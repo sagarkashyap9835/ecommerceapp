@@ -10,11 +10,16 @@ import { Link } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "../constants";
 import { ProductCardProps } from "../constants/types";
+import { useWishlist } from "../context/WishlistContext";
 
 const { width } = Dimensions.get("window");
 
 export default function ProductCard({ product }: ProductCardProps) {
-  const isLiked = true;
+const {toggleWishlist,isInWishlist}=useWishlist()
+const isLiked=isInWishlist(product._id)
+
+
+  // const isLiked = true;
 
   return (
     <View
@@ -50,7 +55,12 @@ export default function ProductCard({ product }: ProductCardProps) {
             />
 
             {/* Favourite */}
-            <TouchableOpacity className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white items-center justify-center">
+            <TouchableOpacity className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white items-center justify-center" 
+             onPress={(e) => {
+    e.stopPropagation();
+    toggleWishlist(product);
+  }}
+            >
               <Ionicons
                 name={isLiked ? "heart" : "heart-outline"}
                 size={20}

@@ -252,6 +252,64 @@ fetchProducts()
     </View>
   )}
 </View>
+<View
+  style={{
+    backgroundColor: "#111827",
+    borderRadius: 24,
+    padding: 24,
+    marginVertical: 20,
+    alignItems: "center",
+  }}
+>
+  <Text
+    style={{
+      color: "#fff",
+      fontSize: 28,
+      fontWeight: "700",
+      textAlign: "center",
+    }}
+  >
+    Join the Revolution
+  </Text>
+
+  <Text
+    style={{
+      color: "#D1D5DB",
+      fontSize: 16,
+      textAlign: "center",
+      marginTop: 12,
+      lineHeight: 24,
+    }}
+  >
+    Subscribe to our newsletter and get{" "}
+    <Text style={{ color: "#FF4C3B", fontWeight: "700" }}>
+      10% OFF
+    </Text>{" "}
+    on your first purchase.
+  </Text>
+
+  <TouchableOpacity
+    style={{
+      marginTop: 20,
+      backgroundColor: "#FF4C3B",
+      paddingHorizontal: 30,
+      paddingVertical: 14,
+      borderRadius: 999,
+    }}
+  >
+    <Text
+      style={{
+        color: "#fff",
+        fontWeight: "700",
+        fontSize: 16,
+      }}
+    >
+      Subscribe Now
+    </Text>
+  </TouchableOpacity>
+</View>
+
+
       </ScrollView>
     </SafeAreaView>
   );
