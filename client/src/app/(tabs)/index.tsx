@@ -238,7 +238,7 @@ fetchProducts()
         justifyContent: "space-between",
       }}
     >
-      {products.slice(0, 4).map((product: any) => (
+      {products.slice(0, 8).map((product: any) => (
         <View
           key={product._id}
           style={{

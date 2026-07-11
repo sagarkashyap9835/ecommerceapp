@@ -28,7 +28,15 @@ const isLiked=isInWishlist(product._id)
         marginBottom: 16,
       }}
     >
- <Link href={`/product/${product._id}`} asChild>
+<Link
+  href={{
+    pathname: "/product/[id]",
+    params: {
+      id: product._id,
+    },
+  }}
+  asChild
+>
     <TouchableOpacity
       activeOpacity={0.9}
       className="bg-white rounded-2xl overflow-hidden bg-white"
@@ -105,9 +113,9 @@ const isLiked=isInWishlist(product._id)
                   size={14}
                   color="#FBBF24"
                 />
-                <Text className="ml-1 text-xs font-semibold">
-                  {product.rating ?? "4.8"}
-                </Text>
+               <Text className="ml-1 text-xs font-semibold">
+  {product.ratings?.average ?? "4.8"}
+</Text>
               </View>
             </View>
           </View>
