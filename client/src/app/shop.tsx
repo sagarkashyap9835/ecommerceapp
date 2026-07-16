@@ -86,7 +86,7 @@ export default function Shop() {
             <FlatList
                 // अगर पहली बार डेटा लोड हो रहा है तो स्केलेटन डेटा दिखाओ, वरना असली प्रोडक्ट्स
                 data={loading && page === 1 ? skeletonProducts : products}
-                keyExtractor={(item, index) => item._id || item.id?.toString() || index.toString()}
+                keyExtractor={(item, index) => item._id || item._id?.toString() || index.toString()}
                 numColumns={2}
                 columnWrapperStyle={styles.row}
                 renderItem={({ item }) => (
