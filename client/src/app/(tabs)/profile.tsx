@@ -95,7 +95,7 @@ export default function Profile() {
             <TouchableOpacity 
               activeOpacity={0.8}
               style={styles.signInButton} 
-              onPress={() => router.push('/login')}
+              onPress={() => router.push('/sign-in')}
             >
               <Text style={styles.signInButtonText}>Sign In</Text>
             </TouchableOpacity>
@@ -104,7 +104,7 @@ export default function Profile() {
             <TouchableOpacity 
               activeOpacity={0.8}
               style={styles.signUpButton} 
-              onPress={() => router.push('/signup')}
+              onPress={() => router.push('/sign-up')}
             >
               <Text style={styles.signUpButtonText}>Create an Account</Text>
             </TouchableOpacity>
