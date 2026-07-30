@@ -4,6 +4,8 @@ import cors from "cors";
 import connectDB from "./config/db.js";
 import { clerkMiddleware } from '@clerk/express'
 import { clerkWebhook } from "./controllers/webhooks.js";
+import makeAdmin from "./scripts/makeAdmin.js";
+import productRoutes from "./routes/productsRoutes.js";
 const app = express();
 
 // Middleware
@@ -14,15 +16,18 @@ app.post(
   clerkWebhook
 );
 app.use(express.json());
+app.use("/api/products", productRoutes);
 
 const port = process.env.PORT || 3000;
 
 app.get('/', (req: Request, res: Response) => {
     res.send('Server is Live!');
 });
-connectDB()
 
+connectDB()
+await makeAdmin();
 app.use(clerkMiddleware())
+app.use("/api/products", productRoutes)
 app.listen(port, () => {
     console.log(`Server is running at http://localhost:${port}`);
 });
