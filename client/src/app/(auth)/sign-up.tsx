@@ -40,6 +40,7 @@ export default function SignUpScreen() {
                 firstName,
                 lastName,
             });
+            console.log("Create Result:", createResult);
 
             if (createResult.error) {
                 throw createResult.error;
@@ -84,6 +85,7 @@ export default function SignUpScreen() {
 
             if (signUp.status === "complete") {
                 const finalizeResult = await signUp.finalize();
+                 console.log("Finalize Result:", finalizeResult);
                 if (finalizeResult.error) {
                     throw finalizeResult.error;
                 }

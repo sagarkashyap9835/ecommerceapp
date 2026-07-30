@@ -8,6 +8,11 @@ const app = express();
 
 // Middleware
 app.use(cors())
+app.post(
+  "/api/clerk",
+  express.raw({ type: "application/json" }),
+  clerkWebhook
+);
 app.use(express.json());
 
 const port = process.env.PORT || 3000;
@@ -16,11 +21,7 @@ app.get('/', (req: Request, res: Response) => {
     res.send('Server is Live!');
 });
 connectDB()
-app.post(
-  "/api/clerk",
-  express.raw({ type: "application/json" }),
-  clerkWebhook
-);
+
 app.use(clerkMiddleware())
 app.listen(port, () => {
     console.log(`Server is running at http://localhost:${port}`);
