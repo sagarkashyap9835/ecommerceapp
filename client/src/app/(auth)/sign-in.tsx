@@ -1,14 +1,16 @@
 import { COLORS } from "@/assets/constants";
-import { useSignIn } from "@clerk/expo";
+import { useSignIn, useAuth } from "@clerk/expo";
 import type { EmailCodeFactor } from "@clerk/types";
 import { Ionicons } from "@expo/vector-icons";
 import { Link, useRouter } from "expo-router";
 import * as React from "react";
 import { Pressable, TextInput, View, Text, ActivityIndicator, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import Toast from "react-native-toast-message";
 
 export default function Page() {
-    const { signIn, setActive, isLoaded } = useSignIn();
+    const { signIn } = useSignIn();
+    const { isLoaded } = useAuth();
     const router = useRouter();
 
     const [emailAddress, setEmailAddress] = React.useState("");
@@ -26,29 +28,39 @@ export default function Page() {
 
         try {
 
-            const signInAttempt = await signIn.create({
+            const result = await signIn.create({
                 identifier: emailAddress,
                 password,
             });
 
-            if (signInAttempt.status === "complete") {
-                await setActive({
-                    session: signInAttempt.createdSessionId,
-                });
+            if (result.error) {
+                throw result.error;
+            }
+
+            if (signIn.status === "complete") {
+                const finalizeResult = await signIn.finalize();
+                if (finalizeResult.error) {
+                    throw finalizeResult.error;
+                }
                 router.replace("/");
-            } else if (signInAttempt.status === "needs_second_factor") {
-                const emailCodeFactor = signInAttempt.supportedSecondFactors?.find((factor): factor is EmailCodeFactor => factor.strategy === "email_code");
+            } else if (signIn.status === "needs_second_factor") {
+                const emailCodeFactor = signIn.supportedSecondFactors?.find((factor): factor is EmailCodeFactor => factor.strategy === "email_code");
 
                 if (emailCodeFactor) {
-                    await signIn.prepareSecondFactor({
-                        strategy: "email_code",
-                        emailAddressId: emailCodeFactor.emailAddressId,
-                    });
+                    const sendMfaResult = await signIn.mfa.sendEmailCode();
+                    if (sendMfaResult.error) {
+                        throw sendMfaResult.error;
+                    }
                     setShowEmailCode(true);
                 }
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
+            Toast.show({
+                type: 'error',
+                text1: 'Sign In Failed',
+                text2: err?.message ?? err?.errors?.[0]?.message ?? "Invalid email or password"
+            });
         } finally {
             setLoading(false);
         }
@@ -59,19 +71,28 @@ export default function Page() {
 
         setLoading(true);
         try {
-            const attempt = await signIn.attemptSecondFactor({
-                strategy: "email_code",
+            const result = await signIn.mfa.verifyEmailCode({
                 code,
             });
 
-            if (attempt.status === "complete") {
-                await setActive({
-                    session: attempt.createdSessionId,
-                });
+            if (result.error) {
+                throw result.error;
+            }
+
+            if (signIn.status === "complete") {
+                const finalizeResult = await signIn.finalize();
+                if (finalizeResult.error) {
+                    throw finalizeResult.error;
+                }
                 router.replace("/");
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
+            Toast.show({
+                type: 'error',
+                text1: 'Verification Failed',
+                text2: err?.message ?? err?.errors?.[0]?.message ?? "Invalid code"
+            });
         } finally {
             setLoading(false);
         }

@@ -5,6 +5,7 @@ import { WishlistProvider } from "../../context/WishlistContext";
 import { ClerkProvider } from "@clerk/expo";
 import { tokenCache } from "@clerk/expo/token-cache";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import Toast from "react-native-toast-message";
 
 export default function RootLayout() {
   return (
@@ -16,6 +17,7 @@ export default function RootLayout() {
         <CartProvider>
           <WishlistProvider>
             <Stack screenOptions={{ headerShown: false }} />
+            <Toast />
           </WishlistProvider>
         </CartProvider>
       </ClerkProvider>

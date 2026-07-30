@@ -1,10 +1,11 @@
-import { View, Text, ScrollView, Image, TouchableOpacity, StyleSheet } from 'react-native'
+import { View, Text, ScrollView, Image, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native'
 import React, { useState } from 'react'
-import { dummyUser } from '@/assets/assets'
 import { useRouter } from 'expo-router'
 import Header from '../../../components/Header'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
+import { useUser, useAuth } from '@clerk/expo'
+import Toast from 'react-native-toast-message'
 
 // constants फ़ोल्डर से PROFILE_MENU को इम्पोर्ट किया
 // नोट: पाथ को अपनी प्रोजेक्ट डायरेक्टरी के अनुसार कन्फर्म कर लें
@@ -12,17 +13,44 @@ import { PROFILE_MENU } from '../../../constants'
 
 export default function Profile() {
   const router = useRouter()
-  
-  // टेस्ट करने के लिए: अगर आप असली प्रोफाइल देखना चाहते हैं तो dummyUser रखें, 
-  // अगर Guest User स्क्रीन देखना चाहते हैं तो null कर दें।
-  const [user, setUser] = useState<typeof dummyUser | null>(dummyUser)
+  const { isLoaded, isSignedIn, user } = useUser()
+  const { signOut } = useAuth()
+  const [loggingOut, setLoggingOut] = useState(false)
+
+  const handleLogout = async () => {
+    setLoggingOut(true)
+    try {
+      await signOut()
+      router.replace('/(tabs)')
+    } catch (err: any) {
+      console.error(err)
+      Toast.show({
+        type: 'error',
+        text1: 'Logout Failed',
+        text2: err?.message ?? 'Could not sign out'
+      })
+    } finally {
+      setLoggingOut(false)
+    }
+  }
+
+  if (!isLoaded || loggingOut) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <Header title='Profile' />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color="#111111" />
+        </View>
+      </SafeAreaView>
+    )
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <Header title='Profile' />
       
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {user ? (
+        {isSignedIn && user ? (
           /* 1. असली प्रोफ़ाइल स्क्रीन (जब यूज़र लॉग-इन हो) */
           <View style={styles.profileContainer}>
             
@@ -32,11 +60,11 @@ export default function Profile() {
                 source={{ uri: user.imageUrl }} 
                 style={styles.avatar}
               />
-              <Text style={styles.userName}>{user.name}</Text>
-              <Text style={styles.userEmail}>{user.email}</Text>
+              <Text style={styles.userName}>{user.fullName || user.username || 'User'}</Text>
+              <Text style={styles.userEmail}>{user.primaryEmailAddress?.emailAddress}</Text>
               
               <View style={styles.badge}>
-                <Text style={styles.badgeText}>{user.role.toUpperCase()}</Text>
+                <Text style={styles.badgeText}>{(user.publicMetadata?.role as string || 'user').toUpperCase()}</Text>
               </View>
             </View>
 
@@ -74,7 +102,7 @@ export default function Profile() {
               ))}
 
               {/* लॉगआउट बटन (हमेशा लिस्ट के आखिर में रहेगा) */}
-              <TouchableOpacity style={[styles.menuItem, styles.logoutItem]} onPress={() => setUser(null)}>
+              <TouchableOpacity style={[styles.menuItem, styles.logoutItem]} onPress={handleLogout}>
                 <View style={styles.menuItemLeft}>
                   <Ionicons name="log-out-outline" size={22} color="#ef4444" />
                   <Text style={[styles.menuItemText, { color: '#ef4444', fontWeight: '500' }]}>Log Out</Text>

@@ -4,11 +4,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import Toast from 'react-native-toast-message';
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, Link } from "expo-router";
-import { useSignUp } from "@clerk/expo";
+import { useSignUp, useAuth } from "@clerk/expo";
 import { COLORS } from "@/assets/constants";
 
 export default function SignUpScreen() {
-    const { isLoaded, signUp, setActive } = useSignUp();
+    const { signUp } = useSignUp();
+    const { isLoaded } = useAuth();
     const router = useRouter();
 
     const [emailAddress, setEmailAddress] = useState("");
@@ -33,23 +34,28 @@ export default function SignUpScreen() {
 
         setLoading(true);
         try {
-            await signUp.create({
+            const createResult = await signUp.create({
                 emailAddress,
                 password,
                 firstName,
                 lastName,
             });
 
-            await signUp.prepareEmailAddressVerification({
-                strategy: "email_code",
-            });
+            if (createResult.error) {
+                throw createResult.error;
+            }
+
+            const sendCodeResult = await signUp.verifications.sendEmailCode();
+            if (sendCodeResult.error) {
+                throw sendCodeResult.error;
+            }
 
             setPendingVerification(true);
         } catch (err: any) {
             Toast.show({
                 type: 'error',
                 text1: 'Failed to Sign Up',
-                text2: err?.errors?.[0]?.message ?? "Something went wrong"
+                text2: err?.message ?? err?.errors?.[0]?.message ?? "Something went wrong"
             });
         } finally {
             setLoading(false);
@@ -70,10 +76,17 @@ export default function SignUpScreen() {
 
         setLoading(true);
         try {
-            const attempt = await signUp.attemptEmailAddressVerification({ code });
+            const result = await signUp.verifications.verifyEmailCode({ code });
 
-            if (attempt.status === "complete") {
-                await setActive({ session: attempt.createdSessionId });
+            if (result.error) {
+                throw result.error;
+            }
+
+            if (signUp.status === "complete") {
+                const finalizeResult = await signUp.finalize();
+                if (finalizeResult.error) {
+                    throw finalizeResult.error;
+                }
                 router.replace("/");
             } else {
                 Toast.show({
@@ -85,7 +98,7 @@ export default function SignUpScreen() {
             Toast.show({
                 type: 'error',
                 text1: 'Failed to Verify',
-                text2: err?.errors?.[0]?.message ?? "Invalid code"
+                text2: err?.message ?? err?.errors?.[0]?.message ?? "Invalid code"
             });
         } finally {
             setLoading(false);
