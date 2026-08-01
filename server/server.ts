@@ -33,7 +33,7 @@ app.get('/', (req: Request, res: Response) => {
 connectDB();
 await makeAdmin();
 // Seed dummy products if no products are present
-await seedProducts(process.env.MONGODB_URI as string);
+// await seedProducts(process.env.MONGODB_URI as string);
 
 app.use("/api/products", productRoutes);
 app.use("/api/cart", cartRoutes);
