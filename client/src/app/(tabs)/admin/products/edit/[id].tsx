@@ -61,7 +61,11 @@ export default function EditProduct() {
                     text1: 'Failed to Fetch Product',
                     text2: error.response?.data?.message || "Something went wrong"
                 });
-                router.back();
+                if (router.canGoBack()) {
+                    router.back();
+                } else {
+                    router.replace("/admin/products");
+                }
             } finally {
                 setLoading(false);
             }

@@ -160,7 +160,16 @@ export default function SignUpScreen() {
                 </>
             ) : (
                 <>
-                    <TouchableOpacity onPress={() => router.back()} className="absolute top-12 z-10">
+                    <TouchableOpacity 
+                        onPress={() => {
+                            if (router.canGoBack()) {
+                                router.back();
+                            } else {
+                                router.replace("/(auth)/sign-in");
+                            }
+                        }} 
+                        className="absolute top-12 z-10"
+                    >
                         <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
                     </TouchableOpacity>
 

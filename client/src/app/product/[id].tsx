@@ -121,7 +121,13 @@ export default function ProductDetails() {
             }}
           >
             <TouchableOpacity
-              onPress={() => router.back()}
+              onPress={() => {
+                if (router.canGoBack()) {
+                  router.back();
+                } else {
+                  router.replace("/");
+                }
+              }}
               style={{
                 width: 38,
                 height: 38,
