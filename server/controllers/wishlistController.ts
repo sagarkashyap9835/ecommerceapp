@@ -60,7 +60,7 @@ export const addToWishlist = async (req: Request, res: Response) => {
     }
 
     const alreadyExists = wishlist.products.some(
-      (id) => id.toString() === productId
+      (id: any) => id.toString() === productId
     );
 
     if (alreadyExists) {
@@ -112,7 +112,7 @@ export const removeFromWishlist = async (
     }
 
     wishlist.products = wishlist.products.filter(
-      (id) => id.toString() !== productId
+      (id: any) => id.toString() !== productId
     );
 
     await wishlist.save();

@@ -1,8 +1,8 @@
 import "dotenv/config";
-import express, { Request, Response } from 'express';
+import express from 'express';
 import cors from "cors";
 import connectDB from "./config/db.js";
-import { clerkMiddleware } from '@clerk/express'
+import { clerkMiddleware } from '@clerk/express';
 import { clerkWebhook } from "./controllers/webhooks.js";
 import makeAdmin from "./scripts/makeAdmin.js";
 import productRoutes from "./routes/productsRoutes.js";
@@ -11,32 +11,20 @@ import orderRoutes from "./routes/ordersRoutes.js";
 import addressRoutes from "./routes/addressRoutes.js";
 import adminRoutes from "./routes/adminroutes.js";
 import wishlistRoutes from "./routes/wishlistRoutes.js";
-import { seedProducts } from "./scripts/seedProducts.js";
 const app = express();
-
 // Middleware
-app.use(cors())
-app.post(
-  "/api/clerk",
-  express.raw({ type: "application/json" }),
-  clerkWebhook
-);
+app.use(cors());
+app.post("/api/clerk", express.raw({ type: "application/json" }), clerkWebhook);
 app.use(express.json());
 app.use("/api/products", productRoutes);
-
 const port = process.env.PORT || 3000;
-
-app.get('/', (req: Request, res: Response) => {
+app.get('/', (req, res) => {
     res.send('Server is Live!');
 });
-
-connectDB()
+connectDB();
 await makeAdmin();
-// Seed dummy products if no products are present
-await seedProducts(process.env.MONGODB_URI as string)
-
-app.use(clerkMiddleware())
-app.use("/api/products", productRoutes)
+app.use(clerkMiddleware());
+app.use("/api/products", productRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/address", addressRoutes);

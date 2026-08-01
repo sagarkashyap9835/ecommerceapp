@@ -4,19 +4,38 @@ import User from "../models/User.js";
 const makeAdmin = async () => {
   try {
     const email = process.env.ADMIN_EMAIL;
-
-    const user = await User.findOneAndUpdate(
-      { email },
-      { role: "admin" },
-      { new: true }
-    );
-
-    if (!user) {
-      console.log("❌ Admin user not found");
+    if (!email) {
+      console.log("❌ ADMIN_EMAIL not set in .env");
       return;
     }
 
-    const client = await clerkClient();
+    let user = await User.findOne({ email });
+    const client = clerkClient;
+
+    if (!user) {
+      console.log(`🔍 User ${email} not found in DB. Checking Clerk...`);
+      const clerkUsers = await client.users.getUserList({
+        emailAddress: [email],
+      });
+
+      if (!clerkUsers.data || clerkUsers.data.length === 0) {
+        console.log("❌ Admin user not found in DB or Clerk");
+        return;
+      }
+
+      const clerkUser = clerkUsers.data[0];
+      console.log(`📥 Syncing admin user from Clerk to DB...`);
+      user = await User.create({
+        clerkId: clerkUser.id,
+        name: `${clerkUser.firstName ?? ""} ${clerkUser.lastName ?? ""}`.trim() || "Admin",
+        email: clerkUser.emailAddresses[0]?.emailAddress,
+        image: clerkUser.imageUrl,
+        role: "admin",
+      });
+    } else {
+      user.role = "admin";
+      await user.save();
+    }
 
     await client.users.updateUserMetadata(user.clerkId, {
       publicMetadata: {
@@ -24,7 +43,7 @@ const makeAdmin = async () => {
       },
     });
 
-    console.log("✅ Admin promoted successfully");
+    console.log("✅ Admin promoted successfully in DB and Clerk");
   } catch (error: any) {
     console.error("❌ Admin promotion failed:", error.message);
   }

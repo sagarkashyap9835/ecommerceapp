@@ -79,7 +79,7 @@ export const addToCart = async (
 
     // Check if product already exists in cart
     const item = cart.items.find(
-      (i) =>
+      (i: any) =>
         i.product.toString() === productId &&
         (i.size || "") === (size || "")
     );
@@ -179,7 +179,7 @@ export const updateCartItem = async (
     }
 
     const item = cart.items.find(
-      (i) =>
+      (i: any) =>
         i.product.toString() === productId &&
         (i.size || "") === (size || "")
     );
@@ -240,7 +240,7 @@ export const removeCartItem = async (
 
     // Find item index
     const itemIndex = cart.items.findIndex(
-      (item) =>
+      (item: any) =>
         item.product.toString() === productId &&
         (item.size || "") === (size || "")
     );

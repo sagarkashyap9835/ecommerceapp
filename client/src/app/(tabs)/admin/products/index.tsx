@@ -3,18 +3,35 @@ import React, { useEffect, useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View, ActivityIndicator, RefreshControl, Image, Alert, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "@/assets/constants";
-import { dummyProducts } from "@/assets/assets";
+// import { dummyProducts } from "@/assets/assets";
+import { useAuth } from "@clerk/expo";
+import api from "../../../../../constants/api";
 
 export default function AdminProducts() {
+    const {getToken}=useAuth()
     const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [products, setProducts] = useState([]);
 
     const fetchProducts = async () => {
-        setProducts(dummyProducts as any);
-        setLoading(false);
-        setRefreshing(false);
+      try {
+        const {data}=await api.get("/products",{params:{limit:999}})
+        if(data.success){
+            setProducts(data.data)
+        }
+      } catch (error:any) {
+        console.error("failed to fetch products")
+        Toast.show({
+            type:"error",
+            text1:"failed to fetch products",
+            text2:error.response?.data?.message || "something went wrong"
+        })
+      }
+      finally:{
+        setLoading(false)
+        setRefreshing(false)
+      }
     };
 
     useEffect(() => {
@@ -27,7 +44,27 @@ export default function AdminProducts() {
     };
 
     const performDelete = async (id: string) => {
-        setProducts(products.filter((product: any) => product._id !== id) as any);
+      try {
+        const token=await getToken()
+        const {data}=await api.delete(`/products/$id`,
+            {headers:{Authorization:`Bearer ${token}`}}
+        )
+        if(data.success){
+            Toast.show({
+                type:"success",
+                text1:"success",
+                text2:"Product deleted"
+            })
+            fetchProducts()
+        }
+      } 
+      catch (error:any) {
+        Toast.show({
+              type:"error",
+                text1:"failed to  delete product",
+                text2:error.response?.data?.message || "something went wrong"
+        })
+      }
     };
 
     const deleteProduct = async (id: string) => {
