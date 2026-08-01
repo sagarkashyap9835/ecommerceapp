@@ -1,11 +1,12 @@
 import { View, TextInput, FlatList, StyleSheet, ActivityIndicator, Text } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import { Product } from '@/assets/constants/types'
-import { dummyProducts } from '@/assets/assets';
+
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Header from '../../components/Header';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '@/assets/constants';
+import api from '../../constants/api';
 
 // आपका बनाया हुआ ProductCard कंपोनेंट
 import ProductCard from '../../components/ProductCard'; 
@@ -35,16 +36,14 @@ export default function Shop() {
             setLoadingMore(true)
         }
         try {
-            const start = (pageNumber - 1) * 10;
-            const end = start + 10;
-            const paginatedData = dummyProducts.slice(start, end)
-            
-            if (pageNumber === 1) {
-                setProducts(paginatedData)
-            } else {
-                setProducts(prev => [...prev, ...paginatedData])
+            const queryparams={page:pageNumber,limit:10};
+            const {data}=await api.get('/products', {params:queryparams})
+            if(pageNumber===1){
+                setProducts(data.data)
+            } else{
+                setProducts(prev=>[...prev, ...data.data])
             }
-            setHasMore(end < dummyProducts.length)
+            setHasMore(data.pagination.page < data.pagination.pages)
             setPage(pageNumber)
         } catch (error) {
             console.error("pagination error", error) 
