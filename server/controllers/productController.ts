@@ -88,7 +88,6 @@ export const createProduct = async (req: Request, res: Response): Promise<void> 
             }
         }
 
-        // सुनिश्चित करें कि यह हमेशा एक Array हो
         if (!Array.isArray(sizes)) {
             sizes = [sizes];
         }
@@ -96,39 +95,44 @@ export const createProduct = async (req: Request, res: Response): Promise<void> 
         // 2. इमेजेस को हैंडल करना (Multer से आने वाली फाइल्स)
         const files = req.files as Express.Multer.File[] | undefined;
 
-        // वैलिडेशन: अगर कोई फाइल अपलोड नहीं हुई या एरे खाली है
-        if (!files || files.length === 0) {
-             res.status(400).json({
-                success: false,
-                message: "At least one image is required"
+        let imageUrls: string[] = [];
+
+        if (files && files.length > 0) {
+            const uploadPromises = files.map(async (file) => {
+                if (file.buffer && process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_CLOUD_NAME !== 'your_cloud_name') {
+                    const b64 = Buffer.from(file.buffer).toString("base64");
+                    const dataURI = "data:" + file.mimetype + ";base64," + b64;
+                    const result = await cloudinary.uploader.upload(dataURI, { folder: "products" });
+                    return result.secure_url;
+                }
+                return "https://via.placeholder.com/300"; 
             });
-            return;
+            imageUrls = await Promise.all(uploadPromises);
         }
 
-        // 3. सभी इमेजेस को Cloudinary पर अपलोड करना
-        const uploadPromises = files.map(async (file) => {
-            // आपका Cloudinary अपलोड लॉजिक यहाँ आएगा
-            // const result = await cloudinary.uploader.upload(file.path);
-            // return result.secure_url;
-            return "cloudinary_uploaded_url_placeholder"; 
-        });
-        
-        const imageUrls = await Promise.all(uploadPromises);
+        if (imageUrls.length === 0) {
+            imageUrls = ["https://via.placeholder.com/300"];
+        }
 
-        // 4. प्रोडक्ट डेटा तैयार करना
+        // 3. प्रोडक्ट डेटा तैयार करना
         const productData = {
-            ...req.body,
+            name: req.body.name,
+            description: req.body.description,
+            price: Number(req.body.price),
+            stock: Number(req.body.stock || 0),
+            category: req.body.category || "Other",
+            isFeatured: req.body.isFeatured === "true" || req.body.isFeatured === true,
             sizes: sizes,
             images: imageUrls
         };
 
-        // 5. डेटाबेस में सेव करना
-        // const newProduct = await Product.create(productData);
+        // 4. डेटाबेस में सेव करना
+        const newProduct = await Product.create(productData);
 
         res.status(201).json({
             success: true,
             message: "Product created successfully",
-            // data: newProduct
+            data: newProduct
         });
 
     } catch (error: any) {
@@ -143,16 +147,14 @@ export const createProduct = async (req: Request, res: Response): Promise<void> 
 
 export const updateProduct = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { id } = req.params; // रूट से प्रोडक्ट ID निकालना (/api/products/:id)
+        const { id } = req.params;
 
-        // 1. चेक करें कि क्या प्रोडक्ट डेटाबेस में मौजूद है
-        // const existingProduct = await Product.findById(id);
-        // if (!existingProduct) {
-        //     res.status(404).json({ success: false, message: "Product not found" });
-        //     return;
-        // }
+        const existingProduct = await Product.findById(id);
+        if (!existingProduct) {
+            res.status(404).json({ success: false, message: "Product not found" });
+            return;
+        }
 
-        // 2. Sizes को हैंडल और पार्स करना (अगर रिक्वेस्ट में sizes भेजा गया है)
         let sizes = req.body.sizes;
         if (sizes !== undefined) {
             if (typeof sizes === "string") {
@@ -169,58 +171,56 @@ export const updateProduct = async (req: Request, res: Response): Promise<void> 
             }
         }
 
-        // 3. इमेजेस को हैंडल करना (Multer से आने वाली नई फाइल्स)
         const files = req.files as Express.Multer.File[] | undefined;
         let updatedImages: string[] = [];
 
-        // अगर यूजर ने नई इमेजेस अपलोड की हैं
         if (files && files.length > 0) {
             const uploadPromises = files.map(async (file) => {
-                // आपका Cloudinary अपलोड लॉजिक यहाँ आएगा
-                return "new_cloudinary_uploaded_url"; 
+                if (file.buffer && process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_CLOUD_NAME !== 'your_cloud_name') {
+                    const b64 = Buffer.from(file.buffer).toString("base64");
+                    const dataURI = "data:" + file.mimetype + ";base64," + b64;
+                    const result = await cloudinary.uploader.upload(dataURI, { folder: "products" });
+                    return result.secure_url;
+                }
+                return "https://via.placeholder.com/300"; 
             });
             updatedImages = await Promise.all(uploadPromises);
         } else {
-            // अगर कोई नई इमेज नहीं आई, तो फ्रंटएंड से भेजी गई पुरानी इमेजेस को रखें
-            // (यह तब काम आता है जब यूजर कुछ इमेजेस डिलीट या रिटेन करता है)
-            if (typeof req.body.images === "string") {
-                updatedImages = [req.body.images];
-            } else if (Array.isArray(req.body.images)) {
-                updatedImages = req.body.images;
+            let existingImgArr: string[] = [];
+            if (req.body.existingImages) {
+                existingImgArr = Array.isArray(req.body.existingImages) 
+                    ? req.body.existingImages 
+                    : [req.body.existingImages];
+            } else if (req.body.images) {
+                existingImgArr = Array.isArray(req.body.images) 
+                    ? req.body.images 
+                    : [req.body.images];
             } else {
-                // अगर डेटाबेस में मौजूद पुरानी इमेज रखनी हैं:
-                // updatedImages = existingProduct.images; 
+                existingImgArr = existingProduct.images;
             }
+            updatedImages = existingImgArr;
         }
 
-        // 4. वैलिडेशन: अपडेट होने के बाद भी कम से कम एक इमेज होनी जरूरी है
         if (!updatedImages || updatedImages.length === 0) {
-            res.status(400).json({
-                success: false,
-                message: "At least one image is required for the product"
-            });
-            return;
+            updatedImages = existingProduct.images.length > 0 ? existingProduct.images : ["https://via.placeholder.com/300"];
         }
 
-        // 5. अपडेटेड डेटा तैयार करना
-        const updatedData: any = {
-            ...req.body,
-            images: updatedImages
-        };
+        const updatedData: any = {};
+        if (req.body.name) updatedData.name = req.body.name;
+        if (req.body.description !== undefined) updatedData.description = req.body.description;
+        if (req.body.price !== undefined) updatedData.price = Number(req.body.price);
+        if (req.body.stock !== undefined) updatedData.stock = Number(req.body.stock);
+        if (req.body.category) updatedData.category = req.body.category;
+        if (req.body.isFeatured !== undefined) updatedData.isFeatured = req.body.isFeatured === "true" || req.body.isFeatured === true;
+        if (sizes !== undefined) updatedData.sizes = sizes;
+        updatedData.images = updatedImages;
 
-        // अगर sizes भेजे गए थे, तभी उन्हें ऑब्जेक्ट में जोड़ें
-        if (sizes !== undefined) {
-            updatedData.sizes = sizes;
-        }
-
-        // 6. डेटाबेस में अपडेट करना
-        // const updatedProduct = await Product.findByIdAndUpdate(id, updatedData, { new: true, runValidators: true });
+        const updatedProduct = await Product.findByIdAndUpdate(id, updatedData, { new: true, runValidators: true });
 
         res.status(200).json({
             success: true,
             message: "Product updated successfully",
-            // data: updatedProduct
-            data: updatedData // टेस्टिंग के लिए भेजा गया डेटा
+            data: updatedProduct
         });
 
     } catch (error: any) {

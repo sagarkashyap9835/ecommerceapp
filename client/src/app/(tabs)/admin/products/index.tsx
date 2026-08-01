@@ -5,6 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "@/assets/constants";
 // import { dummyProducts } from "@/assets/assets";
 import { useAuth } from "@clerk/expo";
+import Toast from 'react-native-toast-message';
 import api from "../../../../../constants/api";
 
 export default function AdminProducts() {
@@ -28,7 +29,7 @@ export default function AdminProducts() {
             text2:error.response?.data?.message || "something went wrong"
         })
       }
-      finally:{
+      finally {
         setLoading(false)
         setRefreshing(false)
       }
@@ -46,7 +47,7 @@ export default function AdminProducts() {
     const performDelete = async (id: string) => {
       try {
         const token=await getToken()
-        const {data}=await api.delete(`/products/$id`,
+        const {data}=await api.delete(`/products/${id}`,
             {headers:{Authorization:`Bearer ${token}`}}
         )
         if(data.success){

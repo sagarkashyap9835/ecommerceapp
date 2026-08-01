@@ -3,14 +3,16 @@ import React, { useEffect, useState } from 'react'
 import { useCart } from '../../context/CartContext'
 import { useRouter } from 'expo-router' 
 import { Address } from '../../constants/types'
-import { dummyAddress } from '@/assets/assets'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import Header from '../../components/Header'
 import { COLORS } from '@/assets/constants'
 import { Ionicons } from '@expo/vector-icons'
 import Toast from 'react-native-toast-message'
+import { useAuth } from '@clerk/expo'
+import api from '../../constants/api'
 
 export default function Checkout() {
+  const { getToken } = useAuth()
   const { cartTotal, clearCart } = useCart()
   const router = useRouter()
   
@@ -25,17 +27,22 @@ export default function Checkout() {
 
   const fetchAddress = async () => {
     try {
-      const addressList = dummyAddress;
-      if (addressList && addressList.length > 0) {
-        const def = addressList.find((a: any) => a.isDefault) || addressList[0]
-        setSelectedAddress(def as Address)
+      setPageLoading(true);
+      const token = await getToken();
+      const { data } = await api.get('/address', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (data.success && data.data && data.data.length > 0) {
+        const def = data.data.find((a: any) => a.isDefault) || data.data[0];
+        setSelectedAddress(def as Address);
       }
     } catch (error) {
-      console.error("Error fetching address:", error)
+      console.error("Error fetching address:", error);
     } finally {
-      setPageLoading(false)
+      setPageLoading(false);
     }
-  }
+  };
 
   const handlePlaceOrder = async () => {
     if (!selectedAddress) {
@@ -44,7 +51,7 @@ export default function Checkout() {
         text1: 'Address Required',
         text2: 'Please add or select a shipping address.',
         position: 'top'
-      })
+      });
     }
 
     if (paymentMethod === 'stripe') {
@@ -53,31 +60,55 @@ export default function Checkout() {
         text1: 'Stripe Payment',
         text2: 'Stripe Gateway integration coming soon!',
         position: 'top'
-      })
+      });
     }
 
-    setLoading(true)
+    setLoading(true);
     try {
-      setTimeout(async () => {
+      const token = await getToken();
+      const { data } = await api.post(
+        '/orders',
+        {
+          shippingAddress: {
+            street: selectedAddress.street,
+            city: selectedAddress.city,
+            state: selectedAddress.state,
+            zipCode: selectedAddress.zipCode,
+            country: selectedAddress.country,
+          },
+          paymentMethod: 'cash',
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+
+      if (data.success) {
         Toast.show({
           type: 'success',
           text1: 'Order Placed! 🎉',
           text2: 'Your order has been placed successfully via COD.',
           position: 'top'
-        })
-        await clearCart()
-        setLoading(false)
-        router.replace('/orders' as any)
-      }, 2000)
-    } catch (error) {
-      setLoading(false)
-      console.error(error)
+        });
+        await clearCart();
+        router.replace('/(tabs)/orders' as any);
+      }
+    } catch (error: any) {
+      console.error("Error placing order:", error);
+      Toast.show({
+        type: 'error',
+        text1: 'Order Failed',
+        text2: error.response?.data?.message || 'Failed to place order',
+        position: 'top'
+      });
+    } finally {
+      setLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
-    fetchAddress()
-  }, [])
+    fetchAddress();
+  }, []);
 
   if (pageLoading) {
     return (

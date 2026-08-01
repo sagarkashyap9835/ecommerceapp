@@ -15,14 +15,14 @@ import { seedProducts } from "./scripts/seedProducts.js";
 const app = express();
 
 // Middleware
-app.use(cors())
+app.use(cors());
 app.post(
   "/api/clerk",
   express.raw({ type: "application/json" }),
   clerkWebhook
 );
 app.use(express.json());
-app.use("/api/products", productRoutes);
+app.use(clerkMiddleware());
 
 const port = process.env.PORT || 3000;
 
@@ -30,13 +30,12 @@ app.get('/', (req: Request, res: Response) => {
     res.send('Server is Live!');
 });
 
-connectDB()
+connectDB();
 await makeAdmin();
 // Seed dummy products if no products are present
-await seedProducts(process.env.MONGODB_URI as string)
+await seedProducts(process.env.MONGODB_URI as string);
 
-app.use(clerkMiddleware())
-app.use("/api/products", productRoutes)
+app.use("/api/products", productRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/address", addressRoutes);

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ScrollView, Text, TouchableOpacity, View, ActivityIndicator, RefreshControl, Modal, TouchableWithoutFeedback, FlatList, StyleSheet } from "react-native";
+import { ScrollView, Text, TouchableOpacity, View, ActivityIndicator, RefreshControl, Modal, TouchableWithoutFeedback, FlatList, StyleSheet, Alert } from "react-native";
 import { COLORS, getStatusColor } from "@/assets/constants";
 import { Ionicons } from "@expo/vector-icons";
 // import { dummyOrders, dummyUser } from "@/assets/assets";
@@ -55,26 +55,25 @@ try {
 
     const updateStatus = async (newStatus: string) => {
         if (!selectedOrder) return;
-try {
-    const token =await getToken();
-const {data}=await api.put(`/orders/admin/${selectedOrder._id`, {
-    orderStatus:newStatus
-    },{headers:{Authorization:`Bearer $token`}}})
+        try {
+            setUpdating(true);
+            const token = await getToken();
+            const { data } = await api.put(`/orders/admin/${selectedOrder._id}`, {
+                orderStatus: newStatus
+            }, { headers: { Authorization: `Bearer ${token}` } });
 
-if(data.success){
-Alert.alert("success","order status updated")
-setStatusModalVisible(false);
-fetchOrders()
-}
-
-setUpdating(false)
+            if (data.success) {
+                Alert.alert("Success", "Order status updated");
+                setStatusModalVisible(false);
+                fetchOrders();
+            }
+        } catch (error) {
+            console.error("Failed to update status", error);
+            Alert.alert("Error", "Failed to update status");
+        } finally {
+            setUpdating(false);
+        }
     };
-} catch (error) {
-    console.error("failed to update status", error);
-    Alert.alert("Error", "failed to update status")
-}finally{
-setUpdating(false)
-}
 
     if (loading && !refreshing) {
         return (

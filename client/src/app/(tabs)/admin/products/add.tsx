@@ -78,7 +78,7 @@ const handleSubmit = async () => {
         }
 
         try {
-            const { data } = await api.post("/products/add", formData, {
+            const { data } = await api.post("/products", formData, {
                 headers: { Authorization: `Bearer ${token}` },
             })
 

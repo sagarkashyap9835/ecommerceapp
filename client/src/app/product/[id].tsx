@@ -18,6 +18,7 @@ import { useWishlist } from "../../../context/WishlistContext";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { COLORS } from "@/assets/constants";
 import { Ionicons } from "@expo/vector-icons";
+import Toast from "react-native-toast-message";
 import api from "../../../constants/api";
 
 const { width } = Dimensions.get("window");
@@ -36,19 +37,18 @@ export default function ProductDetails() {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
 
   const fetchProduct = async () => {
-  try {
-    const {data}=await api.get(`/products/${id}`)
-    setProduct(data.data)
-  } catch (error:any) {
-    Toast.show({
-type:"error",
-text1:"failed to fetch product",
-text2:"error.response?.data?.message || "Something went wrong"
-
-    })
-  } finally{
-    setLoading(false)
-  }
+    try {
+      const { data } = await api.get(`/products/${id}`);
+      setProduct(data.data);
+    } catch (error: any) {
+      Toast.show({
+        type: "error",
+        text1: "Failed to fetch product",
+        text2: error.response?.data?.message || "Something went wrong"
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -203,10 +203,10 @@ text2:"error.response?.data?.message || "Something went wrong"
             <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4 }}>
               <Ionicons name="star" size={15} color="#FBBF24" />
               <Text style={{ marginLeft: 4, fontSize: 14, fontWeight: "700", color: "#111827" }}>
-                {product.ratings.average > 0 ? product.ratings.average.toFixed(1) : "0.0"}
+                {product?.ratings?.average ? product.ratings.average.toFixed(1) : "4.8"}
               </Text>
               <Text style={{ fontSize: 13, color: "#9CA3AF", marginLeft: 2 }}>
-                ({product.ratings.count})
+                ({product?.ratings?.count ?? 0})
               </Text>
             </View>
           </View>
@@ -323,11 +323,15 @@ text2:"error.response?.data?.message || "Something went wrong"
             /* Standard Add To Cart Mode */
             <TouchableOpacity
               onPress={async () => {
-                if (!selectedSize) {
-                  Alert.alert("Select Size", "Please select a size first before adding to cart.");
+                if (product.sizes && product.sizes.length > 0 && !selectedSize) {
+                  Toast.show({
+                    type: "info",
+                    text1: "Select Size",
+                    text2: "Please select a size first before adding to cart.",
+                  });
                   return;
                 }
-                await addToCart(product, selectedSize);
+                await addToCart(product, selectedSize || "");
               }}
               style={{
                 height: 52,

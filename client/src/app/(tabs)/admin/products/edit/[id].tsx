@@ -34,7 +34,7 @@ export default function EditProduct() {
     useEffect(() => {
         const fetchProduct = async () => {
             try {
-             const {data}=await api.get(`/products/$id`)
+             const {data}=await api.get(`/products/${id}`)
              if(data.success){
                 const product=data.data
   setName(product.name);
@@ -134,17 +134,17 @@ export default function EditProduct() {
                     formData.append("images", { uri, name: filename, type: "image/jpeg" } as any);
                 }
             }
-            const data=await api.put(`/products/$id`, formData,{
-                headers:{
-                    Authorization:`Bearer ${token}`,
-                    "Content-Type":"multipart/form-data",
+            const { data } = await api.put(`/products/${id}`, formData, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "multipart/form-data",
                 }
             })
-            if(data.success){
+            if (data?.success) {
                  Toast.show({
                     type: 'success',
-                    text1: 'success',
-                    text2: "product updated successfully"
+                    text1: 'Success',
+                    text2: "Product updated successfully"
                 });
                 router.replace("/admin/products")
             }

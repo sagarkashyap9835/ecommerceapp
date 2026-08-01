@@ -4,18 +4,33 @@ import { FlatList, Text, TouchableOpacity, View, ActivityIndicator, ScrollView, 
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Header from "../../../../components/Header";
-import { COLORS,getStatusColor } from "@/assets/constants";
+import { COLORS, getStatusColor } from "@/assets/constants";
 import type { Order } from "@/assets/constants/types";
-import { dummyOrders, formatDate } from "@/assets/assets";
+import { formatDate } from "@/assets/assets";
+import { useAuth } from "@clerk/expo";
+import api from "../../../../constants/api";
 
 export default function Orders() {
+    const { getToken } = useAuth();
     const router = useRouter();
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
 
     const fetchOrders = async () => {
-        setOrders(dummyOrders as any[]);
-        setLoading(false);
+        try {
+            setLoading(true);
+            const token = await getToken();
+            const { data } = await api.get("/orders", {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (data.success) {
+                setOrders(data.data);
+            }
+        } catch (error) {
+            console.error("Failed to fetch orders:", error);
+        } finally {
+            setLoading(false);
+        }
     };
 
     useEffect(() => {
