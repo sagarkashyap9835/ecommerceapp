@@ -20,11 +20,14 @@ import { Ionicons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
 import { useAuth } from "@clerk/expo";
 import api from "../../constants/api";
+import { getEstimatedDelivery } from "../../utils/delivery";
 
 export default function Checkout() {
   const { getToken } = useAuth();
   const { cartTotal, clearCart } = useCart();
   const router = useRouter();
+
+  const deliveryEstimate = getEstimatedDelivery(3, 5);
 
   const [loading, setLoading] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
@@ -85,6 +88,7 @@ export default function Checkout() {
         "/orders",
         {
           shippingAddress: {
+            villageHouseCode: selectedAddress.villageHouseCode || "",
             street: selectedAddress.street,
             city: selectedAddress.city,
             state: selectedAddress.state,
@@ -92,6 +96,7 @@ export default function Checkout() {
             country: selectedAddress.country,
           },
           paymentMethod: "cash",
+          estimatedDeliveryDate: deliveryEstimate.startDate,
         },
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -141,6 +146,7 @@ export default function Checkout() {
         "/orders",
         {
           shippingAddress: {
+            villageHouseCode: selectedAddress?.villageHouseCode || "",
             street: selectedAddress?.street,
             city: selectedAddress?.city,
             state: selectedAddress?.state,
@@ -150,6 +156,7 @@ export default function Checkout() {
           paymentMethod: "stripe",
           paymentStatus: "paid",
           paymentIntentId: testPaymentIntentId,
+          estimatedDeliveryDate: deliveryEstimate.startDate,
         },
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -217,6 +224,14 @@ export default function Checkout() {
                 <Text style={styles.defaultLabel}>Default</Text>
               )}
             </View>
+
+            {selectedAddress.villageHouseCode ? (
+              <View style={{ backgroundColor: "#ECFDF5", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, marginVertical: 6, alignSelf: "flex-start", borderWidth: 1, borderColor: "#A7F3D0" }}>
+                <Text style={{ fontSize: 12, fontWeight: "700", color: "#065F46" }}>
+                  🏡 Village / Gram Code: #{selectedAddress.villageHouseCode}
+                </Text>
+              </View>
+            ) : null}
 
             <Text style={styles.addressText}>{selectedAddress.street}</Text>
             <Text style={styles.addressText}>
@@ -291,6 +306,28 @@ export default function Checkout() {
         {/* 3. ORDER SUMMARY SECTION */}
         <Text style={styles.sectionTitle}>Order Summary</Text>
         <View style={styles.card}>
+          {/* Estimated Delivery Banner */}
+          <View style={{
+            backgroundColor: "#ECFDF5",
+            borderRadius: 10,
+            padding: 10,
+            marginBottom: 14,
+            flexDirection: "row",
+            alignItems: "center",
+            borderWidth: 1,
+            borderColor: "#A7F3D0",
+          }}>
+            <Ionicons name="bus-outline" size={20} color="#059669" />
+            <View style={{ marginLeft: 10, flex: 1 }}>
+              <Text style={{ fontSize: 10, fontWeight: "800", color: "#047857", letterSpacing: 0.5 }}>
+                EXPECTED DELIVERY DAY
+              </Text>
+              <Text style={{ fontSize: 13, fontWeight: "700", color: "#065F46", marginTop: 1 }}>
+                {deliveryEstimate.formattedStartDate}
+              </Text>
+            </View>
+          </View>
+
           <View style={styles.priceRow}>
             <Text style={styles.priceLabel}>Subtotal</Text>
             <Text style={styles.priceValue}>₹{cartTotal.toFixed(2)}</Text>

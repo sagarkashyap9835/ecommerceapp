@@ -82,6 +82,11 @@ export const createOrder = async (req: Request, res: Response) => {
         const isStripe = req.body.paymentMethod === "stripe";
         const paymentStatus = req.body.paymentStatus || (isStripe ? "paid" : "pending");
 
+        // Calculate guaranteed 3-day district delivery date
+        const estimatedDeliveryDate = req.body.estimatedDeliveryDate 
+          ? new Date(req.body.estimatedDeliveryDate) 
+          : new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
+
         const order = await Order.create({
             user: req.user._id,
             items: orderItems,
@@ -93,6 +98,7 @@ export const createOrder = async (req: Request, res: Response) => {
             tax,
             totalAmount,
             notes,
+            estimatedDeliveryDate,
             paymentIntentId: req.body.paymentIntentId || (isStripe ? "pi_test_" + Date.now() : undefined),
             orderNumber: "ORD-" + Date.now(),
         });

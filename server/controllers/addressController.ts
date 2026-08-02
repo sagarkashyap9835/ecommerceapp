@@ -12,13 +12,13 @@ export const getAddresses = async (req: Request, res: Response) => {
 
 export const addAddress = async (req: Request, res: Response) => {
     try {
-        const { type, street, city, state, zipCode, country, isDefault } = req.body;
+        const { type, villageHouseCode, street, city, state, zipCode, country, isDefault } = req.body;
 
         if(isDefault){
             await Address.updateMany({user: req.user._id}, {isDefault: false})
         }
 
-        const newAddress = await Address.create({user: req.user._id, type, street, city, state, zipCode, country, isDefault: isDefault || false})
+        const newAddress = await Address.create({user: req.user._id, type, villageHouseCode, street, city, state, zipCode, country, isDefault: isDefault || false})
 
         res.status(201).json({success: true, data: newAddress})
     } catch (error: any) {
@@ -28,7 +28,7 @@ export const addAddress = async (req: Request, res: Response) => {
 
 export const updateAddress = async (req: Request, res: Response) => {
     try {
-        const { type, street, city, state, zipCode, country, isDefault } = req.body;
+        const { type, villageHouseCode, street, city, state, zipCode, country, isDefault } = req.body;
 
         let addressItem = await Address.findById(req.params.id)
 
@@ -44,7 +44,7 @@ export const updateAddress = async (req: Request, res: Response) => {
             await Address.updateMany({user: req.user._id}, {isDefault: false})
         }
 
-        addressItem = await Address.findByIdAndUpdate(req.params.id, {type, street, city, state, zipCode, country, isDefault}, {new: true})
+        addressItem = await Address.findByIdAndUpdate(req.params.id, {type, villageHouseCode, street, city, state, zipCode, country, isDefault}, {new: true})
 
         res.json({success: true, data: addressItem})
     } catch (error: any) {

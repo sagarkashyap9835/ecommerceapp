@@ -16,14 +16,15 @@ const app = express();
 app.use(cors());
 app.post("/api/clerk", express.raw({ type: "application/json" }), clerkWebhook);
 app.use(express.json());
-app.use("/api/products", productRoutes);
+app.use(clerkMiddleware());
 const port = process.env.PORT || 3000;
 app.get('/', (req, res) => {
     res.send('Server is Live!');
 });
 connectDB();
 await makeAdmin();
-app.use(clerkMiddleware());
+// Seed dummy products if no products are present
+// await seedProducts(process.env.MONGODB_URI as string);
 app.use("/api/products", productRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/orders", orderRoutes);

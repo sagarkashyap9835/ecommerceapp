@@ -90,6 +90,7 @@ export type HeaderProps = {
 export interface Address {
     _id: string;
     type: "Home" | "Work" | "Other";
+    villageHouseCode?: string;
     street: string;
     city: string;
     state: string;

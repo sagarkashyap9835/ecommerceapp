@@ -5,6 +5,8 @@ import { useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import Header from '../../../components/Header'
 import CartItem from '../../../components/CartItem'
+import { Ionicons } from '@expo/vector-icons'
+import { getEstimatedDelivery } from '../../../utils/delivery'
 
 export default function Cart() {
   const { cartItems, cartTotal, removeFromCart, updateQuantity } = useCart()
@@ -15,6 +17,8 @@ export default function Cart() {
 
   // 2. फाइनल टोटल = कार्ट का कुल दाम + शिपिंग चार्ज
   const finalTotal = (cartTotal || 0) + SHIPPING_CHARGE;
+
+  const deliveryEstimate = getEstimatedDelivery(3, 5);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -41,6 +45,26 @@ export default function Cart() {
           {/* बॉटम टोटल और चेकआउट सेक्शन */}
           <View style={styles.footer}>
             
+            {/* 💡 Estimated Delivery Date Banner */}
+            <View style={{
+              backgroundColor: '#ECFDF5',
+              borderRadius: 10,
+              padding: 10,
+              marginBottom: 14,
+              flexDirection: 'row',
+              alignItems: 'center',
+              borderWidth: 1,
+              borderColor: '#A7F3D0',
+            }}>
+              <Ionicons name="bus-outline" size={20} color="#059669" />
+              <View style={{ marginLeft: 10, flex: 1 }}>
+                <Text style={{ fontSize: 10, fontWeight: '800', color: '#047857', letterSpacing: 0.5 }}>ESTIMATED DELIVERY</Text>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: '#065F46', marginTop: 1 }}>
+                  Expected by {deliveryEstimate.formattedStartDate}
+                </Text>
+              </View>
+            </View>
+
             {/* 3. सबटोटल (Items Total) */}
             <View style={styles.priceRow}>
               <Text style={styles.priceLabel}>Subtotal:</Text>

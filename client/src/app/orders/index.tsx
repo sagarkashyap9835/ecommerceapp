@@ -9,6 +9,7 @@ import type { Order } from "@/assets/constants/types";
 import { formatDate } from "@/assets/assets";
 import { useAuth } from "@clerk/expo";
 import api from "../../../constants/api";
+import { getDeliveryDateForOrder } from "../../../utils/delivery";
 
 export default function Orders() {
     const { getToken } = useAuth();
@@ -96,6 +97,15 @@ export default function Orders() {
 
                             <View className="flex-row justify-between items-center mb-2">
                                 <Text className="text-secondary text-xs">Payment Method: <Text className="text-primary font-medium capitalize">{item.paymentMethod}</Text></Text>
+                            </View>
+
+                            {/* Estimated Delivery Tag */}
+                            <View className="flex-row items-center mb-3 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200">
+                                <Ionicons name="bus-outline" size={14} color="#059669" />
+                                <Text className="text-emerald-800 text-xs font-bold ml-1.5">
+                                    {item.orderStatus === 'delivered' ? 'Delivered on: ' : 'Expected Delivery: '}
+                                    {getDeliveryDateForOrder(item as any)}
+                                </Text>
                             </View>
 
                             {/* Product Images */}

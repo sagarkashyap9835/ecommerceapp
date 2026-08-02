@@ -1,4 +1,4 @@
-import { getAuth } from "@clerk/express";
+import { getAuth, clerkClient } from "@clerk/express";
 import User from "../models/User.js";
 export const protect = async (req, res, next) => {
     try {
@@ -9,12 +9,33 @@ export const protect = async (req, res, next) => {
                 message: "Not authorized",
             });
         }
-        const user = await User.findOne({ clerkId: userId });
+        let user = await User.findOne({ clerkId: userId });
         if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: "User not found",
-            });
+            try {
+                const clerkUser = await clerkClient.users.getUser(userId);
+                const email = clerkUser.emailAddresses[0]?.emailAddress;
+                const adminEmail = process.env.ADMIN_EMAIL;
+                const role = (adminEmail && email === adminEmail) ? "admin" : "user";
+                user = await User.create({
+                    clerkId: userId,
+                    name: `${clerkUser.firstName ?? ""} ${clerkUser.lastName ?? ""}`.trim() || "User",
+                    email: email || `${userId}@clerk.user`,
+                    image: clerkUser.imageUrl,
+                    role: role,
+                });
+            }
+            catch (e) {
+                user = await User.create({
+                    clerkId: userId,
+                    name: "User",
+                    email: `${userId}@clerk.user`,
+                    role: "user",
+                });
+            }
+        }
+        if (process.env.ADMIN_EMAIL && user.email === process.env.ADMIN_EMAIL && user.role !== "admin") {
+            user.role = "admin";
+            await user.save();
         }
         req.user = user;
         next();

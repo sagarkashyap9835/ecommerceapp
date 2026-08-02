@@ -3,6 +3,7 @@ import { Document, Types } from "mongoose";
 export interface IAddress extends Document {
     user: Types.ObjectId;
     type: "Home" | "Work" | "Other";
+    villageHouseCode?: string; // Village House / Gram Code (e.g. 1, 2, 3...)
     street: string;
     city: string;
     state: string;
@@ -41,6 +42,7 @@ export interface IOrder extends Document {
     orderNumber: string;
     items: IOrderItem[];
     shippingAddress: {
+        villageHouseCode?: string;
         street: string;
         city: string;
         state: string;
@@ -57,6 +59,7 @@ export interface IOrder extends Document {
     totalAmount: number;
     notes?: string;
     deliveredAt?: Date;
+    estimatedDeliveryDate?: Date;
     createdAt: Date;
     updatedAt: Date;
 }

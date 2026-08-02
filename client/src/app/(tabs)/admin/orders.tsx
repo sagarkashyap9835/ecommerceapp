@@ -116,7 +116,15 @@ try {
 
                                 <View style={styles.infoBox}>
                                     <Text style={styles.infoBoxLabel}>SHIPPING ADDRESS</Text>
+                                    {order.shippingAddress?.villageHouseCode ? (
+                                        <View style={{ backgroundColor: "#ECFDF5", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, marginBottom: 6, alignSelf: "flex-start", borderWidth: 1, borderColor: "#A7F3D0" }}>
+                                            <Text style={{ fontSize: 12, fontWeight: "800", color: "#065F46" }}>
+                                                🏡 Village / Gram House Code: #{order.shippingAddress.villageHouseCode}
+                                            </Text>
+                                        </View>
+                                    ) : null}
                                     <Text style={styles.primaryTextSmall}>
+                                        {order.shippingAddress?.villageHouseCode && !order.shippingAddress?.street?.toLowerCase().includes("house #") ? `House #${order.shippingAddress.villageHouseCode}, ` : ""}
                                         {order.shippingAddress?.street}, {order.shippingAddress?.city}
                                     </Text>
                                     <Text style={styles.primaryTextSmall}>

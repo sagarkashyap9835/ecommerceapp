@@ -1,6 +1,7 @@
 import Order from "../models/order.js";
 import Cart from "../models/cart.js";
 import Product from "../models/products.js";
+import Stripe from "stripe";
 export const getOrders = async (req, res) => {
     try {
         const query = { user: req.user._id };
@@ -58,29 +59,88 @@ export const createOrder = async (req, res) => {
             await product.save();
         }
         const subtotal = cart.totalAmount;
-        const shippingCost = 2;
+        const shippingCost = 20;
         const tax = 0;
         const totalAmount = subtotal + shippingCost + tax;
+        const isStripe = req.body.paymentMethod === "stripe";
+        const paymentStatus = req.body.paymentStatus || (isStripe ? "paid" : "pending");
+        // Calculate guaranteed 3-day district delivery date
+        const estimatedDeliveryDate = req.body.estimatedDeliveryDate
+            ? new Date(req.body.estimatedDeliveryDate)
+            : new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
         const order = await Order.create({
             user: req.user._id,
             items: orderItems,
             shippingAddress,
             paymentMethod: req.body.paymentMethod || "cash",
-            paymentStatus: "pending",
+            paymentStatus: paymentStatus,
             subtotal,
             shippingCost,
             tax,
             totalAmount,
             notes,
-            paymentIntentId: req.body.paymentIntentId,
+            estimatedDeliveryDate,
+            paymentIntentId: req.body.paymentIntentId || (isStripe ? "pi_test_" + Date.now() : undefined),
             orderNumber: "ORD-" + Date.now(),
         });
-        if (req.body.paymentMethod !== "stripe") {
-            cart.items = [];
-            cart.totalAmount = 0;
-            await cart.save();
-        }
+        cart.items = [];
+        cart.totalAmount = 0;
+        await cart.save();
         res.status(201).json({ success: true, data: order });
+    }
+    catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+// Create Stripe Checkout Session (Test Mode Support)
+export const createStripeCheckoutSession = async (req, res) => {
+    try {
+        const cart = await Cart.findOne({ user: req.user._id }).populate("items.product");
+        if (!cart || cart.items.length === 0) {
+            return res.status(400).json({ success: false, message: "Cart is empty" });
+        }
+        const subtotal = cart.totalAmount;
+        const shippingCost = 20;
+        const totalAmount = subtotal + shippingCost;
+        let sessionUrl = "";
+        let sessionId = "cs_test_" + Date.now();
+        if (process.env.STRIPE_SECRET_KEY && !process.env.STRIPE_SECRET_KEY.includes("dummy")) {
+            try {
+                const stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY, {
+                    apiVersion: "2024-06-20",
+                });
+                const lineItems = cart.items.map((item) => ({
+                    price_data: {
+                        currency: "inr",
+                        product_data: {
+                            name: item.product?.name || "Product",
+                            images: item.product?.images ? [item.product.images[0]] : [],
+                        },
+                        unit_amount: Math.round(item.price * 100),
+                    },
+                    quantity: item.quantity,
+                }));
+                const session = await stripeClient.checkout.sessions.create({
+                    payment_method_types: ["card"],
+                    line_items: lineItems,
+                    mode: "payment",
+                    success_url: `${req.headers.origin || "http://localhost:8081"}/checkout?payment=success`,
+                    cancel_url: `${req.headers.origin || "http://localhost:8081"}/checkout?payment=cancelled`,
+                });
+                sessionUrl = session.url || "";
+                sessionId = session.id;
+            }
+            catch (stripeErr) {
+                console.log("Stripe session creation note:", stripeErr.message);
+            }
+        }
+        res.status(200).json({
+            success: true,
+            url: sessionUrl,
+            sessionId: sessionId,
+            amount: totalAmount,
+            message: "Stripe payment initialized in Test Mode",
+        });
     }
     catch (error) {
         res.status(500).json({ success: false, message: error.message });

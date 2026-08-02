@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 const AddressSchema = new mongoose.Schema({
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, unique: true },
     type: { type: String, required: true, enum: ["Home", "Work", "Other"], default: "Home" },
+    villageHouseCode: { type: String, default: "" },
     street: { type: String, required: true },
     city: { type: String, required: true },
     state: { type: String, required: true },

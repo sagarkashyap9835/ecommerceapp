@@ -1,17 +1,56 @@
 import Product from "../models/products.js";
+import Order from "../models/order.js";
 import cloudinary from "../config/cloudinary.js";
 // सभी एक्टिव प्रोडक्ट्स को पेजिनेशन के साथ गेट करने का लॉजिक
 export const getProducts = async (req, res) => {
     try {
-        // क्वेरी से page और limit निकालना (डिफ़ॉल्ट वैल्यू के साथ)
         const page = Number(req.query.page) || 1;
         const limit = Number(req.query.limit) || 10;
+        const { search, category, minPrice, maxPrice, sortBy, isBogo } = req.query;
         // केवल वही प्रोडक्ट्स जो एक्टिव हैं
         const query = { isActive: true };
+        // 0. BOGO / Offer Filter
+        if (isBogo === "true" || String(isBogo) === "true") {
+            query.isBogo = true;
+        }
+        // 1. Category Filter
+        if (category && typeof category === "string" && category.toLowerCase() !== "all" && category.trim() !== "") {
+            query.category = { $regex: new RegExp(`^${category.trim()}$`, "i") };
+        }
+        // 2. Search Filter (name & description)
+        if (search && typeof search === "string" && search.trim() !== "") {
+            const searchRegex = new RegExp(search.trim(), "i");
+            query.$or = [
+                { name: searchRegex },
+                { description: searchRegex }
+            ];
+        }
+        // 3. Price Range Filter
+        if (minPrice || maxPrice) {
+            query.price = {};
+            if (minPrice && !isNaN(Number(minPrice))) {
+                query.price.$gte = Number(minPrice);
+            }
+            if (maxPrice && !isNaN(Number(maxPrice))) {
+                query.price.$lte = Number(maxPrice);
+            }
+        }
+        // 4. Sorting Options
+        let sortOptions = { createdAt: -1 };
+        if (sortBy === "price_asc") {
+            sortOptions = { price: 1 };
+        }
+        else if (sortBy === "price_desc") {
+            sortOptions = { price: -1 };
+        }
+        else if (sortBy === "newest") {
+            sortOptions = { createdAt: -1 };
+        }
         // टोटल प्रोडक्ट्स की गिनती
         const total = await Product.countDocuments(query);
         // पेजिनेशन के साथ प्रोडक्ट्स को डेटाबेस से खोजना
         const products = await Product.find(query)
+            .sort(sortOptions)
             .skip((page - 1) * limit)
             .limit(limit);
         // सफल रिस्पॉन्स भेजना
@@ -74,40 +113,55 @@ export const createProduct = async (req, res) => {
                     .filter((s) => s !== "");
             }
         }
-        // सुनिश्चित करें कि यह हमेशा एक Array हो
         if (!Array.isArray(sizes)) {
             sizes = [sizes];
         }
         // 2. इमेजेस को हैंडल करना (Multer से आने वाली फाइल्स)
         const files = req.files;
-        // वैलिडेशन: अगर कोई फाइल अपलोड नहीं हुई या एरे खाली है
-        if (!files || files.length === 0) {
-            res.status(400).json({
-                success: false,
-                message: "At least one image is required"
+        let imageUrls = [];
+        const DEFAULT_PLACEHOLDER = "https://placehold.co/300x300/png?text=Product";
+        if (files && files.length > 0) {
+            const uploadPromises = files.map(async (file) => {
+                if (file.buffer && process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_CLOUD_NAME !== 'your_cloud_name') {
+                    try {
+                        const b64 = Buffer.from(file.buffer).toString("base64");
+                        const dataURI = "data:" + (file.mimetype || "image/jpeg") + ";base64," + b64;
+                        const result = await cloudinary.uploader.upload(dataURI, { folder: "products" });
+                        return result.secure_url;
+                    }
+                    catch (cloudErr) {
+                        console.error("Cloudinary upload failed, falling back to base64 data URI:", cloudErr);
+                    }
+                }
+                if (file.buffer) {
+                    const b64 = Buffer.from(file.buffer).toString("base64");
+                    return "data:" + (file.mimetype || "image/jpeg") + ";base64," + b64;
+                }
+                return DEFAULT_PLACEHOLDER;
             });
-            return;
+            imageUrls = await Promise.all(uploadPromises);
         }
-        // 3. सभी इमेजेस को Cloudinary पर अपलोड करना
-        const uploadPromises = files.map(async (file) => {
-            // आपका Cloudinary अपलोड लॉजिक यहाँ आएगा
-            // const result = await cloudinary.uploader.upload(file.path);
-            // return result.secure_url;
-            return "cloudinary_uploaded_url_placeholder";
-        });
-        const imageUrls = await Promise.all(uploadPromises);
-        // 4. प्रोडक्ट डेटा तैयार करना
+        if (imageUrls.length === 0) {
+            imageUrls = [DEFAULT_PLACEHOLDER];
+        }
+        // 3. प्रोडक्ट डेटा तैयार करना
         const productData = {
-            ...req.body,
+            name: req.body.name,
+            description: req.body.description,
+            price: Number(req.body.price),
+            stock: Number(req.body.stock || 0),
+            category: req.body.category || "Other",
+            isFeatured: req.body.isFeatured === "true" || req.body.isFeatured === true,
+            isBogo: req.body.isBogo === "true" || req.body.isBogo === true,
             sizes: sizes,
             images: imageUrls
         };
-        // 5. डेटाबेस में सेव करना
-        // const newProduct = await Product.create(productData);
+        // 4. डेटाबेस में सेव करना
+        const newProduct = await Product.create(productData);
         res.status(201).json({
             success: true,
             message: "Product created successfully",
-            // data: newProduct
+            data: newProduct
         });
     }
     catch (error) {
@@ -120,14 +174,12 @@ export const createProduct = async (req, res) => {
 // update products
 export const updateProduct = async (req, res) => {
     try {
-        const { id } = req.params; // रूट से प्रोडक्ट ID निकालना (/api/products/:id)
-        // 1. चेक करें कि क्या प्रोडक्ट डेटाबेस में मौजूद है
-        // const existingProduct = await Product.findById(id);
-        // if (!existingProduct) {
-        //     res.status(404).json({ success: false, message: "Product not found" });
-        //     return;
-        // }
-        // 2. Sizes को हैंडल और पार्स करना (अगर रिक्वेस्ट में sizes भेजा गया है)
+        const { id } = req.params;
+        const existingProduct = await Product.findById(id);
+        if (!existingProduct) {
+            res.status(404).json({ success: false, message: "Product not found" });
+            return;
+        }
         let sizes = req.body.sizes;
         if (sizes !== undefined) {
             if (typeof sizes === "string") {
@@ -144,55 +196,73 @@ export const updateProduct = async (req, res) => {
                 sizes = [sizes];
             }
         }
-        // 3. इमेजेस को हैंडल करना (Multer से आने वाली नई फाइल्स)
         const files = req.files;
         let updatedImages = [];
-        // अगर यूजर ने नई इमेजेस अपलोड की हैं
+        const DEFAULT_PLACEHOLDER = "https://placehold.co/300x300/png?text=Product";
         if (files && files.length > 0) {
             const uploadPromises = files.map(async (file) => {
-                // आपका Cloudinary अपलोड लॉजिक यहाँ आएगा
-                return "new_cloudinary_uploaded_url";
+                if (file.buffer && process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_CLOUD_NAME !== 'your_cloud_name') {
+                    try {
+                        const b64 = Buffer.from(file.buffer).toString("base64");
+                        const dataURI = "data:" + (file.mimetype || "image/jpeg") + ";base64," + b64;
+                        const result = await cloudinary.uploader.upload(dataURI, { folder: "products" });
+                        return result.secure_url;
+                    }
+                    catch (cloudErr) {
+                        console.error("Cloudinary upload failed, falling back to base64 data URI:", cloudErr);
+                    }
+                }
+                if (file.buffer) {
+                    const b64 = Buffer.from(file.buffer).toString("base64");
+                    return "data:" + (file.mimetype || "image/jpeg") + ";base64," + b64;
+                }
+                return DEFAULT_PLACEHOLDER;
             });
             updatedImages = await Promise.all(uploadPromises);
         }
         else {
-            // अगर कोई नई इमेज नहीं आई, तो फ्रंटएंड से भेजी गई पुरानी इमेजेस को रखें
-            // (यह तब काम आता है जब यूजर कुछ इमेजेस डिलीट या रिटेन करता है)
-            if (typeof req.body.images === "string") {
-                updatedImages = [req.body.images];
+            let existingImgArr = [];
+            if (req.body.existingImages) {
+                existingImgArr = Array.isArray(req.body.existingImages)
+                    ? req.body.existingImages
+                    : [req.body.existingImages];
             }
-            else if (Array.isArray(req.body.images)) {
-                updatedImages = req.body.images;
+            else if (req.body.images) {
+                existingImgArr = Array.isArray(req.body.images)
+                    ? req.body.images
+                    : [req.body.images];
             }
             else {
-                // अगर डेटाबेस में मौजूद पुरानी इमेज रखनी हैं:
-                // updatedImages = existingProduct.images; 
+                existingImgArr = existingProduct.images;
             }
+            updatedImages = existingImgArr;
         }
-        // 4. वैलिडेशन: अपडेट होने के बाद भी कम से कम एक इमेज होनी जरूरी है
         if (!updatedImages || updatedImages.length === 0) {
-            res.status(400).json({
-                success: false,
-                message: "At least one image is required for the product"
-            });
-            return;
+            updatedImages = existingProduct.images.length > 0 ? existingProduct.images : [DEFAULT_PLACEHOLDER];
         }
-        // 5. अपडेटेड डेटा तैयार करना
-        const updatedData = {
-            ...req.body,
-            images: updatedImages
-        };
-        // अगर sizes भेजे गए थे, तभी उन्हें ऑब्जेक्ट में जोड़ें
-        if (sizes !== undefined) {
+        const updatedData = {};
+        if (req.body.name)
+            updatedData.name = req.body.name;
+        if (req.body.description !== undefined)
+            updatedData.description = req.body.description;
+        if (req.body.price !== undefined)
+            updatedData.price = Number(req.body.price);
+        if (req.body.stock !== undefined)
+            updatedData.stock = Number(req.body.stock);
+        if (req.body.category)
+            updatedData.category = req.body.category;
+        if (req.body.isFeatured !== undefined)
+            updatedData.isFeatured = req.body.isFeatured === "true" || req.body.isFeatured === true;
+        if (req.body.isBogo !== undefined)
+            updatedData.isBogo = req.body.isBogo === "true" || req.body.isBogo === true;
+        if (sizes !== undefined)
             updatedData.sizes = sizes;
-        }
-        // 6. डेटाबेस में अपडेट करना
-        // const updatedProduct = await Product.findByIdAndUpdate(id, updatedData, { new: true, runValidators: true });
+        updatedData.images = updatedImages;
+        const updatedProduct = await Product.findByIdAndUpdate(id, updatedData, { new: true, runValidators: true });
         res.status(200).json({
             success: true,
             message: "Product updated successfully",
-            // data: updatedProduct
-            data: updatedData // टेस्टिंग के लिए भेजा गया डेटा
+            data: updatedProduct
         });
     }
     catch (error) {
@@ -210,13 +280,17 @@ export const deleteProduct = async (req, res) => {
             return res.status(404).json({ success: false, message: "Product not found" });
         }
         if (product.images && product.images.length > 0) {
-            const deletePromises = product.images.map((imageUrl) => {
-                const publicIdMatch = imageUrl.match(/\/v\d+\/(.+)\.[a-z]+$/);
-                const publicId = publicIdMatch ? publicIdMatch[1] : null;
-                if (publicId) {
-                    return cloudinary.uploader.destroy(publicId);
+            const deletePromises = product.images.map(async (imageUrl) => {
+                try {
+                    const publicIdMatch = imageUrl.match(/\/v\d+\/(.+)\.[a-z]+$/);
+                    const publicId = publicIdMatch ? publicIdMatch[1] : null;
+                    if (publicId && process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_CLOUD_NAME !== 'your_cloud_name') {
+                        await cloudinary.uploader.destroy(publicId);
+                    }
                 }
-                return Promise.resolve();
+                catch (imgErr) {
+                    console.error("Cloudinary image delete error (ignoring to finish product deletion):", imgErr);
+                }
             });
             await Promise.all(deletePromises);
         }
@@ -225,5 +299,182 @@ export const deleteProduct = async (req, res) => {
     }
     catch (error) {
         res.status(500).json({ success: false, message: error.message });
+    }
+};
+// Create or update a verified product review
+export const createProductReview = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { rating, comment, image } = req.body;
+        const user = req.user;
+        if (!user) {
+            res.status(401).json({ success: false, message: "Authentication required to leave a review." });
+            return;
+        }
+        if (!rating || !comment) {
+            res.status(400).json({ success: false, message: "Please provide a star rating and a review comment." });
+            return;
+        }
+        const numericRating = Number(rating);
+        if (numericRating < 1 || numericRating > 5) {
+            res.status(400).json({ success: false, message: "Rating must be between 1 and 5 stars." });
+            return;
+        }
+        const product = await Product.findById(id);
+        if (!product) {
+            res.status(404).json({ success: false, message: "Product not found." });
+            return;
+        }
+        // 1. VERIFIED PURCHASE CHECK: Check if the user has an order containing this product
+        const verifiedOrder = await Order.findOne({
+            user: user._id,
+            "items.product": id,
+            orderStatus: { $ne: "cancelled" }
+        });
+        if (!verifiedOrder) {
+            res.status(403).json({
+                success: false,
+                message: "Verified Purchase Only: You can only leave a review if you have ordered this product."
+            });
+            return;
+        }
+        // Initialize reviews array if missing
+        if (!product.reviews) {
+            product.reviews = [];
+        }
+        // 2. Check if user has already reviewed this product
+        const existingReviewIndex = product.reviews.findIndex((rev) => rev.user && rev.user.toString() === user._id.toString());
+        const newReviewData = {
+            user: user._id,
+            userName: user.name || "Customer",
+            userImage: user.image || "",
+            rating: numericRating,
+            comment: comment.trim(),
+            image: image || "",
+            isVerifiedPurchase: true,
+            createdAt: new Date()
+        };
+        if (existingReviewIndex >= 0) {
+            product.reviews[existingReviewIndex] = newReviewData;
+        }
+        else {
+            product.reviews.push(newReviewData);
+        }
+        // 3. Recalculate Ratings Average & Count dynamically (Real Calculation)
+        const totalCount = product.reviews.length;
+        const sumRating = product.reviews.reduce((acc, item) => acc + item.rating, 0);
+        const averageRating = Number((sumRating / totalCount).toFixed(1));
+        product.ratings = {
+            average: averageRating,
+            count: totalCount
+        };
+        await product.save();
+        res.status(200).json({
+            success: true,
+            message: existingReviewIndex >= 0 ? "Your review has been updated!" : "Thank you for your review!",
+            data: product
+        });
+    }
+    catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message || "Failed to submit review"
+        });
+    }
+};
+// Check if user can review a product (has ordered it & has existing review)
+export const checkUserCanReview = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const user = req.user;
+        if (!user) {
+            res.status(200).json({ success: true, canReview: false, userReview: null });
+            return;
+        }
+        const verifiedOrder = await Order.findOne({
+            user: user._id,
+            "items.product": id,
+            orderStatus: { $ne: "cancelled" }
+        });
+        const product = await Product.findById(id);
+        const existingReview = product?.reviews?.find((rev) => rev.user && rev.user.toString() === user._id.toString());
+        res.status(200).json({
+            success: true,
+            canReview: !!verifiedOrder,
+            userReview: existingReview || null
+        });
+    }
+    catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+// Get all reviews written by the currently logged-in user
+export const getUserReviews = async (req, res) => {
+    try {
+        const user = req.user;
+        if (!user) {
+            res.status(401).json({ success: false, message: "Unauthorized" });
+            return;
+        }
+        const products = await Product.find({ "reviews.user": user._id })
+            .select("name images price ratings reviews");
+        const userReviews = [];
+        products.forEach((product) => {
+            if (product.reviews && Array.isArray(product.reviews)) {
+                product.reviews.forEach((rev) => {
+                    if (rev.user && rev.user.toString() === user._id.toString()) {
+                        userReviews.push({
+                            _id: rev._id,
+                            productId: product._id,
+                            productName: product.name,
+                            productImage: product.images && product.images.length > 0 ? product.images[0] : "https://placehold.co/80x80/png?text=Product",
+                            productPrice: product.price,
+                            rating: rev.rating,
+                            comment: rev.comment,
+                            image: rev.image || "",
+                            createdAt: rev.createdAt
+                        });
+                    }
+                });
+            }
+        });
+        userReviews.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        res.status(200).json({
+            success: true,
+            data: userReviews
+        });
+    }
+    catch (error) {
+        res.status(500).json({ success: false, message: error.message || "Failed to fetch user reviews" });
+    }
+};
+// Delete a user's own review for a product
+export const deleteUserReview = async (req, res) => {
+    try {
+        const { productId } = req.params;
+        const user = req.user;
+        const product = await Product.findById(productId);
+        if (!product) {
+            res.status(404).json({ success: false, message: "Product not found" });
+            return;
+        }
+        if (product.reviews) {
+            product.reviews = product.reviews.filter((rev) => rev.user && rev.user.toString() !== user._id.toString());
+            const totalCount = product.reviews.length;
+            const sumRating = product.reviews.reduce((acc, item) => acc + item.rating, 0);
+            const averageRating = totalCount > 0 ? Number((sumRating / totalCount).toFixed(1)) : 0;
+            product.ratings = {
+                average: averageRating,
+                count: totalCount
+            };
+            await product.save();
+        }
+        res.status(200).json({
+            success: true,
+            message: "Review deleted successfully"
+        });
+    }
+    catch (error) {
+        res.status(500).json({ success: false, message: error.message || "Failed to delete review" });
     }
 };

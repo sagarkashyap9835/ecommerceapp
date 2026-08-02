@@ -10,11 +10,11 @@ export const getAddresses = async (req, res) => {
 };
 export const addAddress = async (req, res) => {
     try {
-        const { type, street, city, state, zipCode, country, isDefault } = req.body;
+        const { type, villageHouseCode, street, city, state, zipCode, country, isDefault } = req.body;
         if (isDefault) {
             await Address.updateMany({ user: req.user._id }, { isDefault: false });
         }
-        const newAddress = await Address.create({ user: req.user._id, type, street, city, state, zipCode, country, isDefault: isDefault || false });
+        const newAddress = await Address.create({ user: req.user._id, type, villageHouseCode, street, city, state, zipCode, country, isDefault: isDefault || false });
         res.status(201).json({ success: true, data: newAddress });
     }
     catch (error) {
@@ -23,7 +23,7 @@ export const addAddress = async (req, res) => {
 };
 export const updateAddress = async (req, res) => {
     try {
-        const { type, street, city, state, zipCode, country, isDefault } = req.body;
+        const { type, villageHouseCode, street, city, state, zipCode, country, isDefault } = req.body;
         let addressItem = await Address.findById(req.params.id);
         if (!addressItem) {
             return res.status(404).json({ success: false, message: "Address not found" });
@@ -34,7 +34,7 @@ export const updateAddress = async (req, res) => {
         if (isDefault) {
             await Address.updateMany({ user: req.user._id }, { isDefault: false });
         }
-        addressItem = await Address.findByIdAndUpdate(req.params.id, { type, street, city, state, zipCode, country, isDefault }, { new: true });
+        addressItem = await Address.findByIdAndUpdate(req.params.id, { type, villageHouseCode, street, city, state, zipCode, country, isDefault }, { new: true });
         res.json({ success: true, data: addressItem });
     }
     catch (error) {

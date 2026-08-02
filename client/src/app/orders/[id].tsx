@@ -8,6 +8,7 @@ import { COLORS } from "@/assets/constants";
 import type { Order, Product } from "@/assets/constants/types";
 import { useAuth } from "@clerk/expo";
 import api from "../../../constants/api";
+import { getDeliveryDateForOrder } from "../../../utils/delivery";
 
 export default function OrderDetails() {
   const { getToken } = useAuth();
@@ -95,7 +96,29 @@ export default function OrderDetails() {
       <ScrollView style={styles.scrollViewContent}>
         {/* Order Status */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Order Status</Text>
+          {/* Estimated Delivery Banner */}
+          <View style={{
+            backgroundColor: "#ECFDF5",
+            borderRadius: 12,
+            padding: 14,
+            marginBottom: 16,
+            flexDirection: "row",
+            alignItems: "center",
+            borderWidth: 1,
+            borderColor: "#A7F3D0",
+          }}>
+            <Ionicons name="bus-outline" size={24} color="#059669" />
+            <View style={{ marginLeft: 12, flex: 1 }}>
+              <Text style={{ fontSize: 11, fontWeight: "800", color: "#047857", letterSpacing: 0.5 }}>
+                {order.orderStatus === "delivered" ? "DELIVERED ON" : "ESTIMATED DELIVERY DAY"}
+              </Text>
+              <Text style={{ fontSize: 16, fontWeight: "800", color: "#065F46", marginTop: 2 }}>
+                {getDeliveryDateForOrder(order as any)}
+              </Text>
+            </View>
+          </View>
+
+          <Text style={styles.cardTitle}>Order Tracking Progress</Text>
 
           {ORDER_STEPS.map((step, index) => (
             <View 
@@ -178,6 +201,13 @@ export default function OrderDetails() {
         {/* Shipping Details */}
         <View style={styles.card}>
           <Text style={styles.cardTitleSmall}>Shipping Details</Text>
+          {order.shippingAddress?.villageHouseCode ? (
+            <View style={{ backgroundColor: "#ECFDF5", paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, marginBottom: 8, alignSelf: "flex-start", borderWidth: 1, borderColor: "#A7F3D0" }}>
+              <Text style={{ fontSize: 13, fontWeight: "800", color: "#065F46" }}>
+                🏡 Village / Gram House Code: #{order.shippingAddress.villageHouseCode}
+              </Text>
+            </View>
+          ) : null}
           <View style={styles.shippingRow}>
             <Ionicons name="location-outline" size={20} color={COLORS.secondary} />
             <Text style={styles.shippingText}>

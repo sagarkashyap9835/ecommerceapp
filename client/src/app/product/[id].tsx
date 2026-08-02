@@ -24,6 +24,7 @@ import { Ionicons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
 import api from "../../../constants/api";
 import { useAuth } from "@clerk/expo";
+import DeliveryEstimateCard from "../../../components/DeliveryEstimateCard";
 
 const { width } = Dimensions.get("window");
 
@@ -439,6 +440,9 @@ export default function ProductDetails() {
               {product.description}
             </Text>
           </View>
+
+          {/* Delivery Options & Estimates Card */}
+          <DeliveryEstimateCard price={product.price} />
 
           {/* CUSTOMER REVIEWS & RATINGS SECTION */}
           <View style={{ marginTop: 32, paddingTop: 24, borderTopWidth: 1, borderTopColor: "#F3F4F6" }}>

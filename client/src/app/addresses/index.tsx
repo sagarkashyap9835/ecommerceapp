@@ -17,6 +17,7 @@ export default function Addresses() {
 
     // Form state
     const [type, setType] = useState("Home");
+    const [villageHouseCode, setVillageHouseCode] = useState("");
     const [street, setStreet] = useState("");
     const [city, setCity] = useState("");
     const [state, setState] = useState("");
@@ -59,6 +60,7 @@ export default function Addresses() {
         setIsEditing(true);
         setEditingId(item._id);
         setType(item.type);
+        setVillageHouseCode(item.villageHouseCode || "");
         setStreet(item.street);
         setCity(item.city);
         setState(item.state);
@@ -78,16 +80,24 @@ export default function Addresses() {
             return;
         }
 
+        // Format street to include village house code if provided and not already present
+        let formattedStreet = street.trim();
+        const cleanCode = villageHouseCode.trim();
+        if (cleanCode && !formattedStreet.toLowerCase().includes("house #") && !formattedStreet.toLowerCase().includes(cleanCode)) {
+            formattedStreet = `House #${cleanCode}, ${formattedStreet}`;
+        }
+
         try {
             setSubmitting(true);
             const token = await getToken();
             const payload = {
                 type,
-                street,
-                city,
-                state,
-                zipCode,
-                country,
+                villageHouseCode: cleanCode,
+                street: formattedStreet,
+                city: city.trim(),
+                state: state.trim(),
+                zipCode: zipCode.trim(),
+                country: country.trim(),
                 isDefault
             };
 
@@ -99,7 +109,7 @@ export default function Addresses() {
                     Toast.show({
                         type: "success",
                         text1: "Success",
-                        text2: "Address updated successfully"
+                        text2: "Address saved successfully"
                     });
                 }
             } else {
@@ -110,19 +120,19 @@ export default function Addresses() {
                     Toast.show({
                         type: "success",
                         text1: "Success",
-                        text2: "Address added successfully"
+                        text2: "Address saved successfully"
                     });
                 }
             }
 
+            fetchAddresses();
             setModalVisible(false);
             resetForm();
-            fetchAddresses();
         } catch (error: any) {
             console.error("Error saving address:", error);
             Toast.show({
                 type: "error",
-                text1: "Failed to Save Address",
+                text1: "Failed to Save",
                 text2: error.response?.data?.message || "Something went wrong"
             });
         } finally {
@@ -209,6 +219,13 @@ export default function Addresses() {
                                         </TouchableOpacity>
                                     </View>
                                 </View>
+                                {item.villageHouseCode ? (
+                                    <View style={{ backgroundColor: "#ECFDF5", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, marginVertical: 4, alignSelf: "flex-start", marginLeft: 28, borderWidth: 1, borderColor: "#A7F3D0" }}>
+                                        <Text style={{ fontSize: 12, fontWeight: "700", color: "#065F46" }}>
+                                            🏡 House / Gram Code: #{item.villageHouseCode}
+                                        </Text>
+                                    </View>
+                                ) : null}
                                 <Text style={styles.addressDetailText}>
                                     {item.street}, {item.city}, {item.state} {item.zipCode}, {item.country}
                                 </Text>
@@ -252,10 +269,19 @@ export default function Addresses() {
                                 ))}
                             </View>
 
-                            <Text style={styles.inputLabel}>Street Address</Text>
+                            <Text style={styles.inputLabel}>Village / Gram House Code (e.g. 1, 2, 3...)</Text>
                             <TextInput 
                                 style={styles.input} 
-                                placeholder="123 Main St" 
+                                placeholder="e.g. House #1, #2, #5" 
+                                placeholderTextColor="#9ca3af"
+                                value={villageHouseCode} 
+                                onChangeText={setVillageHouseCode} 
+                            />
+
+                            <Text style={styles.inputLabel}>Street Address / Landmark</Text>
+                            <TextInput 
+                                style={styles.input} 
+                                placeholder="Near Gram Panchayat / Main Road" 
                                 placeholderTextColor="#9ca3af"
                                 value={street} 
                                 onChangeText={setStreet} 

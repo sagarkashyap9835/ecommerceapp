@@ -11,6 +11,7 @@ const orderSchema = new mongoose.Schema({
     orderNumber: { type: String, unique: true },
     items: [orderItemSchema],
     shippingAddress: {
+        villageHouseCode: { type: String, default: "" },
         street: { type: String, required: true },
         city: { type: String, required: true },
         state: { type: String, required: true },
@@ -27,6 +28,7 @@ const orderSchema = new mongoose.Schema({
     totalAmount: { type: Number, required: true },
     notes: String,
     deliveredAt: Date,
+    estimatedDeliveryDate: Date,
 }, { timestamps: true });
 const Order = mongoose.model("Order", orderSchema);
 export default Order;
