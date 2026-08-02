@@ -20,7 +20,8 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "mongoose": "^8.24.2",
-    "multer": "^2.2.0"
+    "multer": "^2.2.0",
+    "stripe": "^22.4.0"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
