@@ -18,7 +18,7 @@ const SORT_OPTIONS = [
 ];
 
 export default function Shop() {
-    const params = useLocalSearchParams<{ category?: string; search?: string }>();
+    const params = useLocalSearchParams<{ category?: string; search?: string; sortBy?: string; isBogo?: string }>();
 
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
@@ -29,12 +29,13 @@ export default function Shop() {
     // Filter States
     const [selectedCategory, setSelectedCategory] = useState<string>(params.category || 'All');
     const [searchQuery, setSearchQuery] = useState<string>(params.search || '');
-    const [sortBy, setSortBy] = useState<string>('newest');
+    const [sortBy, setSortBy] = useState<string>(params.sortBy || 'newest');
+    const [isBogoFilter, setIsBogoFilter] = useState<boolean>(params.isBogo === 'true');
     const [minPrice, setMinPrice] = useState<string>('');
     const [maxPrice, setMaxPrice] = useState<string>('');
 
     // Temporary Filter State inside Modal
-    const [tempSortBy, setTempSortBy] = useState<string>('newest');
+    const [tempSortBy, setTempSortBy] = useState<string>(params.sortBy || 'newest');
     const [tempMinPrice, setTempMinPrice] = useState<string>('');
     const [tempMaxPrice, setTempMaxPrice] = useState<string>('');
     const [filterModalVisible, setFilterModalVisible] = useState<boolean>(false);
@@ -72,6 +73,10 @@ export default function Shop() {
 
             if (sortBy) {
                 queryparams.sortBy = sortBy;
+            }
+
+            if (isBogoFilter) {
+                queryparams.isBogo = 'true';
             }
 
             if (minPrice) {
@@ -113,17 +118,23 @@ export default function Shop() {
         }, 300);
 
         return () => clearTimeout(timer);
-    }, [selectedCategory, searchQuery, sortBy, minPrice, maxPrice]);
+    }, [selectedCategory, searchQuery, sortBy, isBogoFilter, minPrice, maxPrice]);
 
-    // Set initial params if navigated from Home screen
+    // Set initial params if navigated from Home screen or Banners
     useEffect(() => {
-        if (params.category) {
-            setSelectedCategory(params.category);
+        if (params.category !== undefined) {
+            setSelectedCategory(params.category || 'All');
         }
-        if (params.search) {
-            setSearchQuery(params.search);
+        if (params.search !== undefined) {
+            setSearchQuery(params.search || '');
         }
-    }, [params.category, params.search]);
+        if (params.sortBy !== undefined) {
+            setSortBy(params.sortBy || 'newest');
+        }
+        if (params.isBogo !== undefined) {
+            setIsBogoFilter(params.isBogo === 'true');
+        }
+    }, [params.category, params.search, params.sortBy, params.isBogo]);
 
     const openFilterModal = () => {
         setTempSortBy(sortBy);
@@ -143,6 +154,7 @@ export default function Shop() {
         setSelectedCategory('All');
         setSearchQuery('');
         setSortBy('newest');
+        setIsBogoFilter(false);
         setMinPrice('');
         setMaxPrice('');
         setTempSortBy('newest');
@@ -151,7 +163,7 @@ export default function Shop() {
         setFilterModalVisible(false);
     };
 
-    const isFilterActive = sortBy !== 'newest' || minPrice !== '' || maxPrice !== '' || selectedCategory !== 'All';
+    const isFilterActive = sortBy !== 'newest' || isBogoFilter || minPrice !== '' || maxPrice !== '' || selectedCategory !== 'All';
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
@@ -231,6 +243,14 @@ export default function Shop() {
                                 </TouchableOpacity>
                             </View>
                         )}
+                        {isBogoFilter && (
+                            <View style={styles.filterChip}>
+                                <Text style={styles.filterChipText}>🎁 Buy 1 Get 1 Offers</Text>
+                                <TouchableOpacity onPress={() => setIsBogoFilter(false)}>
+                                    <Ionicons name="close" size={14} color="#374151" style={{ marginLeft: 4 }} />
+                                </TouchableOpacity>
+                            </View>
+                        )}
                         {sortBy !== 'newest' && (
                             <View style={styles.filterChip}>
                                 <Text style={styles.filterChipText}>
@@ -244,7 +264,7 @@ export default function Shop() {
                         {(minPrice !== '' || maxPrice !== '') && (
                             <View style={styles.filterChip}>
                                 <Text style={styles.filterChipText}>
-                                    Price: ${minPrice || '0'} - ${maxPrice || '∞'}
+                                    Price: ₹{minPrice || '0'} - ₹{maxPrice || '∞'}
                                 </Text>
                                 <TouchableOpacity onPress={() => { setMinPrice(''); setMaxPrice(''); }}>
                                     <Ionicons name="close" size={14} color="#374151" style={{ marginLeft: 4 }} />

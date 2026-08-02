@@ -18,8 +18,11 @@ import { Product } from "@/assets/constants/types";
 import ProductCard from "../../../components/ProductCard";
 import api from "../../../constants/api";
 const { width } = Dimensions.get("window");
+const bannerCardWidth = width - 32;
+const bannerStep = bannerCardWidth + 12;
 
 export default function Home() {
+  const bannerRef = React.useRef<ScrollView>(null);
   const [activeBanner, setActiveBanner] = useState(0);
   const [products,setProducts]=useState<Product[]>([])
   const [loading,setLoading]=useState(true)
@@ -40,6 +43,14 @@ useEffect(()=>{
 fetchProducts()
 },[])
 
+  const handleScroll = (event: any) => {
+    const contentOffsetX = event.nativeEvent.contentOffset.x;
+    const index = Math.round(contentOffsetX / bannerStep);
+    if (index >= 0 && index < BANNERS.length && index !== activeBanner) {
+      setActiveBanner(index);
+    }
+  };
+
   return (
     <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
       <Header title="Forever" showMenu showCart showLogo />
@@ -50,100 +61,115 @@ fetchProducts()
       >
         {/* Banner Slider */}
         <ScrollView
+          ref={bannerRef}
           horizontal
-          pagingEnabled
           showsHorizontalScrollIndicator={false}
           scrollEventThrottle={16}
+          decelerationRate="fast"
+          snapToInterval={bannerStep}
           contentContainerStyle={{
             paddingTop: 8,
             paddingBottom: 12,
           }}
-          onMomentumScrollEnd={(event) => {
-            const index = Math.round(
-              event.nativeEvent.contentOffset.x / (width - 32)
-            );
-            setActiveBanner(index);
-          }}
+          onScroll={handleScroll}
+          onMomentumScrollEnd={handleScroll}
         >
-          {BANNERS.map((banner) => (
-            <View
-              key={banner.id}
-              style={{
-                width: width - 32,
-                height: 200,
-                borderRadius: 16,
-                overflow: "hidden",
-                marginRight: 12,
-              }}
-            >
-              {/* Banner Image */}
-              <Image
-                source={{ uri: banner.image }}
-                style={{
-                  width: "100%",
-                  height: "100%",
-                }}
-                resizeMode="cover"
-              />
+          {BANNERS.map((banner: any) => {
+            const handleBannerPress = () => {
+              const queryParams: any = {};
+              if (banner.category) queryParams.category = banner.category;
+              if (banner.sortBy) queryParams.sortBy = banner.sortBy;
+              if (banner.isBogo) queryParams.isBogo = banner.isBogo;
 
-              {/* Dark Overlay */}
-              <View
+              router.push({
+                pathname: "/shop",
+                params: queryParams,
+              });
+            };
+
+            return (
+              <TouchableOpacity
+                key={banner.id}
+                activeOpacity={0.9}
+                onPress={handleBannerPress}
                 style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  backgroundColor: "rgba(0,0,0,0.35)",
-                  justifyContent: "center",
-                  paddingHorizontal: 20,
+                  width: width - 32,
+                  height: 200,
+                  borderRadius: 16,
+                  overflow: "hidden",
+                  marginRight: 12,
                 }}
               >
-                <Text
+                {/* Banner Image */}
+                <Image
+                  source={{ uri: banner.image }}
                   style={{
-                    color: "#fff",
-                    fontSize: 30,
-                    fontWeight: "700",
+                    width: "100%",
+                    height: "100%",
                   }}
-                >
-                  {banner.title}
-                </Text>
+                  resizeMode="cover"
+                />
 
-                <Text
+                {/* Dark Overlay */}
+                <View
                   style={{
-                    color: "#fff",
-                    fontSize: 16,
-                    marginTop: 8,
-                    opacity: 0.95,
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: "rgba(0,0,0,0.35)",
+                    justifyContent: "center",
+                    paddingHorizontal: 20,
                   }}
-                >
-                  {banner.subtitle}
-                </Text>
-
-                <TouchableOpacity
-                  style={{
-                    marginTop: 20,
-                    backgroundColor: COLORS.accent,
-                    paddingVertical: 12,
-                    paddingHorizontal: 24,
-                    borderRadius: 10,
-                    alignSelf: "flex-start",
-                  }}
-                  activeOpacity={0.8}
                 >
                   <Text
                     style={{
                       color: "#fff",
-                      fontSize: 15,
+                      fontSize: 30,
                       fontWeight: "700",
                     }}
                   >
-                    Get Now
+                    {banner.title}
                   </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          ))}
+
+                  <Text
+                    style={{
+                      color: "#fff",
+                      fontSize: 16,
+                      marginTop: 8,
+                      opacity: 0.95,
+                    }}
+                  >
+                    {banner.subtitle}
+                  </Text>
+
+                  <TouchableOpacity
+                    onPress={handleBannerPress}
+                    style={{
+                      marginTop: 20,
+                      backgroundColor: COLORS.accent,
+                      paddingVertical: 12,
+                      paddingHorizontal: 24,
+                      borderRadius: 10,
+                      alignSelf: "flex-start",
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Text
+                      style={{
+                        color: "#fff",
+                        fontSize: 15,
+                        fontWeight: "700",
+                      }}
+                    >
+                      {banner.btnText || "Get Now"}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
 
         {/* Slider Indicator */}
@@ -157,16 +183,24 @@ fetchProducts()
           }}
         >
           {BANNERS.map((_, index) => (
-            <View
+            <TouchableOpacity
               key={index}
+              activeOpacity={0.7}
+              onPress={() => {
+                bannerRef.current?.scrollTo({
+                  x: index * bannerStep,
+                  animated: true,
+                });
+                setActiveBanner(index);
+              }}
               style={{
                 width: activeBanner === index ? 24 : 8,
                 height: 8,
-                borderRadius: 999,
+                borderRadius: 4,
                 marginHorizontal: 4,
                 backgroundColor:
                   activeBanner === index
-                    ? COLORS.primary
+                    ? (COLORS.primary || "#111827")
                     : "#D1D5DB",
               }}
             />
