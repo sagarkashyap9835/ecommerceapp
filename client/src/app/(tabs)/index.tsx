@@ -221,6 +221,71 @@ fetchProducts()
     ))}
   </ScrollView>
 </View>
+
+{/* Special Offers & Sales (Buy 1 Get 1 Free Section) */}
+{(() => {
+  const offerProducts = products.filter((p) => p.isBogo);
+  if (offerProducts.length === 0) return null;
+
+  return (
+    <View style={{ marginBottom: 28 }}>
+      {/* Section Header */}
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 14,
+        }}
+      >
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <View
+            style={{
+              backgroundColor: "#ECFDF5",
+              paddingHorizontal: 10,
+              paddingVertical: 6,
+              borderRadius: 12,
+              flexDirection: "row",
+              alignItems: "center",
+              marginRight: 8,
+              borderWidth: 1,
+              borderColor: "#A7F3D0",
+            }}
+          >
+            <Text style={{ fontSize: 16 }}>🎁</Text>
+          </View>
+          <View>
+            <Text style={{ fontSize: 20, fontWeight: "800", color: "#111827" }}>
+              Buy 1 Get 1 Free
+            </Text>
+            <Text style={{ fontSize: 12, color: "#059669", fontWeight: "700" }}>
+              Exclusive Offer & Sales Products
+            </Text>
+          </View>
+        </View>
+
+        <TouchableOpacity onPress={() => router.push("/shop")}>
+          <Text style={{ fontSize: 14, fontWeight: "700", color: "#059669" }}>
+            See All
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Horizontal Scroll List for Offer Products */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ paddingRight: 16 }}
+      >
+        {offerProducts.map((product) => (
+          <View key={product._id} style={{ width: 175, marginRight: 14 }}>
+            <ProductCard product={product} />
+          </View>
+        ))}
+      </ScrollView>
+    </View>
+  );
+})()}
 {/* Popular Products */}
 <View className="mb-8">
   {/* Header */}

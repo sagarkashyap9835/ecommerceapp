@@ -76,14 +76,20 @@ const isLiked=isInWishlist(product._id)
               />
             </TouchableOpacity>
 
-            {/* Featured */}
-            {product.isFeatured && (
+            {/* BUY 1 GET 1 / BOGO BADGE */}
+            {product.isBogo ? (
+              <View className="absolute top-3 left-3 bg-emerald-600 px-2.5 py-1 rounded-md shadow-sm">
+                <Text className="text-white text-[10px] font-extrabold">
+                  🎁 BUY 1 GET 1
+                </Text>
+              </View>
+            ) : product.isFeatured ? (
               <View className="absolute top-3 left-3 bg-red-500 px-2 py-1 rounded-full">
                 <Text className="text-white text-[10px] font-semibold">
                   Featured
                 </Text>
               </View>
-            )}
+            ) : null}
           </View>
 
           {/* Details */}

@@ -26,6 +26,7 @@ export default function EditProduct() {
     const [category, setCategory] = useState("");
     const [sizes, setSizes] = useState("");
     const [isFeatured, setIsFeatured] = useState(false);
+    const [isBogo, setIsBogo] = useState(false);
 
     // Image State
     const [existingImages, setExistingImages] = useState<string[]>([]);
@@ -43,6 +44,7 @@ export default function EditProduct() {
                 setStock(product.stock.toString());
                 setCategory(typeof product.category === 'object' ? product.category.name : product.category);
                 setIsFeatured(product.isFeatured);
+                setIsBogo(!!product.isBogo);
                 
                 if (product.sizes) setSizes(Array.isArray(product.sizes) ? product.sizes.join(", ") : product.sizes);
 
@@ -121,6 +123,7 @@ export default function EditProduct() {
             formData.append("stock", stock);
             formData.append("category", category);
             formData.append("isFeatured", String(isFeatured));
+            formData.append("isBogo", String(isBogo));
             formData.append("sizes", sizes);
 
             // Append existing images
@@ -290,12 +293,21 @@ export default function EditProduct() {
                     onChangeText={setDescription}
                 />
 
-                <View className="flex-row justify-between items-center mb-6">
+                <View className="flex-row justify-between items-center mb-4">
                     <Text className="text-primary font-bold">Featured Product</Text>
                     <Switch
                         value={isFeatured}
                         onValueChange={setIsFeatured}
                         trackColor={{ false: "#eee", true: COLORS.primary }}
+                    />
+                </View>
+
+                <View className="flex-row justify-between items-center mb-6">
+                    <Text className="text-primary font-bold">🎁 Buy 1 Get 1 Free Offer</Text>
+                    <Switch
+                        value={isBogo}
+                        onValueChange={setIsBogo}
+                        trackColor={{ false: "#eee", true: "#059669" }}
                     />
                 </View>
 

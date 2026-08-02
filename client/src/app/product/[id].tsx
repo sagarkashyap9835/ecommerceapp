@@ -325,6 +325,31 @@ export default function ProductDetails() {
             </View>
           </View>
 
+          {/* BUY 1 GET 1 OFFER BANNER */}
+          {product.isBogo && (
+            <View style={{
+              marginTop: 14,
+              backgroundColor: "#ECFDF5",
+              borderRadius: 12,
+              paddingHorizontal: 14,
+              paddingVertical: 10,
+              flexDirection: "row",
+              alignItems: "center",
+              borderWidth: 1,
+              borderColor: "#A7F3D0",
+            }}>
+              <Text style={{ fontSize: 18, marginRight: 10 }}>🎁</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 13, fontWeight: "800", color: "#065F46" }}>
+                  BUY 1 GET 1 FREE OFFER
+                </Text>
+                <Text style={{ fontSize: 11, color: "#047857", marginTop: 1 }}>
+                  Special Offer: Purchase 1 unit & get 1 free with your order!
+                </Text>
+              </View>
+            </View>
+          )}
+
           {/* Sizes Section */}
           {product.sizes && product.sizes.length > 0 && (
             <View style={{ marginTop: 24 }}>

@@ -24,6 +24,7 @@ export default function AddProduct() {
     const [sizes, setSizes] = useState("");
     const [images, setImages] = useState<string[]>([]);
     const [isFeatured, setIsFeatured] = useState(false);
+    const [isBogo, setIsBogo] = useState(false);
 
     // PICK MULTIPLE IMAGES (MAX 5)
     const pickImages = async () => {
@@ -60,6 +61,7 @@ const handleSubmit = async () => {
             stock: stock || '0',
             category,
             isFeatured: String(isFeatured),
+            isBogo: String(isBogo),
             sizes
         }
 
@@ -250,13 +252,22 @@ const handleSubmit = async () => {
                     onChangeText={setDescription}
                 />
 
-                {/* FEATURED */}
+                {/* FEATURED & BOGO SWITCHES */}
                 <View style={styles.switchRow}>
                     <Text style={styles.switchLabel}>Featured Product</Text>
                     <Switch
                         value={isFeatured}
                         onValueChange={setIsFeatured}
                         trackColor={{ false: "#eee", true: COLORS.primary || '#000' }}
+                    />
+                </View>
+
+                <View style={styles.switchRow}>
+                    <Text style={styles.switchLabel}>🎁 Buy 1 Get 1 Free Offer</Text>
+                    <Switch
+                        value={isBogo}
+                        onValueChange={setIsBogo}
+                        trackColor={{ false: "#eee", true: "#059669" }}
                     />
                 </View>
 

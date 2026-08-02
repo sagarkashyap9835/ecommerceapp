@@ -46,6 +46,7 @@ export interface Product {
     };
     reviews?: Review[];
     isFeatured: boolean;
+    isBogo?: boolean;
     isActive: boolean;
     createdAt: string;
 }
