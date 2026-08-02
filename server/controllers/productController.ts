@@ -332,7 +332,7 @@ export const deleteProduct = async (req: Request, res: Response) => {
 export const createProductReview = async (req: Request, res: Response): Promise<void> => {
     try {
         const { id } = req.params;
-        const { rating, comment } = req.body;
+        const { rating, comment, image } = req.body;
         const user = (req as any).user;
 
         if (!user) {
@@ -388,6 +388,7 @@ export const createProductReview = async (req: Request, res: Response): Promise<
             userImage: user.image || "",
             rating: numericRating,
             comment: comment.trim(),
+            image: image || "",
             isVerifiedPurchase: true,
             createdAt: new Date()
         };
@@ -481,6 +482,7 @@ export const getUserReviews = async (req: Request, res: Response): Promise<void>
                             productPrice: product.price,
                             rating: rev.rating,
                             comment: rev.comment,
+                            image: rev.image || "",
                             createdAt: rev.createdAt
                         });
                     }

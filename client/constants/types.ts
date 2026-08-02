@@ -21,6 +21,7 @@ export interface Review {
     userImage?: string;
     rating: number;
     comment: string;
+    image?: string;
     isVerifiedPurchase: boolean;
     createdAt?: string;
 }

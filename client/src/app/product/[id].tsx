@@ -8,12 +8,15 @@ import {
   TouchableOpacity,
   TextInput,
   StyleSheet,
+  Modal,
+  Pressable,
 } from "react-native";
 import React, { useEffect, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Product, Review } from "@/assets/constants/types";
 import { useCart } from "../../../context/CartContext";
 import { useWishlist } from "../../../context/WishlistContext";
+import * as ImagePicker from "expo-image-picker";
 
 import { SafeAreaView } from "react-native-safe-area-context";
 import { COLORS } from "@/assets/constants";
@@ -42,7 +45,41 @@ export default function ProductDetails() {
   const [canReview, setCanReview] = useState<boolean>(false);
   const [rating, setRating] = useState<number>(5);
   const [reviewComment, setReviewComment] = useState<string>("");
+  const [reviewImage, setReviewImage] = useState<string>("");
+  const [previewModalImage, setPreviewModalImage] = useState<string | null>(null);
   const [submittingReview, setSubmittingReview] = useState<boolean>(false);
+
+  const pickReviewImage = async () => {
+    try {
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permissionResult.granted) {
+        Toast.show({
+          type: "error",
+          text1: "Permission Denied",
+          text2: "Permission to access photo library is required to upload product photo.",
+        });
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        quality: 0.7,
+        base64: true,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        if (asset.base64) {
+          setReviewImage(`data:image/jpeg;base64,${asset.base64}`);
+        } else {
+          setReviewImage(asset.uri);
+        }
+      }
+    } catch (error) {
+      console.error("Image pick error:", error);
+    }
+  };
 
   const fetchProduct = async () => {
     try {
@@ -105,7 +142,7 @@ export default function ProductDetails() {
       const token = await getToken();
       const { data } = await api.post(
         `/products/${id}/reviews`,
-        { rating, comment: reviewComment },
+        { rating, comment: reviewComment, image: reviewImage },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -113,9 +150,11 @@ export default function ProductDetails() {
         Toast.show({
           type: "success",
           text1: "Review Submitted 🎉",
-          text2: data.message || "Thank you for your rating!"
+          text2: data.message || "Thank you for your rating & photo!"
         });
         setProduct(data.data);
+        setReviewComment("");
+        setReviewImage("");
       }
     } catch (error: any) {
       Toast.show({
@@ -449,6 +488,36 @@ export default function ProductDetails() {
                   onChangeText={setReviewComment}
                 />
 
+                {/* Photo Upload Section */}
+                <View style={{ marginBottom: 14 }}>
+                  {reviewImage ? (
+                    <View style={styles.imagePreviewWrapper}>
+                      <View style={{ position: "relative" }}>
+                        <Image source={{ uri: reviewImage }} style={styles.reviewImageThumbnail} resizeMode="cover" />
+                        <TouchableOpacity
+                          onPress={() => setReviewImage("")}
+                          style={styles.removeImageBtn}
+                          activeOpacity={0.8}
+                        >
+                          <Ionicons name="close" size={12} color="#FFFFFF" />
+                        </TouchableOpacity>
+                      </View>
+                      <Text style={{ fontSize: 12, color: "#059669", marginLeft: 10, fontWeight: "600" }}>
+                        Product Photo Attached ✓
+                      </Text>
+                    </View>
+                  ) : (
+                    <TouchableOpacity
+                      onPress={pickReviewImage}
+                      activeOpacity={0.75}
+                      style={styles.uploadPhotoBtn}
+                    >
+                      <Ionicons name="camera-outline" size={18} color="#4B5563" style={{ marginRight: 6 }} />
+                      <Text style={styles.uploadPhotoBtnText}>Add Product Photo (Optional)</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+
                 <TouchableOpacity
                   style={styles.submitReviewBtn}
                   onPress={handleSubmitReview}
@@ -514,6 +583,22 @@ export default function ProductDetails() {
 
                     {/* Review Comment Message */}
                     <Text style={styles.reviewCommentText}>{rev.comment}</Text>
+
+                    {/* Review Customer Photo */}
+                    {rev.image ? (
+                      <TouchableOpacity
+                        onPress={() => setPreviewModalImage(rev.image!)}
+                        activeOpacity={0.88}
+                        style={styles.reviewImageDisplayCard}
+                      >
+                        <Image source={{ uri: rev.image }} style={styles.reviewCustomerPhoto} resizeMode="cover" />
+                        <View style={styles.photoTagBadge}>
+                          <Ionicons name="camera-outline" size={11} color="#FFFFFF" />
+                          <Text style={styles.photoTagText}>Customer Photo</Text>
+                        </View>
+                      </TouchableOpacity>
+                    ) : null}
+
                     {rev.createdAt && (
                       <Text style={styles.reviewDateText}>
                         {new Date(rev.createdAt).toLocaleDateString("en-IN", {
@@ -647,6 +732,23 @@ export default function ProductDetails() {
           )}
         </TouchableOpacity>
       </View>
+
+      {/* Fullscreen Photo View Modal */}
+      <Modal visible={!!previewModalImage} transparent animationType="fade">
+        <Pressable style={styles.modalOverlay} onPress={() => setPreviewModalImage(null)}>
+          <View style={styles.modalCard}>
+            <TouchableOpacity
+              onPress={() => setPreviewModalImage(null)}
+              style={styles.closeModalBtn}
+            >
+              <Ionicons name="close" size={22} color="#FFFFFF" />
+            </TouchableOpacity>
+            {previewModalImage && (
+              <Image source={{ uri: previewModalImage }} style={styles.fullScreenImage} resizeMode="contain" />
+            )}
+          </View>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -692,6 +794,45 @@ const styles = StyleSheet.create({
     color: "#111827",
     textAlignVertical: "top",
     marginBottom: 12,
+  },
+  uploadPhotoBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: "#9CA3AF",
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  },
+  uploadPhotoBtnText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#374151",
+  },
+  imagePreviewWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  reviewImageThumbnail: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+  },
+  removeImageBtn: {
+    position: "absolute",
+    top: -6,
+    right: -6,
+    backgroundColor: "#EF4444",
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1.5,
+    borderColor: "#FFFFFF",
   },
   submitReviewBtn: {
     backgroundColor: "#111827",
@@ -784,9 +925,70 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     marginTop: 4,
   },
+  reviewImageDisplayCard: {
+    marginTop: 10,
+    position: "relative",
+    alignSelf: "flex-start",
+    borderRadius: 10,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  reviewCustomerPhoto: {
+    width: 130,
+    height: 130,
+    borderRadius: 8,
+  },
+  photoTagBadge: {
+    position: "absolute",
+    bottom: 6,
+    left: 6,
+    backgroundColor: "rgba(17, 24, 39, 0.75)",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  photoTagText: {
+    color: "#FFFFFF",
+    fontSize: 10,
+    fontWeight: "600",
+    marginLeft: 3,
+  },
   reviewDateText: {
     fontSize: 11,
     color: "#9CA3AF",
     marginTop: 6,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.85)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 16,
+  },
+  modalCard: {
+    width: "100%",
+    maxHeight: "80%",
+    justifyContent: "center",
+    alignItems: "center",
+    position: "relative",
+  },
+  closeModalBtn: {
+    position: "absolute",
+    top: -40,
+    right: 10,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  fullScreenImage: {
+    width: "100%",
+    height: 400,
+    borderRadius: 12,
   },
 });

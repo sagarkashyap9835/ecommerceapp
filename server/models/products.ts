@@ -7,6 +7,7 @@ const reviewSchema = new Schema({
     userImage: { type: String },
     rating: { type: Number, required: true, min: 1, max: 5 },
     comment: { type: String, required: true, trim: true },
+    image: { type: String },
     isVerifiedPurchase: { type: Boolean, default: true },
 }, { timestamps: true });
 

@@ -28,6 +28,7 @@ interface UserReviewItem {
   productPrice: number;
   rating: number;
   comment: string;
+  image?: string;
   createdAt: string;
 }
 
@@ -215,6 +216,17 @@ export default function MyReviews() {
               <View style={styles.commentBox}>
                 <Text style={styles.commentText}>"{item.comment}"</Text>
               </View>
+
+              {/* Attached Review Photo */}
+              {item.image ? (
+                <View style={{ marginTop: 8 }}>
+                  <Image
+                    source={{ uri: item.image }}
+                    style={{ width: 80, height: 80, borderRadius: 8, borderWidth: 1, borderColor: "#E5E7EB" }}
+                    resizeMode="cover"
+                  />
+                </View>
+              ) : null}
 
               {/* Footer Date */}
               {item.createdAt && (

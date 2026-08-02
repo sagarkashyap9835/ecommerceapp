@@ -68,6 +68,7 @@ export interface IReview {
     userImage?: string;
     rating: number;
     comment: string;
+    image?: string;
     isVerifiedPurchase: boolean;
     createdAt?: Date;
 }
