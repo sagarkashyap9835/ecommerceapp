@@ -1,4 +1,3 @@
-
 import {
   View,
   Text,
@@ -7,11 +6,12 @@ import {
   Dimensions,
   Image,
   TouchableOpacity,
-  Alert,
+  TextInput,
+  StyleSheet,
 } from "react-native";
 import React, { useEffect, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Product } from "@/assets/constants/types";
+import { Product, Review } from "@/assets/constants/types";
 import { useCart } from "../../../context/CartContext";
 import { useWishlist } from "../../../context/WishlistContext";
 
@@ -20,12 +20,14 @@ import { COLORS } from "@/assets/constants";
 import { Ionicons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
 import api from "../../../constants/api";
+import { useAuth } from "@clerk/expo";
 
 const { width } = Dimensions.get("window");
 
 export default function ProductDetails() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
+  const { getToken, isSignedIn } = useAuth();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
@@ -35,6 +37,12 @@ export default function ProductDetails() {
 
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+
+  // Review System States
+  const [canReview, setCanReview] = useState<boolean>(false);
+  const [rating, setRating] = useState<number>(5);
+  const [reviewComment, setReviewComment] = useState<string>("");
+  const [submittingReview, setSubmittingReview] = useState<boolean>(false);
 
   const fetchProduct = async () => {
     try {
@@ -51,9 +59,74 @@ export default function ProductDetails() {
     }
   };
 
+  const checkEligibility = async () => {
+    if (!isSignedIn) return;
+    try {
+      const token = await getToken();
+      const { data } = await api.get(`/products/${id}/can-review`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setCanReview(!!data.canReview);
+      if (data.userReview) {
+        setRating(data.userReview.rating || 5);
+        setReviewComment(data.userReview.comment || "");
+      }
+    } catch (err) {
+      console.error("Check eligibility error:", err);
+    }
+  };
+
   useEffect(() => {
     fetchProduct();
-  }, [id]);
+    checkEligibility();
+  }, [id, isSignedIn]);
+
+  const handleSubmitReview = async () => {
+    if (!isSignedIn) {
+      Toast.show({
+        type: "info",
+        text1: "Sign In Required",
+        text2: "Please sign in to submit a review."
+      });
+      return;
+    }
+
+    if (!reviewComment.trim()) {
+      Toast.show({
+        type: "error",
+        text1: "Empty Review",
+        text2: "Please enter your review message."
+      });
+      return;
+    }
+
+    try {
+      setSubmittingReview(true);
+      const token = await getToken();
+      const { data } = await api.post(
+        `/products/${id}/reviews`,
+        { rating, comment: reviewComment },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (data.success) {
+        Toast.show({
+          type: "success",
+          text1: "Review Submitted 🎉",
+          text2: data.message || "Thank you for your rating!"
+        });
+        setProduct(data.data);
+      }
+    } catch (error: any) {
+      Toast.show({
+        type: "error",
+        text1: "Submission Failed",
+        text2: error.response?.data?.message || "Could not submit review"
+      });
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -72,15 +145,17 @@ export default function ProductDetails() {
   }
 
   const isLiked = isInWishlist(product._id);
-
-  // आपके context के लॉजिक के अनुसार productId और size से सही आइटम खोजना
   const currentCartItem = cartItems.find(
     (item) => item.productId === product._id && item.size === selectedSize
   );
 
+  const reviewsList = product.reviews || [];
+  const averageRatingStr = product.ratings?.count ? product.ratings.average.toFixed(1) : "0.0";
+  const reviewCount = product.ratings?.count ?? 0;
+
   return (
     <SafeAreaView className="flex-1 bg-white">
-      <ScrollView contentContainerStyle={{ paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 140 }} showsVerticalScrollIndicator={false}>
         {/* Image Carousel */}
         <View className="relative">
           <ScrollView
@@ -205,68 +280,228 @@ export default function ProductDetails() {
               {product.name}
             </Text>
             
-            {/* Rating layout from template */}
-            <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4 }}>
-              <Ionicons name="star" size={15} color="#FBBF24" />
+            {/* Rating side-by-side with count */}
+            <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4, backgroundColor: "#FDF8F6", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 }}>
+              <Ionicons name="star" size={16} color="#FBBF24" />
               <Text style={{ marginLeft: 4, fontSize: 14, fontWeight: "700", color: "#111827" }}>
-                {product?.ratings?.average ? product.ratings.average.toFixed(1) : "4.8"}
+                {averageRatingStr}
               </Text>
-              <Text style={{ fontSize: 13, color: "#9CA3AF", marginLeft: 2 }}>
-                ({product?.ratings?.count ?? 0})
+              <Text style={{ fontSize: 13, color: "#6B7280", marginLeft: 3 }}>
+                ({reviewCount})
               </Text>
             </View>
           </View>
 
-          {/* Price Style matching template */}
-          <Text style={{ fontSize: 22, fontWeight: "700", color: "#111827", marginTop: 8 }}>
-            ₹{product.price.toFixed(2)}
-          </Text>
-
-          {/* Sizes Section - Borderless minimalist circles from image */}
-          <View style={{ marginTop: 28 }}>
-            <Text style={{ fontSize: 15, fontWeight: "700", color: "#111827", marginBottom: 16 }}>
-              Size
+          {/* Price & Stock Badge Row */}
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 8 }}>
+            <Text style={{ fontSize: 22, fontWeight: "700", color: "#111827" }}>
+              ₹{product.price.toFixed(2)}
             </Text>
-            <View style={{ flexDirection: "row", alignItems: "center" }}>
-              {product.sizes?.map((size) => {
-                const isSelected = selectedSize === size;
-                return (
-                  <TouchableOpacity
-                    key={size}
-                    onPress={() => setSelectedSize(size)}
-                    style={{
-                      width: 42,
-                      height: 42,
-                      borderRadius: 21,
-                      backgroundColor: isSelected ? "#111827" : "transparent",
-                      justifyContent: "center",
-                      alignItems: "center",
-                      marginRight: 14,
-                    }}
-                  >
-                    <Text
+            
+            {/* Stock Availability Badge */}
+            <View style={{
+              flexDirection: "row",
+              alignItems: "center",
+              backgroundColor: product.stock > 0 ? (product.stock <= 5 ? "#FEF3C7" : "#ECFDF5") : "#FEF2F2",
+              paddingHorizontal: 10,
+              paddingVertical: 4,
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: product.stock > 0 ? (product.stock <= 5 ? "#FDE68A" : "#A7F3D0") : "#FCA5A5",
+            }}>
+              <Ionicons
+                name={product.stock > 0 ? "cube-outline" : "close-circle-outline"}
+                size={14}
+                color={product.stock > 0 ? (product.stock <= 5 ? "#D97706" : "#059669") : "#DC2626"}
+              />
+              <Text style={{
+                marginLeft: 4,
+                fontSize: 12,
+                fontWeight: "700",
+                color: product.stock > 0 ? (product.stock <= 5 ? "#B45309" : "#047857") : "#B91C1C",
+              }}>
+                {product.stock > 0 ? (product.stock <= 5 ? `Only ${product.stock} left in stock!` : `In Stock: ${product.stock}`) : "Out of Stock"}
+              </Text>
+            </View>
+          </View>
+
+          {/* Sizes Section */}
+          {product.sizes && product.sizes.length > 0 && (
+            <View style={{ marginTop: 24 }}>
+              <Text style={{ fontSize: 15, fontWeight: "700", color: "#111827", marginBottom: 14 }}>
+                Size
+              </Text>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                {product.sizes.map((size) => {
+                  const isSelected = selectedSize === size;
+                  return (
+                    <TouchableOpacity
+                      key={size}
+                      onPress={() => setSelectedSize(size)}
                       style={{
-                        fontSize: 14,
-                        fontWeight: isSelected ? "700" : "500",
-                        color: isSelected ? "#FFFFFF" : "#4B5563",
+                        width: 42,
+                        height: 42,
+                        borderRadius: 21,
+                        backgroundColor: isSelected ? "#111827" : "transparent",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        marginRight: 14,
+                        borderWidth: isSelected ? 0 : 1,
+                        borderColor: "#E5E7EB",
                       }}
                     >
-                      {size}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
+                      <Text
+                        style={{
+                          fontSize: 14,
+                          fontWeight: isSelected ? "700" : "500",
+                          color: isSelected ? "#FFFFFF" : "#4B5563",
+                        }}
+                      >
+                        {size}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
             </View>
-          </View>
+          )}
 
           {/* Description */}
-          <View style={{ marginTop: 28 }}>
+          <View style={{ marginTop: 24 }}>
             <Text style={{ fontSize: 15, fontWeight: "700", color: "#111827", marginBottom: 8 }}>
               Description
             </Text>
             <Text style={{ fontSize: 14, color: "#4B5563", lineHeight: 22 }}>
               {product.description}
             </Text>
+          </View>
+
+          {/* CUSTOMER REVIEWS & RATINGS SECTION */}
+          <View style={{ marginTop: 32, paddingTop: 24, borderTopWidth: 1, borderTopColor: "#F3F4F6" }}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <Text style={{ fontSize: 18, fontWeight: "700", color: "#111827" }}>
+                Customer Reviews
+              </Text>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <Ionicons name="star" size={16} color="#FBBF24" />
+                <Text style={{ fontSize: 15, fontWeight: "700", color: "#111827", marginLeft: 4 }}>
+                  {averageRatingStr}
+                </Text>
+                <Text style={{ fontSize: 13, color: "#6B7280", marginLeft: 4 }}>
+                  ({reviewCount} reviews)
+                </Text>
+              </View>
+            </View>
+
+            {/* WRITE A REVIEW FORM (ONLY FOR VERIFIED PURCHASERS) */}
+            {canReview ? (
+              <View style={styles.reviewFormCard}>
+                <Text style={styles.reviewFormTitle}>Write a Review</Text>
+                <Text style={styles.reviewFormSubtitle}>Share your real experience with this product</Text>
+                
+                {/* Interactive Star Rating Selector */}
+                <View style={styles.starSelectorRow}>
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <TouchableOpacity key={star} onPress={() => setRating(star)} activeOpacity={0.7} style={{ padding: 4 }}>
+                      <Ionicons
+                        name={star <= rating ? "star" : "star-outline"}
+                        size={28}
+                        color={star <= rating ? "#FBBF24" : "#D1D5DB"}
+                      />
+                    </TouchableOpacity>
+                  ))}
+                  <Text style={styles.ratingTextLabel}>{rating} / 5 Stars</Text>
+                </View>
+
+                {/* Review Message Input */}
+                <TextInput
+                  style={styles.reviewInput}
+                  placeholder="Write your review here (e.g. quality, fit, comfort)..."
+                  placeholderTextColor="#9CA3AF"
+                  multiline
+                  numberOfLines={3}
+                  value={reviewComment}
+                  onChangeText={setReviewComment}
+                />
+
+                <TouchableOpacity
+                  style={styles.submitReviewBtn}
+                  onPress={handleSubmitReview}
+                  disabled={submittingReview}
+                >
+                  {submittingReview ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Text style={styles.submitReviewBtnText}>Submit Verified Review</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={styles.verifiedNoticeCard}>
+                <Ionicons name="shield-checkmark-outline" size={24} color="#059669" style={{ marginBottom: 6 }} />
+                <Text style={styles.verifiedNoticeTitle}>Verified Buyer Reviews Only</Text>
+                <Text style={styles.verifiedNoticeText}>
+                  To ensure 100% authentic ratings and prevent fake reviews, only customers who have ordered this product can write a review.
+                </Text>
+              </View>
+            )}
+
+            {/* REVIEWS LIST */}
+            <View style={{ marginTop: 20 }}>
+              {reviewsList.length === 0 ? (
+                <View style={styles.emptyReviewsBox}>
+                  <Ionicons name="chatbox-ellipses-outline" size={36} color="#9CA3AF" />
+                  <Text style={styles.emptyReviewsText}>No customer reviews yet.</Text>
+                </View>
+              ) : (
+                reviewsList.map((rev: Review, index: number) => (
+                  <View key={rev._id || index} style={styles.reviewItemCard}>
+                    <View style={styles.reviewHeaderRow}>
+                      <View style={{ flexDirection: "row", alignItems: "center" }}>
+                        <View style={styles.avatarCircle}>
+                          <Text style={styles.avatarText}>
+                            {rev.userName ? rev.userName.charAt(0).toUpperCase() : "U"}
+                          </Text>
+                        </View>
+                        <View style={{ marginLeft: 10 }}>
+                          <Text style={styles.reviewerName}>{rev.userName || "Verified Buyer"}</Text>
+                          {rev.isVerifiedPurchase && (
+                            <View style={styles.verifiedBadge}>
+                              <Ionicons name="checkmark-circle" size={12} color="#059669" />
+                              <Text style={styles.verifiedBadgeText}>Verified Purchase</Text>
+                            </View>
+                          )}
+                        </View>
+                      </View>
+
+                      {/* Stars for this review */}
+                      <View style={{ flexDirection: "row" }}>
+                        {[1, 2, 3, 4, 5].map((s) => (
+                          <Ionicons
+                            key={s}
+                            name={s <= rev.rating ? "star" : "star-outline"}
+                            size={14}
+                            color={s <= rev.rating ? "#FBBF24" : "#D1D5DB"}
+                          />
+                        ))}
+                      </View>
+                    </View>
+
+                    {/* Review Comment Message */}
+                    <Text style={styles.reviewCommentText}>{rev.comment}</Text>
+                    {rev.createdAt && (
+                      <Text style={styles.reviewDateText}>
+                        {new Date(rev.createdAt).toLocaleDateString("en-IN", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric"
+                        })}
+                      </Text>
+                    )}
+                  </View>
+                ))
+              )}
+            </View>
           </View>
         </View>
       </ScrollView>
@@ -288,10 +523,8 @@ export default function ProductDetails() {
           borderTopColor: "#F3F4F6",
         }}
       >
-        {/* Main Black Pill Button: Add To Cart / Plus Minus Toggle */}
         <View style={{ flex: 1, marginRight: 20 }}>
           {currentCartItem ? (
-            /* Quantity Counter Mode inside Black Pill */
             <View
               style={{
                 height: 52,
@@ -326,7 +559,6 @@ export default function ProductDetails() {
               </TouchableOpacity>
             </View>
           ) : (
-            /* Standard Add To Cart Mode */
             <TouchableOpacity
               onPress={async () => {
                 if (product.sizes && product.sizes.length > 0 && !selectedSize) {
@@ -356,7 +588,6 @@ export default function ProductDetails() {
           )}
         </View>
 
-        {/* Right Side Minimalist Cart Icon with Badge */}
         <TouchableOpacity
           onPress={() => router.push("/cart")}
           style={{
@@ -368,7 +599,6 @@ export default function ProductDetails() {
         >
           <Ionicons name="cart-outline" size={26} color="#111827" />
           
-          {/* Item Count Floating Badge */}
           {itemCount > 0 && (
             <View
               style={{
@@ -396,3 +626,142 @@ export default function ProductDetails() {
   );
 }
 
+const styles = StyleSheet.create({
+  reviewFormCard: {
+    backgroundColor: "#F9FAFB",
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    marginBottom: 20,
+  },
+  reviewFormTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  reviewFormSubtitle: {
+    fontSize: 12,
+    color: "#6B7280",
+    marginTop: 2,
+    marginBottom: 12,
+  },
+  starSelectorRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  ratingTextLabel: {
+    marginLeft: 12,
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#374151",
+  },
+  reviewInput: {
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#D1D5DB",
+    borderRadius: 10,
+    padding: 12,
+    fontSize: 14,
+    color: "#111827",
+    textAlignVertical: "top",
+    marginBottom: 12,
+  },
+  submitReviewBtn: {
+    backgroundColor: "#111827",
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  submitReviewBtnText: {
+    color: "#FFFFFF",
+    fontWeight: "600",
+    fontSize: 14,
+  },
+  verifiedNoticeCard: {
+    backgroundColor: "#ECFDF5",
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#A7F3D0",
+    marginBottom: 16,
+    alignItems: "center",
+  },
+  verifiedNoticeTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#065F46",
+    marginBottom: 4,
+  },
+  verifiedNoticeText: {
+    fontSize: 12,
+    color: "#047857",
+    textAlign: "center",
+    lineHeight: 18,
+  },
+  emptyReviewsBox: {
+    paddingVertical: 24,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emptyReviewsText: {
+    fontSize: 14,
+    color: "#6B7280",
+    marginTop: 8,
+  },
+  reviewItemCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: "#F3F4F6",
+    marginBottom: 12,
+  },
+  reviewHeaderRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  avatarCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#111827",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  avatarText: {
+    color: "#FFFFFF",
+    fontWeight: "700",
+    fontSize: 14,
+  },
+  reviewerName: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  verifiedBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 2,
+  },
+  verifiedBadgeText: {
+    fontSize: 10,
+    color: "#059669",
+    fontWeight: "600",
+    marginLeft: 3,
+  },
+  reviewCommentText: {
+    fontSize: 14,
+    color: "#374151",
+    lineHeight: 20,
+    marginTop: 4,
+  },
+  reviewDateText: {
+    fontSize: 11,
+    color: "#9CA3AF",
+    marginTop: 6,
+  },
+});

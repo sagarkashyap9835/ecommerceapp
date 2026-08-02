@@ -57,7 +57,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           _id: prodId,
           name: prodObj.name || item.name || "Product",
           price: item.price || prodObj.price || 0,
-          images: prodObj.images || (item.image ? [item.image] : ["https://via.placeholder.com/150"]),
+          images: prodObj.images || (item.image ? [item.image] : ["https://placehold.co/150x150/png?text=Product"]),
           description: prodObj.description || "",
           stock: prodObj.stock ?? 99,
           ratings: prodObj.ratings || { average: 4.8, count: 10 },
@@ -192,6 +192,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const targetItem = cartItems.find((i) => i.id === itemId);
     if (!targetItem) return;
 
+    // Check available stock on frontend before making network request
+    const availableStock = targetItem.product?.stock ?? 99;
+    if (quantity > availableStock) {
+      Toast.show({
+        type: "error",
+        text1: "Stock Limit Reached ⚠️",
+        text2: availableStock > 0 
+          ? `Only ${availableStock} units available in stock.`
+          : "This product is out of stock.",
+      });
+      return;
+    }
+
     try {
       const token = await getToken();
       const { data } = await api.put(
@@ -209,11 +222,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
         setCartItems(mapServerCart(data.data.items));
       }
     } catch (error: any) {
-      console.error("Error updating cart quantity:", error);
+      const errorMsg = error.response?.data?.message || "Could not update item quantity.";
       Toast.show({
         type: "error",
-        text1: "Error",
-        text2: error.response?.data?.message || "Failed to update quantity",
+        text1: "Stock Limit Reached ⚠️",
+        text2: errorMsg,
       });
     }
   };

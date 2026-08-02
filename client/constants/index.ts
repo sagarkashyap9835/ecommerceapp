@@ -20,8 +20,8 @@ export const CATEGORIES = [
 export const PROFILE_MENU = [
     { id: 1, title: "My Orders", icon: "receipt-outline", route: "/orders" },
     { id: 2, title: "Shipping Addresses", icon: "location-outline", route: "/addresses" },
-    { id: 4, title: "My Reviews", icon: "star-outline", route: "/" },
-    { id: 5, title: "Settings", icon: "settings-outline", route: "/" },
+    { id: 4, title: "My Reviews", icon: "star-outline", route: "/reviews" },
+    { id: 5, title: "Settings", icon: "settings-outline", route: "/settings" },
 ];
 
 export const getStatusColor = (status: string) => {

@@ -14,6 +14,17 @@ export interface User {
     createdAt: string;
 }
 
+export interface Review {
+    _id?: string;
+    user: string;
+    userName: string;
+    userImage?: string;
+    rating: number;
+    comment: string;
+    isVerifiedPurchase: boolean;
+    createdAt?: string;
+}
+
 export interface Product {
     _id: string;
     name: string;
@@ -33,6 +44,7 @@ export interface Product {
         average: number;
         count: number;
     };
+    reviews?: Review[];
     isFeatured: boolean;
     isActive: boolean;
     createdAt: string;

@@ -61,7 +61,7 @@ export const addToCart = async (
     if (quantity > product.stock) {
       res.status(400).json({
         success: false,
-        message: "Insufficient stock",
+        message: product.stock > 0 ? `Only ${product.stock} units available in stock.` : "This product is currently out of stock.",
       });
       return;
     }
@@ -89,7 +89,7 @@ export const addToCart = async (
       if (item.quantity + quantity > product.stock) {
         res.status(400).json({
           success: false,
-          message: "Stock limit exceeded",
+          message: product.stock > 0 ? `Stock limit reached. Maximum ${product.stock} units available.` : "This product is currently out of stock.",
         });
         return;
       }
@@ -163,7 +163,7 @@ export const updateCartItem = async (
     if (quantity > product.stock) {
       res.status(400).json({
         success: false,
-        message: "Insufficient stock",
+        message: product.stock > 0 ? `Stock limit reached. Only ${product.stock} units available.` : "This product is currently out of stock.",
       });
       return;
     }

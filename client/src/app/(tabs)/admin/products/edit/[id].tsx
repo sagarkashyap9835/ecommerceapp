@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { ScrollView, Text, TextInput, TouchableOpacity, View, Switch, Image, ActivityIndicator, Platform, Modal, FlatList, TouchableWithoutFeedback } from "react-native";
+import { ScrollView, Text, TextInput, TouchableOpacity, View, Switch, Image, ActivityIndicator, Platform, Modal, FlatList, Pressable } from "react-native";
 import Toast from 'react-native-toast-message';
 import { COLORS,CATEGORIES } from "@/assets/constants";
 import { Ionicons } from "@expo/vector-icons";
@@ -76,7 +76,7 @@ export default function EditProduct() {
 
     const pickImages = async () => {
         const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            mediaTypes: ['images'],
             allowsMultipleSelection: true,
             selectionLimit: 5 - (existingImages.length + newImages.length),
             quality: 0.8,
@@ -219,31 +219,29 @@ export default function EditProduct() {
                 </TouchableOpacity>
 
                 <Modal visible={modalVisible} animationType="slide" transparent>
-                    <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
-                        <View className="flex-1 justify-end bg-black/50">
-                            <View className="bg-white rounded-t-2xl p-4 max-h-[50%]">
-                                <Text className="text-lg font-bold text-center mb-4">Select Category</Text>
-                                <FlatList
-                                    data={CATEGORIES}
-                                    keyExtractor={(item) => String(item.id)}
-                                    renderItem={({ item }) => (
-                                        <TouchableOpacity
-                                            className={`p-4 border-b ${category === item.name ? "bg-primary/5" : ""}`}
-                                            onPress={() => {
-                                                setCategory(item.name);
-                                                setModalVisible(false);
-                                            }}
-                                        >
-                                            <View className="flex-row justify-between">
-                                                <Text className={`${category === item.name ? "font-bold text-primary" : ""}`}>{item.name}</Text>
-                                                {category === item.name && <Ionicons name="checkmark" size={20} color={COLORS.primary} />}
-                                            </View>
-                                        </TouchableOpacity>
-                                    )}
-                                />
-                            </View>
-                        </View>
-                    </TouchableWithoutFeedback>
+                    <Pressable style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }} onPress={() => setModalVisible(false)}>
+                        <Pressable style={{ backgroundColor: 'white', borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 16, maxHeight: '50%' }} onPress={(e) => e.stopPropagation()}>
+                            <Text className="text-lg font-bold text-center mb-4">Select Category</Text>
+                            <FlatList
+                                data={CATEGORIES}
+                                keyExtractor={(item) => String(item.id)}
+                                renderItem={({ item }) => (
+                                    <TouchableOpacity
+                                        className={`p-4 border-b ${category === item.name ? "bg-primary/5" : ""}`}
+                                        onPress={() => {
+                                            setCategory(item.name);
+                                            setModalVisible(false);
+                                        }}
+                                    >
+                                        <View className="flex-row justify-between">
+                                            <Text className={`${category === item.name ? "font-bold text-primary" : ""}`}>{item.name}</Text>
+                                            {category === item.name && <Ionicons name="checkmark" size={20} color={COLORS.primary} />}
+                                        </View>
+                                    </TouchableOpacity>
+                                )}
+                            />
+                        </Pressable>
+                    </Pressable>
                 </Modal>
 
                 <Text className="text-secondary text-xs font-bold mb-1 uppercase">Images</Text>

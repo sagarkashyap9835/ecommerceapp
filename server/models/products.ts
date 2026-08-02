@@ -1,6 +1,15 @@
 import mongoose, { Schema } from "mongoose";
 import { IProduct } from "../types/index.js";
 
+const reviewSchema = new Schema({
+    user: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    userName: { type: String, required: true },
+    userImage: { type: String },
+    rating: { type: Number, required: true, min: 1, max: 5 },
+    comment: { type: String, required: true, trim: true },
+    isVerifiedPurchase: { type: Boolean, default: true },
+}, { timestamps: true });
+
 const productSchema = new Schema<IProduct>({
     name: { type: String, required: true, trim: true },
     description: { type: String, required: true },
@@ -14,6 +23,11 @@ const productSchema = new Schema<IProduct>({
         default: "Other" 
     },
     stock: { type: Number, required: true, default: 0, min: 0 },
+    ratings: {
+        average: { type: Number, default: 0 },
+        count: { type: Number, default: 0 }
+    },
+    reviews: [reviewSchema],
     isFeatured: { type: Boolean, default: false },
     isActive: { type: Boolean, default: true },
 }, { timestamps: true });

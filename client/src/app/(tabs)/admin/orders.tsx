@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ScrollView, Text, TouchableOpacity, View, ActivityIndicator, RefreshControl, Modal, TouchableWithoutFeedback, FlatList, StyleSheet, Alert } from "react-native";
+import { ScrollView, Text, TouchableOpacity, View, ActivityIndicator, RefreshControl, Modal, Pressable, FlatList, StyleSheet, Alert } from "react-native";
 import { COLORS, getStatusColor } from "@/assets/constants";
 import { Ionicons } from "@expo/vector-icons";
 // import { dummyOrders, dummyUser } from "@/assets/assets";
@@ -163,55 +163,51 @@ try {
 
             {/* STATUS MODAL */}
             <Modal visible={statusModalVisible} animationType="fade" transparent>
-                <TouchableWithoutFeedback onPress={() => setStatusModalVisible(false)}>
-                    <View style={styles.modalOverlay}>
-                        <TouchableWithoutFeedback>
-                            <View style={styles.modalContent}>
-                                <View style={styles.modalHeader}>
-                                    <Text style={styles.modalTitle}>Update Order Status</Text>
-                                    <TouchableOpacity onPress={() => setStatusModalVisible(false)} activeOpacity={0.7}>
-                                        <Ionicons name="close" size={24} color={COLORS.secondary || '#6b7280'} />
-                                    </TouchableOpacity>
-                                </View>
+                <Pressable style={styles.modalOverlay} onPress={() => setStatusModalVisible(false)}>
+                    <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>Update Order Status</Text>
+                            <TouchableOpacity onPress={() => setStatusModalVisible(false)} activeOpacity={0.7}>
+                                <Ionicons name="close" size={24} color={COLORS.secondary || '#6b7280'} />
+                            </TouchableOpacity>
+                        </View>
 
-                                {updating ? (
-                                    <View style={styles.modalLoadingBox}>
-                                        <ActivityIndicator size="large" color={COLORS.primary || '#000'} />
-                                        <Text style={styles.modalLoadingText}>Updating status...</Text>
-                                    </View>
-                                ) : (
-                                    <FlatList
-                                        data={STATUSES}
-                                        keyExtractor={(item) => item}
-                                        renderItem={({ item }) => {
-                                            const isSelected = selectedOrder?.orderStatus === item;
-                                            return (
-                                                <TouchableOpacity
-                                                    activeOpacity={0.8}
-                                                    style={[
-                                                        styles.modalStatusItem,
-                                                        isSelected ? styles.modalStatusItemActive : styles.modalStatusItemInactive
-                                                    ]}
-                                                    onPress={() => updateStatus(item)}
-                                                >
-                                                    <Text style={[
-                                                        styles.modalStatusText,
-                                                        isSelected ? styles.modalStatusTextActive : styles.modalStatusTextInactive
-                                                    ]}>
-                                                        {item}
-                                                    </Text>
-                                                    {isSelected && (
-                                                        <Ionicons name="checkmark-circle" size={20} color={COLORS.primary || '#000'} />
-                                                    )}
-                                                </TouchableOpacity>
-                                            );
-                                        }}
-                                    />
-                                )}
+                        {updating ? (
+                            <View style={styles.modalLoadingBox}>
+                                <ActivityIndicator size="large" color={COLORS.primary || '#000'} />
+                                <Text style={styles.modalLoadingText}>Updating status...</Text>
                             </View>
-                        </TouchableWithoutFeedback>
-                    </View>
-                </TouchableWithoutFeedback>
+                        ) : (
+                            <FlatList
+                                data={STATUSES}
+                                keyExtractor={(item) => item}
+                                renderItem={({ item }) => {
+                                    const isSelected = selectedOrder?.orderStatus === item;
+                                    return (
+                                        <TouchableOpacity
+                                            activeOpacity={0.8}
+                                            style={[
+                                                styles.modalStatusItem,
+                                                isSelected ? styles.modalStatusItemActive : styles.modalStatusItemInactive
+                                            ]}
+                                            onPress={() => updateStatus(item)}
+                                        >
+                                            <Text style={[
+                                                styles.modalStatusText,
+                                                isSelected ? styles.modalStatusTextActive : styles.modalStatusTextInactive
+                                            ]}>
+                                                {item}
+                                            </Text>
+                                            {isSelected && (
+                                                <Ionicons name="checkmark-circle" size={20} color={COLORS.primary || '#000'} />
+                                            )}
+                                        </TouchableOpacity>
+                                    );
+                                }}
+                            />
+                        )}
+                    </Pressable>
+                </Pressable>
             </Modal>
         </View>
     );

@@ -13,6 +13,7 @@ interface CartItemComponentProps {
       name: string;
       price: number;
       images: string[];
+      stock?: number;
     };
     quantity: number;
     size: string; // size को string रखा ताकि context में सही से पास हो
@@ -24,13 +25,14 @@ interface CartItemComponentProps {
 export default function CartItem({ item, onRemove, onUpdateQuantity }: CartItemComponentProps) {
   // पहली इमेज का URL safely निकालना
   const imageUrl = item?.product?.images && item.product.images[0]
+  const availableStock = item?.product?.stock;
 
   return (
     <View className="flex-row items-center bg-white p-3 rounded-2xl mb-3 shadow-sm border border-gray-100">
       
       {/* Product Image */}
       <Image 
-        source={{ uri: imageUrl || 'https://via.placeholder.com/80' }} 
+        source={{ uri: imageUrl || 'https://placehold.co/80x80/png?text=Product' }} 
         className="w-20 h-20 rounded-xl bg-gray-50"
         resizeMode="cover"
       />
@@ -38,18 +40,25 @@ export default function CartItem({ item, onRemove, onUpdateQuantity }: CartItemC
       {/* Product Details */}
       <View className="flex-1 ml-3 justify-between h-20">
         
-        {/* ऊपर का हिस्सा: नाम, साइज़ और डिलीट बटन */}
+        {/* ऊपर का हिस्सा: नाम, साइज़, स्टॉक और डिलीट बटन */}
         <View className="flex-row justify-between items-start">
           <View className="flex-1 pr-2">
             <Text numberOfLines={1} className="text-sm font-semibold text-gray-800">
               {item?.product?.name}
             </Text>
-            {item?.size && (
-              <Text className="text-xs text-gray-400 mt-0.5">Size: {item.size}</Text>
-            )}
+            <View className="flex-row items-center flex-wrap gap-1 mt-0.5">
+              {item?.size ? (
+                <Text className="text-xs text-gray-400">Size: {item.size}</Text>
+              ) : null}
+              {availableStock !== undefined && (
+                <Text className={`text-xs ${availableStock <= 5 ? "text-amber-600 font-semibold" : "text-gray-400"}`}>
+                  {item?.size ? "• " : ""}{availableStock <= 5 ? `Only ${availableStock} left!` : `Stock: ${availableStock}`}
+                </Text>
+              )}
+            </View>
           </View>
           
-          {/* Remove Button (यहाँ item.product._id हटाकर item.id किया) */}
+          {/* Remove Button */}
           <TouchableOpacity 
             onPress={() => onRemove(item.id)} 
             activeOpacity={0.7}
@@ -68,7 +77,7 @@ export default function CartItem({ item, onRemove, onUpdateQuantity }: CartItemC
           {/* Quantity Selector */}
           <View className="flex-row items-center bg-gray-50 border border-gray-200 rounded-lg px-2 py-1">
             
-            {/* घटाने का बटन (-): इसमें item.id और item.size दोनों भेजा */}
+            {/* घटाने का बटन (-) */}
             <TouchableOpacity 
               onPress={() => item.quantity > 1 && onUpdateQuantity(item.id, item.quantity - 1, item.size)}
               disabled={item.quantity <= 1}
@@ -84,12 +93,17 @@ export default function CartItem({ item, onRemove, onUpdateQuantity }: CartItemC
             {/* वर्तमान क्वांटिटी */}
             <Text className="mx-3 font-semibold text-sm">{item.quantity}</Text>
 
-            {/* बढ़ाने का बटन (+): इसमें भी item.id और item.size भेजा */}
+            {/* बढ़ाने का बटन (+): Available Stock limit check */}
             <TouchableOpacity 
               onPress={() => onUpdateQuantity(item.id, item.quantity + 1, item.size)}
+              disabled={availableStock !== undefined && item.quantity >= availableStock}
               className="p-1"
             >
-              <Ionicons name="add" size={16} color="#000" />
+              <Ionicons 
+                name="add" 
+                size={16} 
+                color={(availableStock !== undefined && item.quantity >= availableStock) ? "#cbd5e1" : "#000"} 
+              />
             </TouchableOpacity>
           </View>
         </View>

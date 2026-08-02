@@ -61,6 +61,17 @@ export interface IOrder extends Document {
     updatedAt: Date;
 }
 
+export interface IReview {
+    _id?: Types.ObjectId;
+    user: Types.ObjectId;
+    userName: string;
+    userImage?: string;
+    rating: number;
+    comment: string;
+    isVerifiedPurchase: boolean;
+    createdAt?: Date;
+}
+
 export interface IProduct extends Document {
     name: string;
     description: string;
@@ -74,6 +85,7 @@ export interface IProduct extends Document {
         average: number;
         count: number;
     };
+    reviews: IReview[];
     isFeatured: boolean;
     isActive: boolean;
     createdAt: Date;

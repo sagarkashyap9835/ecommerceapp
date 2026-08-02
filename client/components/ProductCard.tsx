@@ -113,9 +113,12 @@ const isLiked=isInWishlist(product._id)
                   size={14}
                   color="#FBBF24"
                 />
-               <Text className="ml-1 text-xs font-semibold">
-  {product.ratings?.average ?? "4.8"}
-</Text>
+                <Text className="ml-1 text-xs font-bold text-gray-800">
+                  {product.ratings?.count ? product.ratings.average.toFixed(1) : "0.0"}
+                </Text>
+                <Text className="text-[11px] text-gray-400 ml-0.5">
+                  ({product.ratings?.count ?? 0})
+                </Text>
               </View>
             </View>
           </View>

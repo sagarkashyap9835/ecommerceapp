@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ScrollView, Text, TextInput, TouchableOpacity, View, Switch, Image, ActivityIndicator, Modal, FlatList, TouchableWithoutFeedback, StyleSheet } from "react-native";
+import { ScrollView, Text, TextInput, TouchableOpacity, View, Switch, Image, ActivityIndicator, Modal, FlatList, Pressable, StyleSheet, Platform } from "react-native";
 import Toast from 'react-native-toast-message';
 import { COLORS } from "@/assets/constants";
 import { Ionicons } from "@expo/vector-icons";
@@ -28,7 +28,7 @@ export default function AddProduct() {
     // PICK MULTIPLE IMAGES (MAX 5)
     const pickImages = async () => {
         const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            mediaTypes: ['images'],
             allowsMultipleSelection: true,
             selectionLimit: 5,
             quality: 0.8,
@@ -69,12 +69,21 @@ const handleSubmit = async () => {
 
         for (const [i, uri] of images.entries()) {
             const filename = `image-${i}.jpg`;
-
-            formData.append("images", {
-                uri,
-                name: filename,
-                type: "image/jpeg"
-            } as any)
+            if (Platform.OS === "web") {
+                try {
+                    const response = await fetch(uri);
+                    const blob = await response.blob();
+                    formData.append("images", new File([blob], filename, { type: blob.type || "image/jpeg" }));
+                } catch (e) {
+                    console.error("Error fetching web image blob:", e);
+                }
+            } else {
+                formData.append("images", {
+                    uri,
+                    name: filename,
+                    type: "image/jpeg"
+                } as any);
+            }
         }
 
         try {
@@ -140,50 +149,48 @@ const handleSubmit = async () => {
 
                 {/* CATEGORY MODAL */}
                 <Modal visible={modalVisible} animationType="slide" transparent>
-                    <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
-                        <View style={styles.modalOverlay}>
-                            <View style={styles.modalContent}>
-                                <Text style={styles.modalTitle}>Select Category</Text>
+                    <Pressable style={styles.modalOverlay} onPress={() => setModalVisible(false)}>
+                        <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
+                            <Text style={styles.modalTitle}>Select Category</Text>
 
-                                <FlatList
-                                    data={CATEGORIES}
-                                    keyExtractor={(item) => String(item.id)}
-                                    renderItem={({ item }) => {
-                                        const isSelected = category === item.name;
-                                        return (
-                                            <TouchableOpacity
-                                                activeOpacity={0.8}
-                                                style={[
-                                                    styles.modalItem,
-                                                    isSelected && styles.modalItemActive
-                                                ]}
-                                                onPress={() => {
-                                                    setCategory(item.name);
-                                                    setModalVisible(false);
-                                                }}
-                                            >
-                                                <View style={styles.modalItemRow}>
-                                                    <Text style={[
-                                                        styles.modalItemText,
-                                                        isSelected && styles.modalItemTextActive
-                                                    ]}>
-                                                        {item.name}
-                                                    </Text>
-                                                    {isSelected && (
-                                                        <Ionicons
-                                                            name="checkmark"
-                                                            size={20}
-                                                            color={COLORS.primary || '#000'}
-                                                        />
-                                                    )}
-                                                </View>
-                                            </TouchableOpacity>
-                                        );
-                                    }}
-                                />
-                            </View>
-                        </View>
-                    </TouchableWithoutFeedback>
+                            <FlatList
+                                data={CATEGORIES}
+                                keyExtractor={(item) => String(item.id)}
+                                renderItem={({ item }) => {
+                                    const isSelected = category === item.name;
+                                    return (
+                                        <TouchableOpacity
+                                            activeOpacity={0.8}
+                                            style={[
+                                                styles.modalItem,
+                                                isSelected && styles.modalItemActive
+                                            ]}
+                                            onPress={() => {
+                                                setCategory(item.name);
+                                                setModalVisible(false);
+                                            }}
+                                        >
+                                            <View style={styles.modalItemRow}>
+                                                <Text style={[
+                                                    styles.modalItemText,
+                                                    isSelected && styles.modalItemTextActive
+                                                ]}>
+                                                    {item.name}
+                                                </Text>
+                                                {isSelected && (
+                                                    <Ionicons
+                                                        name="checkmark"
+                                                        size={20}
+                                                        color={COLORS.primary || '#000'}
+                                                    />
+                                                )}
+                                            </View>
+                                        </TouchableOpacity>
+                                    );
+                                }}
+                            />
+                        </Pressable>
+                    </Pressable>
                 </Modal>
 
                 {/* STOCK */}

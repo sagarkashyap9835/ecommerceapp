@@ -1,37 +1,41 @@
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { ScrollView, Text, TouchableOpacity, View, ActivityIndicator, RefreshControl, Image, Alert, StyleSheet } from "react-native";
+import { ScrollView, Text, TouchableOpacity, View, ActivityIndicator, RefreshControl, Image, StyleSheet, Modal, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "@/assets/constants";
-// import { dummyProducts } from "@/assets/assets";
 import { useAuth } from "@clerk/expo";
 import Toast from 'react-native-toast-message';
 import api from "../../../../../constants/api";
 
 export default function AdminProducts() {
-    const {getToken}=useAuth()
+    const {getToken} = useAuth();
     const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
-    const [products, setProducts] = useState([]);
+    const [products, setProducts] = useState<any[]>([]);
+
+    // Delete Modal State
+    const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+    const [productToDelete, setProductToDelete] = useState<{ id: string; name: string } | null>(null);
+    const [deleting, setDeleting] = useState(false);
 
     const fetchProducts = async () => {
       try {
-        const {data}=await api.get("/products",{params:{limit:999}})
+        const {data} = await api.get("/products", {params: {limit: 999}});
         if(data.success){
-            setProducts(data.data)
+            setProducts(data.data);
         }
-      } catch (error:any) {
-        console.error("failed to fetch products")
+      } catch (error: any) {
+        console.error("failed to fetch products");
         Toast.show({
-            type:"error",
-            text1:"failed to fetch products",
-            text2:error.response?.data?.message || "something went wrong"
-        })
+            type: "error",
+            text1: "Failed to fetch products",
+            text2: error.response?.data?.message || "Something went wrong"
+        });
       }
       finally {
-        setLoading(false)
-        setRefreshing(false)
+        setLoading(false);
+        setRefreshing(false);
       }
     };
 
@@ -44,43 +48,46 @@ export default function AdminProducts() {
         fetchProducts();
     };
 
-    const performDelete = async (id: string) => {
-      try {
-        const token=await getToken()
-        const {data}=await api.delete(`/products/${id}`,
-            {headers:{Authorization:`Bearer ${token}`}}
-        )
-        if(data.success){
-            Toast.show({
-                type:"success",
-                text1:"success",
-                text2:"Product deleted"
-            })
-            fetchProducts()
-        }
-      } 
-      catch (error:any) {
-        Toast.show({
-              type:"error",
-                text1:"failed to  delete product",
-                text2:error.response?.data?.message || "something went wrong"
-        })
-      }
+    const confirmDeleteProduct = (id: string, name: string) => {
+        setProductToDelete({ id, name });
+        setDeleteModalVisible(true);
     };
 
-    const deleteProduct = async (id: string) => {
-        Alert.alert(
-            "Delete Product",
-            "Are you sure you want to delete this product?",
-            [
-                { text: "Cancel", style: "cancel" as const },
-                {
-                    text: "Delete",
-                    style: "destructive" as const,
-                    onPress: () => performDelete(id)
-                }
-            ]
+    const handlePerformDelete = async () => {
+      if (!productToDelete) return;
+      const deletedName = productToDelete.name;
+      try {
+        setDeleting(true);
+        const token = await getToken();
+        const {data} = await api.delete(`/products/${productToDelete.id}`,
+            {headers: {Authorization: `Bearer ${token}`}}
         );
+        if(data.success){
+            setDeleteModalVisible(false);
+            setProductToDelete(null);
+            fetchProducts();
+
+            setTimeout(() => {
+                Toast.show({
+                    type: "success",
+                    text1: "Product Deleted 🗑️",
+                    text2: `${deletedName} has been deleted successfully!`,
+                    position: "top",
+                    visibilityTime: 3500,
+                    topOffset: 50,
+                });
+            }, 150);
+        }
+      } 
+      catch (error: any) {
+        Toast.show({
+              type: "error",
+              text1: "Failed to delete product",
+              text2: error.response?.data?.message || "Something went wrong"
+        });
+      } finally {
+        setDeleting(false);
+      }
     };
 
     if (loading && !refreshing) {
@@ -120,7 +127,7 @@ export default function AdminProducts() {
                     products.map((product: any) => (
                         <View key={product._id} style={styles.productCard}>
                             <Image
-                                source={{ uri: product.images && product.images.length > 0 ? product.images[0] : 'https://via.placeholder.com/150' }}
+                                source={{ uri: product.images && product.images.length > 0 ? product.images[0] : 'https://placehold.co/150x150/png?text=Product' }}
                                 style={styles.productImage}
                                 resizeMode="cover"
                             />
@@ -143,16 +150,53 @@ export default function AdminProducts() {
                                 </TouchableOpacity>
                                 <TouchableOpacity
                                     activeOpacity={0.7}
-                                    onPress={() => deleteProduct(product._id)}
+                                    onPress={() => confirmDeleteProduct(product._id, product.name)}
                                     style={styles.deleteButton}
                                 >
-                                    <Ionicons name="trash-outline" size={18} color="#333333" />
+                                    <Ionicons name="trash-outline" size={18} color="#ef4444" />
                                 </TouchableOpacity>
                             </View>
                         </View>
                     ))
                 )}
             </ScrollView>
+
+            {/* DELETE CONFIRMATION MODAL */}
+            <Modal visible={deleteModalVisible} animationType="fade" transparent>
+                <Pressable style={styles.modalOverlay} onPress={() => setDeleteModalVisible(false)}>
+                    <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
+                        <View style={styles.modalHeaderBox}>
+                            <View style={styles.trashIconBg}>
+                                <Ionicons name="trash-outline" size={24} color="#ef4444" />
+                            </View>
+                            <Text style={styles.modalTitle}>Delete Product</Text>
+                            <Text style={styles.modalSubtitle}>
+                                Are you sure you want to delete <Text style={{ fontWeight: '700', color: '#111827' }}>"{productToDelete?.name}"</Text>? This action cannot be undone.
+                            </Text>
+                        </View>
+                        <View style={styles.modalActions}>
+                            <TouchableOpacity
+                                style={styles.cancelBtn}
+                                onPress={() => setDeleteModalVisible(false)}
+                                disabled={deleting}
+                            >
+                                <Text style={styles.cancelBtnText}>Cancel</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.deleteConfirmBtn}
+                                onPress={handlePerformDelete}
+                                disabled={deleting}
+                            >
+                                {deleting ? (
+                                    <ActivityIndicator size="small" color="#ffffff" />
+                                ) : (
+                                    <Text style={styles.deleteConfirmBtnText}>Delete</Text>
+                                )}
+                            </TouchableOpacity>
+                        </View>
+                    </Pressable>
+                </Pressable>
+            </Modal>
         </View>
     );
 }
@@ -160,7 +204,7 @@ export default function AdminProducts() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f9fafb', // surface color
+        backgroundColor: '#f9fafb',
     },
     centerComponent: {
         flex: 1,
@@ -172,7 +216,7 @@ const styles = StyleSheet.create({
         padding: 16,
         backgroundColor: '#ffffff',
         borderWidth: 1,
-        borderColor: '#f3f4f6', // gray-100
+        borderColor: '#f3f4f6',
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
@@ -180,10 +224,10 @@ const styles = StyleSheet.create({
     topBarTitle: {
         fontSize: 18,
         fontWeight: '600',
-        color: '#111827', // primary text
+        color: '#111827',
     },
     addButton: {
-        backgroundColor: '#1f2937', // gray-800
+        backgroundColor: '#1f2937',
         paddingHorizontal: 16,
         paddingVertical: 8,
         borderRadius: 9999,
@@ -209,7 +253,7 @@ const styles = StyleSheet.create({
         marginTop: 80,
     },
     secondaryText: {
-        color: '#6b7280', // secondary color
+        color: '#6b7280',
         fontSize: 15,
     },
     productCard: {
@@ -259,13 +303,88 @@ const styles = StyleSheet.create({
     },
     editButton: {
         padding: 8,
-        backgroundColor: '#f1f5f9', // slate-50
+        backgroundColor: '#f1f5f9',
         borderRadius: 9999,
         marginRight: 8,
     },
     deleteButton: {
         padding: 8,
-        backgroundColor: '#f9fafb', // gray-50
+        backgroundColor: '#fef2f2',
         borderRadius: 9999,
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+    },
+    modalContent: {
+        width: '100%',
+        maxWidth: 400,
+        backgroundColor: '#ffffff',
+        borderRadius: 16,
+        padding: 24,
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
+        elevation: 5,
+    },
+    modalHeaderBox: {
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    trashIconBg: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        backgroundColor: '#fee2e2',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 12,
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: '#111827',
+        marginBottom: 6,
+    },
+    modalSubtitle: {
+        fontSize: 14,
+        color: '#6b7280',
+        textAlign: 'center',
+        lineHeight: 20,
+    },
+    modalActions: {
+        flexDirection: 'row',
+        width: '100%',
+        gap: 12,
+    },
+    cancelBtn: {
+        flex: 1,
+        paddingVertical: 10,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#d1d5db',
+        alignItems: 'center',
+    },
+    cancelBtnText: {
+        color: '#374151',
+        fontWeight: '600',
+        fontSize: 14,
+    },
+    deleteConfirmBtn: {
+        flex: 1,
+        backgroundColor: '#ef4444',
+        paddingVertical: 10,
+        borderRadius: 8,
+        alignItems: 'center',
+    },
+    deleteConfirmBtnText: {
+        color: '#ffffff',
+        fontWeight: '600',
+        fontSize: 14,
     },
 });
