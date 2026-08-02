@@ -1,13 +1,13 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
-import { ScrollView, Text, TouchableOpacity, View, Modal, TextInput, ActivityIndicator, StyleSheet, ViewStyle } from "react-native";
+import { ScrollView, Text, TouchableOpacity, View, Modal, TextInput, ActivityIndicator, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import Header from "../../../../components/Header";
-import { COLORS } from "../../../../constants";
+import Header from "../../../components/Header";
+import { COLORS } from "@/assets/constants";
 import type { Address } from "@/assets/constants/types";
 import { useAuth } from "@clerk/expo";
 import Toast from "react-native-toast-message";
-import api from "../../../../constants/api";
+import api from "../../../constants/api";
 
 export default function Addresses() {
     const { getToken } = useAuth();
@@ -205,7 +205,7 @@ export default function Addresses() {
                                             <Ionicons name="pencil-outline" size={20} color={COLORS.secondary || '#6b7280'} />
                                         </TouchableOpacity>
                                         <TouchableOpacity onPress={() => handleDeleteAddress(item._id)} activeOpacity={0.7}>
-                                            <Ionicons name="trash-outline" size={20} color={COLORS.error || '#ff4444'} />
+                                            <Ionicons name="trash-outline" size={20} color="#EF4444" />
                                         </TouchableOpacity>
                                     </View>
                                 </View>

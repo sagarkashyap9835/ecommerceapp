@@ -128,10 +128,8 @@ export default function TabLayout() {
         }}
       />
 
-      {/* Explicitly Hide Sub-Routes / Folders from Bottom Tab Bar */}
+      {/* Hide Admin from Bottom Tab Bar */}
       <Tabs.Screen name="admin" options={{ href: null }} />
-      <Tabs.Screen name="orders" options={{ href: null }} />
-      <Tabs.Screen name="addresses" options={{ href: null }} />
     </Tabs>
   );
 }

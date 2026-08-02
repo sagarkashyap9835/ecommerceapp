@@ -6,6 +6,7 @@ import {
   createOrder,
   getAllOrders,
   updateOrderStatus,
+  createStripeCheckoutSession,
 } from "../controllers/ordersController.js";
 
 import { protect, authorize } from "../middleware/auth.js";
@@ -41,6 +42,10 @@ router.put(
 // Get Logged In User Orders
 // GET /api/orders
 router.get("/", protect, getOrders);
+
+// Create Stripe Session
+// POST /api/orders/create-stripe-session
+router.post("/create-stripe-session", protect, createStripeCheckoutSession);
 
 // Create Order
 // POST /api/orders

@@ -3,11 +3,11 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { Image, ScrollView, Text, View, ActivityIndicator, StyleSheet, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import Header from "../../../../components/Header";
+import Header from "../../../components/Header";
 import { COLORS } from "@/assets/constants";
 import type { Order, Product } from "@/assets/constants/types";
 import { useAuth } from "@clerk/expo";
-import api from "../../../../constants/api";
+import api from "../../../constants/api";
 
 export default function OrderDetails() {
   const { getToken } = useAuth();
@@ -166,7 +166,7 @@ export default function OrderDetails() {
                   </Text>
                   <Text style={styles.productMeta}>Size: {item.size}</Text>
                   <View style={styles.productPriceRow}>
-                    <Text style={styles.productPrice}>${item.price}</Text>
+                    <Text style={styles.productPrice}>₹{item.price}</Text>
                     <Text style={styles.productMeta}>Qty: {item.quantity}</Text>
                   </View>
                 </View>
@@ -217,24 +217,24 @@ export default function OrderDetails() {
           
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Subtotal</Text>
-            <Text style={styles.summaryValue}>${order.subtotal.toFixed(2)}</Text>
+            <Text style={styles.summaryValue}>₹{order.subtotal.toFixed(2)}</Text>
           </View>
           
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Shipping</Text>
-            <Text style={styles.summaryValue}>${order.shippingCost.toFixed(2)}</Text>
+            <Text style={styles.summaryValue}>₹{order.shippingCost.toFixed(2)}</Text>
           </View>
           
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Tax</Text>
-            <Text style={styles.summaryValue}>${order.tax.toFixed(2)}</Text>
+            <Text style={styles.summaryValue}>₹{order.tax.toFixed(2)}</Text>
           </View>
           
           <View style={styles.divider} />
           
           <View style={styles.summaryRow}>
             <Text style={styles.totalLabel}>Total</Text>
-            <Text style={styles.totalValue}>${order.totalAmount.toFixed(2)}</Text>
+            <Text style={styles.totalValue}>₹{order.totalAmount.toFixed(2)}</Text>
           </View>
         </View>
       </ScrollView>
@@ -245,11 +245,12 @@ export default function OrderDetails() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB', // Replace with your surface color if different
+    backgroundColor: '#F9FAFB',
   },
   centered: {
     justifyContent: 'center',
     alignItems: 'center',
+    flex: 1,
   },
   scrollViewContent: {
     flex: 1,
@@ -279,7 +280,6 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     marginBottom: 8,
   },
-  /* Step Tracker Styles */
   stepRow: {
     flexDirection: 'row',
     marginBottom: 16,
@@ -312,7 +312,6 @@ const styles = StyleSheet.create({
     color: COLORS.secondary,
     fontSize: 12,
   },
-  /* Item List Styles */
   productRow: {
     flexDirection: 'row',
   },
@@ -351,7 +350,6 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontWeight: '700',
   },
-  /* Shipping Styles */
   shippingRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -362,7 +360,6 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     flex: 1,
   },
-  /* Payment Summary Styles */
   summaryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',

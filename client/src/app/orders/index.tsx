@@ -3,12 +3,12 @@ import React, { useEffect, useState } from "react";
 import { FlatList, Text, TouchableOpacity, View, ActivityIndicator, ScrollView, Image } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
-import Header from "../../../../components/Header";
+import Header from "../../../components/Header";
 import { COLORS, getStatusColor } from "@/assets/constants";
 import type { Order } from "@/assets/constants/types";
 import { formatDate } from "@/assets/assets";
 import { useAuth } from "@clerk/expo";
-import api from "../../../../constants/api";
+import api from "../../../constants/api";
 
 export default function Orders() {
     const { getToken } = useAuth();
@@ -43,18 +43,28 @@ export default function Orders() {
 
             {loading ? (
                 <View className="flex-1 justify-center items-center">
-                    <ActivityIndicator size="large" color={COLORS.primary} />
+                    <ActivityIndicator size="large" color={COLORS.primary || "#111827"} />
                 </View>
             ) : orders.length === 0 ? (
-                <View className="flex-1 justify-center items-center">
-                    <Text className="text-secondary text-lg">No orders found</Text>
+                <View className="flex-1 justify-center items-center p-6">
+                    <Ionicons name="receipt-outline" size={60} color="#9CA3AF" style={{ marginBottom: 12 }} />
+                    <Text className="text-gray-900 font-bold text-lg mb-1">No Orders Yet</Text>
+                    <Text className="text-gray-500 text-sm text-center mb-6">
+                        When you place an order, it will appear here so you can track its status.
+                    </Text>
+                    <TouchableOpacity
+                        onPress={() => router.push("/shop")}
+                        style={{ backgroundColor: "#111827", paddingHorizontal: 20, paddingVertical: 12, borderRadius: 10 }}
+                    >
+                        <Text style={{ color: "#FFFFFF", fontWeight: "600", fontSize: 14 }}>Start Shopping</Text>
+                    </TouchableOpacity>
                 </View>
             ) : (
                 <FlatList
                     data={orders}
                     keyExtractor={(item) => item._id}
                     contentContainerStyle={{ padding: 16 }}
-                    renderItem={({ item, index }) => (
+                    renderItem={({ item }) => (
                         <TouchableOpacity
                             className="bg-white p-4 rounded-xl mb-4 border border-gray-100 shadow-sm"
                             onPress={() => {
@@ -77,10 +87,8 @@ export default function Orders() {
                                     </Text>
                                 </View>
 
-                                <View className={`px-2 py-1 rounded-full ${item.paymentStatus === 'paid' ? 'bg-green-100' : 'bg-gray-100'
-                                    }`}>
-                                    <Text className={`text-xs font-bold capitalize ${item.paymentStatus === 'paid' ? 'text-green-700' : 'text-gray-700'
-                                        }`}>
+                                <View className={`px-2 py-1 rounded-full ${item.paymentStatus === 'paid' ? 'bg-green-100' : 'bg-gray-100'}`}>
+                                    <Text className={`text-xs font-bold capitalize ${item.paymentStatus === 'paid' ? 'text-green-700' : 'text-gray-700'}`}>
                                         {item.paymentStatus}
                                     </Text>
                                 </View>
@@ -114,7 +122,7 @@ export default function Orders() {
 
                             <View className="flex-row justify-between items-center mt-2 pt-3 border-t border-gray-100">
                                 <Text className="text-secondary">Items: {item.items.length}</Text>
-                                <Text className="text-primary font-bold text-lg">${item.totalAmount.toFixed(2)}</Text>
+                                <Text className="text-primary font-bold text-lg">₹{item.totalAmount.toFixed(2)}</Text>
                             </View>
                         </TouchableOpacity>
                     )}

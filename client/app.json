@@ -37,7 +37,13 @@
       ],
       "@clerk/expo",
       "expo-secure-store",
-      "@stripe/stripe-react-native"
+      [
+        "@stripe/stripe-react-native",
+        {
+          "merchantIdentifier": "merchant.com.ecommerceapp",
+          "enableGooglePay": true
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
