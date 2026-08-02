@@ -8,7 +8,7 @@ import Toast from 'react-native-toast-message';
 import api from "../../../../../constants/api";
 
 export default function AdminProducts() {
-    const {getToken} = useAuth();
+    const { getToken } = useAuth();
     const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -20,23 +20,23 @@ export default function AdminProducts() {
     const [deleting, setDeleting] = useState(false);
 
     const fetchProducts = async () => {
-      try {
-        const {data} = await api.get("/products", {params: {limit: 999}});
-        if(data.success){
-            setProducts(data.data);
+        try {
+            const { data } = await api.get("/products", { params: { limit: 999 } });
+            if (data.success) {
+                setProducts(data.data);
+            }
+        } catch (error: any) {
+            console.error("failed to fetch products");
+            Toast.show({
+                type: "error",
+                text1: "Failed to fetch products",
+                text2: error.response?.data?.message || "Something went wrong"
+            });
         }
-      } catch (error: any) {
-        console.error("failed to fetch products");
-        Toast.show({
-            type: "error",
-            text1: "Failed to fetch products",
-            text2: error.response?.data?.message || "Something went wrong"
-        });
-      }
-      finally {
-        setLoading(false);
-        setRefreshing(false);
-      }
+        finally {
+            setLoading(false);
+            setRefreshing(false);
+        }
     };
 
     useEffect(() => {
@@ -54,40 +54,40 @@ export default function AdminProducts() {
     };
 
     const handlePerformDelete = async () => {
-      if (!productToDelete) return;
-      const deletedName = productToDelete.name;
-      try {
-        setDeleting(true);
-        const token = await getToken();
-        const {data} = await api.delete(`/products/${productToDelete.id}`,
-            {headers: {Authorization: `Bearer ${token}`}}
-        );
-        if(data.success){
-            setDeleteModalVisible(false);
-            setProductToDelete(null);
-            fetchProducts();
+        if (!productToDelete) return;
+        const deletedName = productToDelete.name;
+        try {
+            setDeleting(true);
+            const token = await getToken();
+            const { data } = await api.delete(`/products/${productToDelete.id}`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            if (data.success) {
+                setDeleteModalVisible(false);
+                setProductToDelete(null);
+                fetchProducts();
 
-            setTimeout(() => {
-                Toast.show({
-                    type: "success",
-                    text1: "Product Deleted 🗑️",
-                    text2: `${deletedName} has been deleted successfully!`,
-                    position: "top",
-                    visibilityTime: 3500,
-                    topOffset: 50,
-                });
-            }, 150);
+                setTimeout(() => {
+                    Toast.show({
+                        type: "success",
+                        text1: "Product Deleted 🗑️",
+                        text2: `${deletedName} has been deleted successfully!`,
+                        position: "top",
+                        visibilityTime: 3500,
+                        topOffset: 50,
+                    });
+                }, 150);
+            }
         }
-      } 
-      catch (error: any) {
-        Toast.show({
-              type: "error",
-              text1: "Failed to delete product",
-              text2: error.response?.data?.message || "Something went wrong"
-        });
-      } finally {
-        setDeleting(false);
-      }
+        catch (error: any) {
+            Toast.show({
+                type: "error",
+                text1: "Failed to delete product",
+                text2: error.response?.data?.message || "Something went wrong"
+            });
+        } finally {
+            setDeleting(false);
+        }
     };
 
     if (loading && !refreshing) {

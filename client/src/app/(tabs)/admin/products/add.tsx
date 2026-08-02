@@ -10,8 +10,8 @@ import { useAuth } from "@clerk/expo";
 import api from "../../../../../constants/api";
 
 export default function AddProduct() {
-    const router=useRouter()
-    const {getToken}=useAuth()
+    const router = useRouter()
+    const { getToken } = useAuth()
     const [submitting, setSubmitting] = useState(false);
     const [modalVisible, setModalVisible] = useState(false);
 
@@ -42,7 +42,7 @@ export default function AddProduct() {
     };
 
     // Add Product
-const handleSubmit = async () => {
+    const handleSubmit = async () => {
         if (!name || !price || !category || sizes.length < 1) {
             Toast.show({
                 type: 'error',
@@ -277,7 +277,7 @@ const handleSubmit = async () => {
                     disabled={submitting}
                     activeOpacity={0.8}
                     style={[
-                        styles.submitButton, 
+                        styles.submitButton,
                         submitting && styles.submitButtonDisabled
                     ]}
                 >

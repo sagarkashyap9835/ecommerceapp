@@ -88,13 +88,13 @@ export default function Shop() {
             }
 
             const { data } = await api.get('/products', { params: queryparams });
-            
+
             if (pageNumber === 1 || isNewFilter) {
                 setProducts(data.data);
             } else {
                 setProducts(prev => [...prev, ...data.data]);
             }
-            
+
             setHasMore(data.pagination.page < data.pagination.pages);
             setPage(pageNumber);
         } catch (error) {
@@ -178,20 +178,20 @@ export default function Shop() {
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
-            <Header 
-                showBack 
-                showCart 
+            <Header
+                showBack
+                showCart
                 showSearch
                 searchValue={searchQuery}
                 onSearchChange={setSearchQuery}
                 onFilterPress={openFilterModal}
                 isFilterActive={isFilterActive}
             />
-            
+
             {/* 1. Category Horizontal Scroll Pills */}
             <View style={styles.categoryContainer}>
-                <ScrollView 
-                    horizontal 
+                <ScrollView
+                    horizontal
                     showsHorizontalScrollIndicator={false}
                     contentContainerStyle={styles.categoryScroll}
                 >
@@ -207,10 +207,10 @@ export default function Shop() {
                                     isSelected && styles.categoryPillActive
                                 ]}
                             >
-                                <Ionicons 
-                                    name={cat.icon as any} 
-                                    size={16} 
-                                    color={isSelected ? '#ffffff' : '#4b5563'} 
+                                <Ionicons
+                                    name={cat.icon as any}
+                                    size={16}
+                                    color={isSelected ? '#ffffff' : '#4b5563'}
                                     style={{ marginRight: 6 }}
                                 />
                                 <Text style={[
