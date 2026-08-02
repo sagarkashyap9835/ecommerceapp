@@ -12,37 +12,42 @@ export default function CategoryItem({
   return (
     <TouchableOpacity
       onPress={onPress}
-      activeOpacity={0.8}
+      activeOpacity={0.75}
       style={{
         alignItems: "center",
-        marginRight: 14,
+        marginRight: 16,
       }}
     >
       <View
         style={{
-          width: 64,
-          height: 64,
-          borderRadius: 32,
+          width: 52,
+          height: 52,
+          borderRadius: 26,
           justifyContent: "center",
           alignItems: "center",
-          backgroundColor: isSelected ? COLORS.accent : "#F5F5F5",
+          backgroundColor: isSelected ? (COLORS.primary || "#111827") : "#F3F4F6",
           borderWidth: 1,
-          borderColor: isSelected ? COLORS.accent : "#E5E7EB",
+          borderColor: isSelected ? (COLORS.primary || "#111827") : "#E5E7EB",
+          elevation: isSelected ? 3 : 0,
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: isSelected ? 0.12 : 0,
+          shadowRadius: 4,
         }}
       >
         <Ionicons
           name={item.icon as any}
-          size={28}
-          color={isSelected ? "#FFFFFF" : COLORS.primary}
+          size={20}
+          color={isSelected ? "#FFFFFF" : "#374151"}
         />
       </View>
 
       <Text
         style={{
-          marginTop: 8,
-          fontSize: 14,
-          fontWeight: "600",
-          color: isSelected ? COLORS.accent : COLORS.primary,
+          marginTop: 6,
+          fontSize: 12,
+          fontWeight: isSelected ? "700" : "600",
+          color: isSelected ? (COLORS.primary || "#111827") : "#4B5563",
         }}
       >
         {item.name}

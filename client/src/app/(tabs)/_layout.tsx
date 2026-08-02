@@ -1,95 +1,166 @@
-import { View } from 'react-native'
-import React from 'react'
-import { Tabs } from 'expo-router'
-import { Ionicons, Feather } from '@expo/vector-icons'
-import { COLORS } from '@/assets/constants'
+import { View, Text, StyleSheet, Platform } from "react-native";
+import React from "react";
+import { Tabs } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { COLORS } from "@/assets/constants";
+import { useCart } from "../../../context/CartContext";
 
 export default function TabLayout() {
+  const { itemCount } = useCart();
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: COLORS.primary,
+        tabBarActiveTintColor: COLORS.primary || "#111827",
         tabBarInactiveTintColor: "#9CA3AF",
-        tabBarShowLabel: false,
+        tabBarShowLabel: true,
+        tabBarLabelStyle: {
+          fontSize: 10,
+          fontWeight: "600",
+          marginTop: -2,
+          marginBottom: 4,
+        },
         tabBarStyle: {
-          backgroundColor: "#ffffff",
+          backgroundColor: "#FFFFFF",
           borderTopWidth: 1,
           borderTopColor: "#F3F4F6",
-          height: 64,
-          paddingTop: 8,
-          paddingBottom: 8,
-          elevation: 5,
-          shadowColor: "#000",
-          shadowOpacity: 0.05,
-          shadowRadius: 10,
-          shadowOffset: { width: 0, height: -2 },
-        }
+          height: Platform.OS === "ios" ? 84 : 64,
+          paddingTop: 6,
+          paddingBottom: Platform.OS === "ios" ? 20 : 6,
+          elevation: 10,
+          shadowColor: "#000000",
+          shadowOpacity: 0.06,
+          shadowRadius: 12,
+          shadowOffset: { width: 0, height: -4 },
+        },
       }}
     >
+      {/* 1. Home Tab */}
       <Tabs.Screen
         name="index"
         options={{
+          title: "Home",
           tabBarIcon: ({ color, focused }) => (
-            <View style={{ alignItems: 'center', justifyContent: 'center', flex: 1 }}>
-              <Ionicons name={focused ? 'home' : 'home-outline'} size={24} color={color} />
+            <View style={styles.iconContainer}>
+              <Ionicons
+                name={focused ? "home" : "home-outline"}
+                size={22}
+                color={color}
+              />
             </View>
-          )
+          ),
         }}
       />
 
+      {/* 2. Shop Tab */}
+      <Tabs.Screen
+        name="shop"
+        options={{
+          title: "Shop",
+          tabBarIcon: ({ color, focused }) => (
+            <View style={styles.iconContainer}>
+              <Ionicons
+                name={focused ? "bag-handle" : "bag-handle-outline"}
+                size={22}
+                color={color}
+              />
+            </View>
+          ),
+        }}
+      />
+
+      {/* 3. Cart Tab (With Live Badge) */}
       <Tabs.Screen
         name="cart"
         options={{
+          title: "Cart",
           tabBarIcon: ({ color, focused }) => (
-            <View style={{ alignItems: 'center', justifyContent: 'center', flex: 1 }}>
-              <Feather name={focused ? 'shopping-cart' : 'shopping-cart'} size={24} color={color} />
+            <View style={styles.iconContainer}>
+              <Ionicons
+                name={focused ? "cart" : "cart-outline"}
+                size={23}
+                color={color}
+              />
+              {itemCount > 0 && (
+                <View style={styles.cartBadge}>
+                  <Text style={styles.cartBadgeText}>
+                    {itemCount > 99 ? "99+" : itemCount}
+                  </Text>
+                </View>
+              )}
             </View>
-          )
+          ),
         }}
       />
 
+      {/* 4. Wishlist Tab */}
       <Tabs.Screen
         name="favourite"
         options={{
+          title: "Wishlist",
           tabBarIcon: ({ color, focused }) => (
-            <View style={{ alignItems: 'center', justifyContent: 'center', flex: 1 }}>
-              <Ionicons name={focused ? 'heart' : 'heart-outline'} size={24} color={color} />
+            <View style={styles.iconContainer}>
+              <Ionicons
+                name={focused ? "heart" : "heart-outline"}
+                size={22}
+                color={focused ? "#EF4444" : color}
+              />
             </View>
-          )
+          ),
         }}
       />
 
+      {/* 5. Profile Tab */}
       <Tabs.Screen
         name="profile"
         options={{
+          title: "Profile",
           tabBarIcon: ({ color, focused }) => (
-            <View style={{ alignItems: 'center', justifyContent: 'center', flex: 1 }}>
-              <Ionicons name={focused ? 'person' : 'person-outline'} size={24} color={color} />
+            <View style={styles.iconContainer}>
+              <Ionicons
+                name={focused ? "person" : "person-outline"}
+                size={22}
+                color={color}
+              />
             </View>
-          )
+          ),
         }}
       />
 
-      {/* Hide other routes from the bottom tab bar */}
-      <Tabs.Screen
-        name="admin"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="orders/index"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="addresses/index"
-        options={{
-          href: null,
-        }}
-      />
+      {/* Explicitly Hide Sub-Routes / Folders from Bottom Tab Bar */}
+      <Tabs.Screen name="admin" options={{ href: null }} />
+      <Tabs.Screen name="orders" options={{ href: null }} />
+      <Tabs.Screen name="addresses" options={{ href: null }} />
     </Tabs>
-  )
+  );
 }
+
+const styles = StyleSheet.create({
+  iconContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
+    width: 32,
+    height: 28,
+  },
+  cartBadge: {
+    position: "absolute",
+    top: -4,
+    right: -8,
+    backgroundColor: "#EF4444",
+    borderRadius: 9,
+    minWidth: 16,
+    height: 16,
+    paddingHorizontal: 4,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1.5,
+    borderColor: "#FFFFFF",
+  },
+  cartBadgeText: {
+    color: "#FFFFFF",
+    fontSize: 9,
+    fontWeight: "800",
+  },
+});

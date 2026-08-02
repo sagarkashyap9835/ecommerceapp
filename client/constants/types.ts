@@ -80,6 +80,10 @@ export type HeaderProps = {
     showCart?: boolean;
     showMenu?: boolean;
     showLogo?: boolean;
+    searchValue?: string;
+    onSearchChange?: (text: string) => void;
+    onFilterPress?: () => void;
+    isFilterActive?: boolean;
 };
 
 export interface Address {

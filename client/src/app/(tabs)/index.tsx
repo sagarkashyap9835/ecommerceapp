@@ -178,8 +178,8 @@ fetchProducts()
             flexDirection: "row",
             justifyContent: "center",
             alignItems: "center",
-            marginTop: 6,
-            marginBottom: 24,
+            marginTop: 4,
+            marginBottom: 16,
           }}
         >
           {BANNERS.map((_, index) => (
@@ -207,28 +207,28 @@ fetchProducts()
           ))}
         </View>
 
-{/* Categories */}
-<View style={{ marginTop: 24, marginBottom: 24 }}>
-  {/* Heading */}
-  <View
-    style={{
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      marginBottom: 16,
-    }}
-  >
-    <Text
-      style={{
-        fontSize: 22,
-        fontWeight: "700",
-        color: COLORS.primary,
-      }}
-    >
-      Categories
-    </Text>
-
-  </View>
+        {/* Categories Section */}
+        <View style={{ marginTop: 4, marginBottom: 24 }}>
+          {/* Heading */}
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: 12,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 20,
+                fontWeight: "800",
+                color: "#111827",
+                letterSpacing: -0.3,
+              }}
+            >
+              Categories
+            </Text>
+          </View>
 
   {/* Categories List */}
   <ScrollView

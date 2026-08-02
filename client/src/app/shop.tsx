@@ -163,37 +163,32 @@ export default function Shop() {
         setFilterModalVisible(false);
     };
 
-    const isFilterActive = sortBy !== 'newest' || isBogoFilter || minPrice !== '' || maxPrice !== '' || selectedCategory !== 'All';
+    // Real-time instant letter matching filter for 0ms typing response
+    const liveFilteredProducts = React.useMemo(() => {
+        if (!searchQuery.trim()) return products;
+        const q = searchQuery.toLowerCase().trim();
+        return products.filter(p =>
+            p.name.toLowerCase().includes(q) ||
+            (p.description && p.description.toLowerCase().includes(q)) ||
+            (p.category && p.category.toLowerCase().includes(q))
+        );
+    }, [products, searchQuery]);
+
+    const isFilterActive = sortBy !== 'newest' || isBogoFilter || minPrice !== '' || maxPrice !== '' || selectedCategory !== 'All' || searchQuery.trim() !== '';
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
-            <Header title='Shop' showBack showCart />
+            <Header 
+                showBack 
+                showCart 
+                showSearch
+                searchValue={searchQuery}
+                onSearchChange={setSearchQuery}
+                onFilterPress={openFilterModal}
+                isFilterActive={isFilterActive}
+            />
             
-            {/* 1. Search Bar & Filter Button */}
-            <View style={styles.searchContainer}>
-                <View style={styles.searchWrapper}>
-                    <Ionicons name='search' size={20} color={COLORS.secondary} style={styles.searchIcon} />
-                    <TextInput 
-                        style={styles.searchInput}
-                        placeholder='Search Products by name...' 
-                        value={searchQuery}
-                        onChangeText={setSearchQuery}
-                        returnKeyType='search'
-                        placeholderTextColor="#888"
-                    />
-                    {searchQuery.length > 0 && (
-                        <TouchableOpacity onPress={() => setSearchQuery('')} style={{ marginRight: 6 }}>
-                            <Ionicons name='close-circle' size={18} color="#9ca3af" />
-                        </TouchableOpacity>
-                    )}
-                    <TouchableOpacity onPress={openFilterModal} activeOpacity={0.7} style={styles.optionsBtn}>
-                        <Ionicons name='options-outline' size={22} color={isFilterActive ? '#ef4444' : COLORS.secondary} />
-                        {isFilterActive && <View style={styles.activeDot} />}
-                    </TouchableOpacity>
-                </View>
-            </View>
-
-            {/* 2. Category Horizontal Scroll Pills */}
+            {/* 1. Category Horizontal Scroll Pills */}
             <View style={styles.categoryContainer}>
                 <ScrollView 
                     horizontal 
@@ -235,6 +230,14 @@ export default function Shop() {
                 <View style={styles.activeFiltersBar}>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.activeFiltersScroll}>
                         <Text style={styles.activeFiltersLabel}>Filters:</Text>
+                        {searchQuery.trim() !== '' && (
+                            <View style={styles.filterChip}>
+                                <Text style={styles.filterChipText}>Search: "{searchQuery}"</Text>
+                                <TouchableOpacity onPress={() => setSearchQuery('')}>
+                                    <Ionicons name="close" size={14} color="#374151" style={{ marginLeft: 4 }} />
+                                </TouchableOpacity>
+                            </View>
+                        )}
                         {selectedCategory !== 'All' && (
                             <View style={styles.filterChip}>
                                 <Text style={styles.filterChipText}>Cat: {selectedCategory}</Text>
@@ -280,7 +283,7 @@ export default function Shop() {
 
             {/* 3. Product Grid */}
             <FlatList
-                data={loading && page === 1 ? skeletonProducts : products}
+                data={loading && page === 1 ? skeletonProducts : liveFilteredProducts}
                 keyExtractor={(item, index) => item._id || index.toString()}
                 numColumns={2}
                 columnWrapperStyle={styles.row}

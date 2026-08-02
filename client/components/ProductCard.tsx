@@ -38,32 +38,41 @@ const isLiked=isInWishlist(product._id)
   asChild
 >
     <TouchableOpacity
-      activeOpacity={0.9}
-      className="bg-white rounded-2xl overflow-hidden bg-white"
+      activeOpacity={0.88}
+      className="bg-white rounded-2xl overflow-hidden border border-gray-100"
       style={{
-        elevation: 3,
+        elevation: 4,
         shadowColor: "#000",
-        shadowOpacity: 0.08,
-        shadowRadius: 5,
+        shadowOpacity: 0.06,
+        shadowRadius: 8,
         shadowOffset: {
           width: 0,
-          height: 2,
+          height: 3,
         },
       }}
     >
           {/* Product Image */}
           <View className="relative">
             <Image
-              source={{ uri: product.images[0] }}
+              source={{ uri: product.images && product.images.length > 0 ? product.images[0] : 'https://placehold.co/180x180/png?text=Product' }}
               style={{
                 width: "100%",
-                height: 180,
+                height: 175,
               }}
               resizeMode="cover"
             />
 
+            {/* Out of stock overlay */}
+            {product.stock !== undefined && product.stock <= 0 && (
+              <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' }}>
+                <View style={{ backgroundColor: '#DC2626', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 }}>
+                  <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '700' }}>Out of Stock</Text>
+                </View>
+              </View>
+            )}
+
             {/* Favourite */}
-            <TouchableOpacity className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white items-center justify-center" 
+            <TouchableOpacity className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/90 items-center justify-center shadow-sm" 
              onPress={(e) => {
     e.stopPropagation();
     toggleWishlist(product);

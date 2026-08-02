@@ -57,7 +57,12 @@ export default function Orders() {
                     renderItem={({ item, index }) => (
                         <TouchableOpacity
                             className="bg-white p-4 rounded-xl mb-4 border border-gray-100 shadow-sm"
-                            onPress={() => router.push(`/orders/${item._id}`)}
+                            onPress={() => {
+                                const targetId = item._id || (item as any).id;
+                                if (targetId) {
+                                    router.push(`/orders/${targetId}`);
+                                }
+                            }}
                         >
                             <View className="flex-row justify-between mb-2">
                                 <Text className="text-primary font-bold">Order #{item.orderNumber}</Text>

@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { Image, ScrollView, Text, View, ActivityIndicator, StyleSheet } from "react-native";
+import { Image, ScrollView, Text, View, ActivityIndicator, StyleSheet, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Header from "../../../../components/Header";
 import { COLORS } from "@/assets/constants";
@@ -12,10 +12,17 @@ import api from "../../../../constants/api";
 export default function OrderDetails() {
   const { getToken } = useAuth();
   const { id } = useLocalSearchParams();
+  const router = useRouter();
+
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchOrderDetails = async () => {
+    if (!id || id === "undefined" || id === "null") {
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       const token = await getToken();
@@ -33,21 +40,38 @@ export default function OrderDetails() {
   };
 
   useEffect(() => {
-    if (id) fetchOrderDetails();
+    fetchOrderDetails();
   }, [id]);
 
   if (loading) {
     return (
       <SafeAreaView style={[styles.container, styles.centered]}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
+        <ActivityIndicator size="large" color={COLORS.primary || "#111827"} />
       </SafeAreaView>
     );
   }
 
-  if (!order) {
+  if (!order || !id || id === "undefined" || id === "null") {
     return (
-      <SafeAreaView style={[styles.container, styles.centered]}>
-        <Text>Order not found</Text>
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <Header title="Order Details" showBack />
+        <View style={styles.centered}>
+          <Ionicons name="receipt-outline" size={60} color="#9CA3AF" style={{ marginBottom: 12 }} />
+          <Text style={{ fontSize: 18, fontWeight: "700", color: "#111827", marginBottom: 6 }}>
+            Order Not Found
+          </Text>
+          <Text style={{ fontSize: 13, color: "#6B7280", textAlign: "center", maxWidth: 280, marginBottom: 20, lineHeight: 18 }}>
+            We could not find the requested order. Please check your order history.
+          </Text>
+          <TouchableOpacity
+            style={{ backgroundColor: "#111827", paddingHorizontal: 20, paddingVertical: 12, borderRadius: 10 }}
+            onPress={() => router.replace("/orders" as any)}
+          >
+            <Text style={{ color: "#FFFFFF", fontWeight: "600", fontSize: 14 }}>
+              Go to My Orders
+            </Text>
+          </TouchableOpacity>
+        </View>
       </SafeAreaView>
     );
   }
