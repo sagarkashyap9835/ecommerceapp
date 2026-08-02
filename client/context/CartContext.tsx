@@ -116,6 +116,32 @@ export function CartProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    // Check if product is out of stock
+    if (product.stock !== undefined && product.stock <= 0) {
+      Toast.show({
+        type: "error",
+        text1: "Out of Stock ⚠️",
+        text2: "This product is currently out of stock.",
+      });
+      return;
+    }
+
+    // Check if total quantity in cart would exceed stock
+    const existingCartItem = cartItems.find(
+      (i) => i.productId === product._id && (i.size || "") === (size || "")
+    );
+    const currentQtyInCart = existingCartItem ? existingCartItem.quantity : 0;
+    if (product.stock !== undefined && currentQtyInCart + 1 > product.stock) {
+      Toast.show({
+        type: "error",
+        text1: "Stock Limit Reached ⚠️",
+        text2: product.stock > 0
+          ? `Only ${product.stock} units available in stock.`
+          : "This product is currently out of stock.",
+      });
+      return;
+    }
+
     try {
       setIsLoading(true);
       const token = await getToken();
@@ -140,11 +166,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
         });
       }
     } catch (error: any) {
-      console.error("Error adding to cart:", error);
+      const serverMessage = error.response?.data?.message || "Could not add item to cart";
+      const isOutOfStock = serverMessage.toLowerCase().includes("stock") || serverMessage.toLowerCase().includes("out of stock");
+
       Toast.show({
         type: "error",
-        text1: "Failed to Add",
-        text2: error.response?.data?.message || "Could not add item to cart",
+        text1: isOutOfStock ? "Out of Stock ⚠️" : "Cannot Add to Cart",
+        text2: serverMessage,
       });
     } finally {
       setIsLoading(false);

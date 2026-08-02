@@ -671,6 +671,14 @@ export default function ProductDetails() {
           ) : (
             <TouchableOpacity
               onPress={async () => {
+                if (product.stock <= 0) {
+                  Toast.show({
+                    type: "error",
+                    text1: "Out of Stock ⚠️",
+                    text2: "This product is currently out of stock.",
+                  });
+                  return;
+                }
                 if (product.sizes && product.sizes.length > 0 && !selectedSize) {
                   Toast.show({
                     type: "info",
@@ -683,16 +691,16 @@ export default function ProductDetails() {
               }}
               style={{
                 height: 52,
-                backgroundColor: "#111827",
+                backgroundColor: product.stock <= 0 ? "#9CA3AF" : "#111827",
                 borderRadius: 26,
                 justifyContent: "center",
                 alignItems: "center",
                 flexDirection: "row",
               }}
             >
-              <Ionicons name="bag-handle-outline" size={18} color="#fff" />
+              <Ionicons name={product.stock <= 0 ? "close-circle-outline" : "bag-handle-outline"} size={18} color="#fff" />
               <Text style={{ color: "#fff", fontSize: 15, fontWeight: "600", marginLeft: 8 }}>
-                Add to Cart
+                {product.stock <= 0 ? "Out of Stock" : "Add to Cart"}
               </Text>
             </TouchableOpacity>
           )}
