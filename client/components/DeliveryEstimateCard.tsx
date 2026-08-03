@@ -73,8 +73,8 @@ export default function DeliveryEstimateCard({
         </View>
 
         <View style={styles.guaranteeItem}>
-          <Ionicons name="sync-outline" size={16} color="#4B5563" />
-          <Text style={styles.guaranteeText}>7-Day Replacement</Text>
+          <Ionicons name="sync-outline" size={16} color="#0284C7" />
+          <Text style={[styles.guaranteeText, { color: "#0284C7", fontWeight: "700" }]}>2-Day Easy Replacement</Text>
         </View>
 
         <View style={styles.guaranteeItem}>

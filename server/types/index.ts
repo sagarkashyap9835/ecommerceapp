@@ -61,6 +61,15 @@ export interface IOrder extends Document {
     notes?: string;
     deliveredAt?: Date;
     estimatedDeliveryDate?: Date;
+    cancelledAt?: Date;
+    cancellationReason?: string;
+    refundId?: string;
+    refundAmount?: number;
+    replacementRequest?: {
+        status: "none" | "pending" | "approved" | "rejected";
+        reason: string;
+        requestedAt: Date;
+    };
     createdAt: Date;
     updatedAt: Date;
 }

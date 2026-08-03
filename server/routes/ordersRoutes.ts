@@ -7,6 +7,8 @@ import {
   getAllOrders,
   updateOrderStatus,
   createRazorpayOrder,
+  cancelOrder,
+  requestReplacement,
 } from "../controllers/ordersController.js";
 
 import { protect, authorize } from "../middleware/auth.js";
@@ -50,6 +52,14 @@ router.post("/create-razorpay-order", protect, createRazorpayOrder);
 // Create Order
 // POST /api/orders
 router.post("/", protect, createOrder);
+
+// Cancel Order (User)
+// PUT /api/orders/:id/cancel
+router.put("/:id/cancel", protect, cancelOrder);
+
+// Request 2-Day Replacement (User)
+// POST /api/orders/:id/replacement
+router.post("/:id/replacement", protect, requestReplacement);
 
 // Get Single Order
 // GET /api/orders/:id

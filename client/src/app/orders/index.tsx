@@ -81,18 +81,26 @@ export default function Orders() {
                             </View>
 
                             {/* Status Badges */}
-                            <View className="flex-row gap-2 mb-3">
+                            <View className="flex-row gap-2 mb-3 flex-wrap">
                                 <View className={`px-2 py-1 rounded-full ${getStatusColor(item.orderStatus)}`}>
                                     <Text className={`text-xs font-bold capitalize`}>
                                         {item.orderStatus}
                                     </Text>
                                 </View>
 
-                                <View className={`px-2 py-1 rounded-full ${item.paymentStatus === 'paid' ? 'bg-green-100' : 'bg-gray-100'}`}>
-                                    <Text className={`text-xs font-bold capitalize ${item.paymentStatus === 'paid' ? 'text-green-700' : 'text-gray-700'}`}>
-                                        {item.paymentStatus}
+                                <View className={`px-2 py-1 rounded-full ${item.paymentStatus === 'paid' ? 'bg-green-100' : item.paymentStatus === 'refunded' ? 'bg-emerald-100' : 'bg-gray-100'}`}>
+                                    <Text className={`text-xs font-bold capitalize ${item.paymentStatus === 'paid' ? 'text-green-700' : item.paymentStatus === 'refunded' ? 'text-emerald-800' : 'text-gray-700'}`}>
+                                        {item.paymentStatus === 'refunded' ? '💰 Refunded' : item.paymentStatus}
                                     </Text>
                                 </View>
+
+                                {item.replacementRequest && item.replacementRequest.status !== 'none' ? (
+                                    <View className="px-2 py-1 rounded-full bg-sky-100 border border-sky-200">
+                                        <Text className="text-xs font-bold text-sky-800 capitalize">
+                                            🔄 Replacement ({item.replacementRequest.status})
+                                        </Text>
+                                    </View>
+                                ) : null}
                             </View>
 
                             <View className="flex-row justify-between items-center mb-2">

@@ -130,6 +130,15 @@ export interface Order {
     totalAmount: number;
     notes?: string;
     deliveredAt?: string;
+    cancelledAt?: string;
+    cancellationReason?: string;
+    refundId?: string;
+    refundAmount?: number;
+    replacementRequest?: {
+        status: "none" | "pending" | "approved" | "rejected";
+        reason: string;
+        requestedAt: string;
+    };
     createdAt: string;
 }
 

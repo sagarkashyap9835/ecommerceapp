@@ -182,3 +182,91 @@ export const getAllOrders = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 };
+// Cancel Order (User Feature with Stock Restoration & Refund)
+export const cancelOrder = async (req, res) => {
+    try {
+        const { reason } = req.body;
+        const order = await Order.findById(req.params.id);
+        if (!order) {
+            return res.status(404).json({ success: false, message: "Order not found" });
+        }
+        if (order.user.toString() !== req.user._id.toString() && req.user.role !== "admin") {
+            return res.status(403).json({ success: false, message: "Not authorized to cancel this order" });
+        }
+        if (order.orderStatus !== "placed" && order.orderStatus !== "processing") {
+            return res.status(400).json({
+                success: false,
+                message: `Order cannot be cancelled because it is already ${order.orderStatus}.`,
+            });
+        }
+        // Restore Stock Quantities
+        for (const item of order.items) {
+            await Product.findByIdAndUpdate(item.product, {
+                $inc: { stock: item.quantity },
+            });
+        }
+        order.orderStatus = "cancelled";
+        order.cancelledAt = new Date();
+        order.cancellationReason = reason || "Cancelled by customer";
+        // Handle Refund for prepaid orders
+        if (order.paymentStatus === "paid") {
+            order.paymentStatus = "refunded";
+            order.refundAmount = order.totalAmount;
+            order.refundId = "ref_test_" + Date.now();
+        }
+        await order.save();
+        res.json({
+            success: true,
+            data: order,
+            message: order.paymentStatus === "refunded"
+                ? `Order cancelled successfully. Refund of ₹${order.totalAmount} initiated.`
+                : "Order cancelled successfully.",
+        });
+    }
+    catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+// Request 2-Day Replacement (User Feature)
+export const requestReplacement = async (req, res) => {
+    try {
+        const { reason } = req.body;
+        const order = await Order.findById(req.params.id);
+        if (!order) {
+            return res.status(404).json({ success: false, message: "Order not found" });
+        }
+        if (order.user.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ success: false, message: "Not authorized to request replacement" });
+        }
+        if (order.orderStatus !== "delivered") {
+            return res.status(400).json({
+                success: false,
+                message: "Replacement can only be requested for delivered orders.",
+            });
+        }
+        // Validate 2-Day Replacement Window (48 hours)
+        const deliveryTime = order.deliveredAt ? new Date(order.deliveredAt).getTime() : new Date(order.updatedAt).getTime();
+        const twoDaysInMs = 2 * 24 * 60 * 60 * 1000;
+        const isEligible = (Date.now() - deliveryTime) <= twoDaysInMs;
+        if (!isEligible) {
+            return res.status(400).json({
+                success: false,
+                message: "The 2-day replacement window for this order has expired.",
+            });
+        }
+        order.replacementRequest = {
+            status: "pending",
+            reason: reason || "Defect / Size issue reported by customer",
+            requestedAt: new Date(),
+        };
+        await order.save();
+        res.json({
+            success: true,
+            data: order,
+            message: "2-Day Replacement request submitted successfully. Our team will contact you shortly.",
+        });
+    }
+    catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};

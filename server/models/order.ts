@@ -33,6 +33,15 @@ const orderSchema = new mongoose.Schema<IOrder>({
     notes: String,
     deliveredAt: Date,
     estimatedDeliveryDate: Date,
+    cancelledAt: Date,
+    cancellationReason: String,
+    refundId: String,
+    refundAmount: Number,
+    replacementRequest: {
+        status: { type: String, enum: ["none", "pending", "approved", "rejected"], default: "none" },
+        reason: String,
+        requestedAt: Date,
+    },
 },{timestamps: true})
 
 const Order = mongoose.model<IOrder>("Order", orderSchema)
