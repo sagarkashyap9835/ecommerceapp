@@ -12,12 +12,13 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        primary: "#111111",
-        secondary: "#666666",
-        surface: "#F7F7F7",
-        accent: "#FF4C3B",
-        border: "#EEEEEE",
-        error: "#FF4444",
+        primary: "#EC4899",
+        secondary: "#2563EB",
+        surface: "#FDF2F8",
+        accent: "#DB2777",
+        brandCyan: "#0284C7",
+        border: "#FBCFE8",
+        error: "#EF4444",
       }
     },
   },

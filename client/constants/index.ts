@@ -1,11 +1,12 @@
 export const COLORS = {
-    primary: "#111111",
-    secondary: "#666666",
+    primary: "#EC4899",
+    secondary: "#2563EB",
     background: "#FFFFFF",
-    surface: "#F7F7F7",
-    accent: "#FF4C3B",
-    border: "#EEEEEE",
-    error: "#FF4444",
+    surface: "#FDF2F8",
+    accent: "#DB2777",
+    brandCyan: "#0284C7",
+    border: "#FBCFE8",
+    error: "#EF4444",
 };
 
 export const CATEGORIES = [
