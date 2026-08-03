@@ -1,328 +1,693 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { ScrollView, Text, TextInput, TouchableOpacity, View, Switch, Image, ActivityIndicator, Platform, Modal, FlatList, Pressable } from "react-native";
-import Toast from 'react-native-toast-message';
-import { COLORS, CATEGORIES } from "@/assets/constants";
+import {
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+  Switch,
+  Image,
+  ActivityIndicator,
+  Platform,
+  Modal,
+  FlatList,
+  Pressable,
+  StyleSheet,
+} from "react-native";
+import Toast from "react-native-toast-message";
+import { COLORS } from "@/assets/constants";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useAuth } from "@clerk/expo";
 import api from "../../../../../../constants/api";
-// import { dummyProducts } from "@/assets/assets";
+import { Category } from "@/assets/constants/types";
 
 export default function EditProduct() {
-    const { getToken } = useAuth()
-    const { id } = useLocalSearchParams();
-    const router = useRouter();
+  const { getToken } = useAuth();
+  const { id } = useLocalSearchParams();
+  const router = useRouter();
 
-    const [loading, setLoading] = useState(true);
-    const [submitting, setSubmitting] = useState(false);
-    const [modalVisible, setModalVisible] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
-    // Form State
-    const [name, setName] = useState("");
-    const [description, setDescription] = useState("");
-    const [price, setPrice] = useState("");
-    const [stock, setStock] = useState("");
-    const [category, setCategory] = useState("");
-    const [sizes, setSizes] = useState("");
-    const [isFeatured, setIsFeatured] = useState(false);
-    const [isBogo, setIsBogo] = useState(false);
+  // Dynamic Categories list
+  const [categoriesList, setCategoriesList] = useState<Category[]>([]);
 
-    // Image State
-    const [existingImages, setExistingImages] = useState<string[]>([]);
-    const [newImages, setNewImages] = useState<string[]>([]);
+  // Modals state
+  const [categoryModalVisible, setCategoryModalVisible] = useState(false);
+  const [subcategoryModalVisible, setSubcategoryModalVisible] = useState(false);
 
-    useEffect(() => {
-        const fetchProduct = async () => {
-            try {
-                const { data } = await api.get(`/products/${id}`)
-                if (data.success) {
-                    const product = data.data
-                    setName(product.name);
-                    setDescription(product.description || "");
-                    setPrice(product.price.toString());
-                    setStock(product.stock.toString());
-                    setCategory(typeof product.category === 'object' ? product.category.name : product.category);
-                    setIsFeatured(product.isFeatured);
-                    setIsBogo(!!product.isBogo);
+  // Form State
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [price, setPrice] = useState("");
+  const [stock, setStock] = useState("");
 
-                    if (product.sizes) setSizes(Array.isArray(product.sizes) ? product.sizes.join(", ") : product.sizes);
+  // Dependent Taxonomy State
+  const [selectedCategoryObj, setSelectedCategoryObj] = useState<Category | null>(null);
+  const [category, setCategory] = useState("");
+  const [subcategory, setSubcategory] = useState("");
+  const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
 
-                    if (product.images && Array.isArray(product.images)) {
-                        setExistingImages(product.images);
-                    } else if (product.images) {
-                        setExistingImages([product.images]);
-                    }
-                }
+  const [isFeatured, setIsFeatured] = useState(false);
+  const [isBogo, setIsBogo] = useState(false);
 
+  // Image State
+  const [existingImages, setExistingImages] = useState<string[]>([]);
+  const [newImages, setNewImages] = useState<string[]>([]);
 
-            } catch (error: any) {
-                console.error("Failed to fetch product:", error);
-                Toast.show({
-                    type: 'error',
-                    text1: 'Failed to Fetch Product',
-                    text2: error.response?.data?.message || "Something went wrong"
-                });
-                if (router.canGoBack()) {
-                    router.back();
-                } else {
-                    router.replace("/admin/products");
-                }
-            } finally {
-                setLoading(false);
-            }
-        };
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch Categories taxonomy
+        const { data: catRes } = await api.get("/categories");
+        let fetchedCategories: Category[] = [];
+        if (catRes.success) {
+          fetchedCategories = catRes.data;
+          setCategoriesList(fetchedCategories);
+        }
 
-        if (id) fetchProduct();
-    }, [id]);
+        // Fetch target Product
+        const { data: prodRes } = await api.get(`/products/${id}`);
+        if (prodRes.success) {
+          const product = prodRes.data;
+          setName(product.name || "");
+          setDescription(product.description || "");
+          setPrice(product.price ? product.price.toString() : "");
+          setStock(product.stock !== undefined ? product.stock.toString() : "0");
+          setIsFeatured(!!product.isFeatured);
+          setIsBogo(!!product.isBogo);
 
-    const pickImages = async () => {
-        const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ['images'],
-            allowsMultipleSelection: true,
-            selectionLimit: 5 - (existingImages.length + newImages.length),
-            quality: 0.8,
+          const catName = typeof product.category === "object" ? product.category.name : product.category;
+          setCategory(catName || "");
+          setSubcategory(product.subcategory || "");
+
+          if (product.sizes) {
+            setSelectedSizes(Array.isArray(product.sizes) ? product.sizes : [product.sizes]);
+          }
+
+          if (product.images && Array.isArray(product.images)) {
+            setExistingImages(product.images);
+          } else if (product.images) {
+            setExistingImages([product.images]);
+          }
+
+          // Match category object
+          const matchCat = fetchedCategories.find((c) => c.name === catName);
+          if (matchCat) {
+            setSelectedCategoryObj(matchCat);
+          }
+        }
+      } catch (error: any) {
+        console.error("Failed to fetch product data:", error);
+        Toast.show({
+          type: "error",
+          text1: "Error",
+          text2: error.response?.data?.message || "Failed to load product data",
         });
-
-        if (!result.canceled) {
-            const uris = result.assets.map((asset) => asset.uri);
-            setNewImages([...newImages, ...uris]);
+        if (router.canGoBack()) {
+          router.back();
+        } else {
+          router.replace("/admin/products");
         }
+      } finally {
+        setLoading(false);
+      }
     };
 
-    const removeExistingImage = (index: number) => {
-        const updated = [...existingImages];
-        updated.splice(index, 1);
-        setExistingImages(updated);
-    };
+    if (id) fetchData();
+  }, [id]);
 
-    const removeNewImage = (index: number) => {
-        const updated = [...newImages];
-        updated.splice(index, 1);
-        setNewImages(updated);
-    };
+  const handleSelectCategory = (cat: Category) => {
+    setSelectedCategoryObj(cat);
+    setCategory(cat.name);
+    const firstSub = cat.subcategories?.[0] || "";
+    setSubcategory(firstSub);
+    setSelectedSizes(cat.sizes || []);
+    setCategoryModalVisible(false);
+  };
 
-    const handleSubmit = async () => {
-        if (!name || !price || sizes.length < 1) {
-            Toast.show({
-                type: 'error',
-                text1: 'Missing Fields',
-                text2: 'Please fill in all required fields'
-            });
-            return;
-        }
+  const toggleSize = (sizeOption: string) => {
+    if (selectedSizes.includes(sizeOption)) {
+      setSelectedSizes(selectedSizes.filter((s) => s !== sizeOption));
+    } else {
+      setSelectedSizes([...selectedSizes, sizeOption]);
+    }
+  };
 
-        try {
-            setSubmitting(true);
-            const token = await getToken()
-            const formData = new FormData();
+  const pickImages = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsMultipleSelection: true,
+      selectionLimit: 5 - (existingImages.length + newImages.length),
+      quality: 0.8,
+    });
 
-            formData.append("name", name);
-            formData.append("description", description);
-            formData.append("price", price);
-            formData.append("stock", stock);
-            formData.append("category", category);
-            formData.append("isFeatured", String(isFeatured));
-            formData.append("isBogo", String(isBogo));
-            formData.append("sizes", sizes);
+    if (!result.canceled) {
+      const uris = result.assets.map((asset) => asset.uri);
+      setNewImages([...newImages, ...uris]);
+    }
+  };
 
-            // Append existing images
-            existingImages.forEach((img) => {
-                formData.append("existingImages", img);
-            });
+  const removeExistingImage = (index: number) => {
+    const updated = [...existingImages];
+    updated.splice(index, 1);
+    setExistingImages(updated);
+  };
 
-            // Append new images
-            for (const [i, uri] of newImages.entries()) {
-                const filename = `new-image-${i}.jpg`;
-                if (Platform.OS === "web") {
-                    const blob = await (await fetch(uri)).blob();
-                    formData.append("images", new File([blob], filename, { type: "image/jpeg" }));
-                } else {
-                    formData.append("images", { uri, name: filename, type: "image/jpeg" } as any);
-                }
-            }
-            const { data } = await api.put(`/products/${id}`, formData, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    "Content-Type": "multipart/form-data",
-                }
-            })
-            if (data?.success) {
-                Toast.show({
-                    type: 'success',
-                    text1: 'Success',
-                    text2: "Product updated successfully"
-                });
-                router.replace("/admin/products")
-            }
+  const removeNewImage = (index: number) => {
+    const updated = [...newImages];
+    updated.splice(index, 1);
+    setNewImages(updated);
+  };
 
-        } catch (error: any) {
-            console.error("Failed to update product:", error);
-            Toast.show({
-                type: 'error',
-                text1: 'Failed to Update Product',
-                text2: error.response?.data?.message || "Something went wrong"
-            });
-        } finally {
-            setSubmitting(false);
-        }
-    };
-
-    if (loading) {
-        return (
-            <View className="flex-1 justify-center items-center bg-surface">
-                <ActivityIndicator size="large" color={COLORS.primary} />
-            </View>
-        );
+  const handleSubmit = async () => {
+    if (!name.trim() || !price || !category || selectedSizes.length < 1) {
+      Toast.show({
+        type: "error",
+        text1: "Missing Fields",
+        text2: "Please fill in all required fields",
+      });
+      return;
     }
 
+    try {
+      setSubmitting(true);
+      const token = await getToken();
+      const formData = new FormData();
+
+      formData.append("name", name.trim());
+      formData.append("description", description);
+      formData.append("price", price);
+      formData.append("stock", stock);
+      formData.append("category", category);
+      formData.append("subcategory", subcategory);
+      formData.append("isFeatured", String(isFeatured));
+      formData.append("isBogo", String(isBogo));
+      formData.append("sizes", JSON.stringify(selectedSizes));
+
+      // Append existing images
+      existingImages.forEach((img) => {
+        formData.append("existingImages", img);
+      });
+
+      // Append new images
+      for (const [i, uri] of newImages.entries()) {
+        const filename = `new-image-${i}.jpg`;
+        if (Platform.OS === "web") {
+          const blob = await (await fetch(uri)).blob();
+          formData.append("images", new File([blob], filename, { type: "image/jpeg" }));
+        } else {
+          formData.append("images", { uri, name: filename, type: "image/jpeg" } as any);
+        }
+      }
+
+      const { data } = await api.put(`/products/${id}`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      if (data?.success) {
+        Toast.show({
+          type: "success",
+          text1: "Success",
+          text2: "Product updated successfully",
+        });
+        router.replace("/admin/products");
+      }
+    } catch (error: any) {
+      console.error("Failed to update product:", error);
+      Toast.show({
+        type: "error",
+        text1: "Failed to Update Product",
+        text2: error.response?.data?.message || "Something went wrong",
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (loading) {
     return (
-        <ScrollView className="flex-1 bg-surface p-4">
-            <View className="bg-white p-4 rounded-xl border border-gray-100 mb-20">
-                <Text className="text-secondary text-xs font-bold mb-1 uppercase">Product Name *</Text>
-                <TextInput
-                    className="bg-surface p-3 rounded-lg mb-4 text-primary"
-                    value={name}
-                    onChangeText={setName}
-                />
-
-                <Text className="text-secondary text-xs font-bold mb-1 uppercase">Price ($) *</Text>
-                <TextInput
-                    className="bg-surface p-3 rounded-lg mb-4 text-primary"
-                    keyboardType="decimal-pad"
-                    value={price}
-                    onChangeText={setPrice}
-                />
-
-                <Text className="text-secondary text-xs font-bold mb-1 uppercase">Stock Level</Text>
-                <TextInput
-                    className="bg-surface p-3 rounded-lg mb-4 text-primary"
-                    keyboardType="number-pad"
-                    value={stock}
-                    onChangeText={setStock}
-                />
-
-                <Text className="text-secondary text-xs font-bold mb-1 uppercase">Sizes (comma separated)</Text>
-                <TextInput
-                    className="bg-surface p-3 rounded-lg mb-4 text-primary"
-                    placeholder="e.g. S, M, L"
-                    value={sizes}
-                    onChangeText={setSizes}
-                />
-
-                <Text className="text-secondary text-xs font-bold mb-1 uppercase">
-                    Category
-                </Text>
-                <TouchableOpacity
-                    onPress={() => setModalVisible(true)}
-                    className="bg-surface p-3 rounded-lg mb-4 flex-row justify-between items-center"
-                >
-                    <Text className="text-primary">{category || "Select Category"}</Text>
-                    <Ionicons name="chevron-down" size={20} color={COLORS.secondary} />
-                </TouchableOpacity>
-
-                <Modal visible={modalVisible} animationType="slide" transparent>
-                    <Pressable style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }} onPress={() => setModalVisible(false)}>
-                        <Pressable style={{ backgroundColor: 'white', borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 16, maxHeight: '50%' }} onPress={(e) => e.stopPropagation()}>
-                            <Text className="text-lg font-bold text-center mb-4">Select Category</Text>
-                            <FlatList
-                                data={CATEGORIES}
-                                keyExtractor={(item) => String(item.id)}
-                                renderItem={({ item }) => (
-                                    <TouchableOpacity
-                                        className={`p-4 border-b ${category === item.name ? "bg-primary/5" : ""}`}
-                                        onPress={() => {
-                                            setCategory(item.name);
-                                            setModalVisible(false);
-                                        }}
-                                    >
-                                        <View className="flex-row justify-between">
-                                            <Text className={`${category === item.name ? "font-bold text-primary" : ""}`}>{item.name}</Text>
-                                            {category === item.name && <Ionicons name="checkmark" size={20} color={COLORS.primary} />}
-                                        </View>
-                                    </TouchableOpacity>
-                                )}
-                            />
-                        </Pressable>
-                    </Pressable>
-                </Modal>
-
-                <Text className="text-secondary text-xs font-bold mb-1 uppercase">Images</Text>
-                <View className="mb-4">
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                        {existingImages.map((uri, index) => (
-                            <View key={`existing-${index}`} className="relative mr-2">
-                                <Image source={{ uri }} className="w-24 h-24 rounded-lg" />
-                                <TouchableOpacity
-                                    onPress={() => removeExistingImage(index)}
-                                    className="absolute top-1 right-1 bg-black/50 rounded-full p-1"
-                                >
-                                    <Ionicons name="close" size={12} color="white" />
-                                </TouchableOpacity>
-                            </View>
-                        ))}
-                        {newImages.map((uri, index) => (
-                            <View key={`new-${index}`} className="relative mr-2">
-                                <Image source={{ uri }} className="w-24 h-24 rounded-lg border-2 border-primary" />
-                                <TouchableOpacity
-                                    onPress={() => removeNewImage(index)}
-                                    className="absolute top-1 right-1 bg-primary rounded-full p-1"
-                                >
-                                    <Ionicons name="close" size={12} color="white" />
-                                </TouchableOpacity>
-                            </View>
-                        ))}
-                        {(existingImages.length + newImages.length) < 5 && (
-                            <TouchableOpacity
-                                onPress={pickImages}
-                                className="w-24 h-24 rounded-lg bg-gray-100 justify-center items-center border border-dashed border-gray-300"
-                            >
-                                <Ionicons name="add" size={24} color={COLORS.secondary} />
-                                <Text className="text-xs text-secondary mt-1">Add</Text>
-                            </TouchableOpacity>
-                        )}
-                    </ScrollView>
-                </View>
-
-                <Text className="text-secondary text-xs font-bold mb-1 uppercase">Description</Text>
-                <TextInput
-                    className="bg-surface p-3 rounded-lg mb-6 text-primary h-24"
-                    multiline
-                    textAlignVertical="top"
-                    value={description}
-                    onChangeText={setDescription}
-                />
-
-                <View className="flex-row justify-between items-center mb-4">
-                    <Text className="text-primary font-bold">Featured Product</Text>
-                    <Switch
-                        value={isFeatured}
-                        onValueChange={setIsFeatured}
-                        trackColor={{ false: "#eee", true: COLORS.primary }}
-                    />
-                </View>
-
-                <View className="flex-row justify-between items-center mb-6">
-                    <Text className="text-primary font-bold">🎁 Buy 1 Get 1 Free Offer</Text>
-                    <Switch
-                        value={isBogo}
-                        onValueChange={setIsBogo}
-                        trackColor={{ false: "#eee", true: "#059669" }}
-                    />
-                </View>
-
-                <TouchableOpacity
-                    className={`bg-primary p-4 rounded-xl items-center ${submitting ? 'opacity-70' : ''}`}
-                    onPress={handleSubmit}
-                    disabled={submitting}
-                >
-                    {submitting ? (
-                        <ActivityIndicator color="white" />
-                    ) : (
-                        <Text className="text-white font-medium text-lg">Update Product</Text>
-                    )}
-                </TouchableOpacity>
-            </View>
-        </ScrollView>
+      <View style={styles.loaderContainer}>
+        <ActivityIndicator size="large" color={COLORS.primary || "#000"} />
+      </View>
     );
+  }
+
+  const subcategoriesList = selectedCategoryObj?.subcategories || [];
+  const availableSizes = selectedCategoryObj?.sizes || selectedSizes;
+
+  return (
+    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+      <View style={styles.card}>
+        {/* PRODUCT NAME */}
+        <Text style={styles.inputLabel}>Product Name *</Text>
+        <TextInput
+          style={styles.input}
+          value={name}
+          onChangeText={setName}
+          placeholder="Product Name"
+          placeholderTextColor="#9ca3af"
+        />
+
+        {/* PRICE */}
+        <Text style={styles.inputLabel}>Price ($) *</Text>
+        <TextInput
+          style={styles.input}
+          keyboardType="decimal-pad"
+          value={price}
+          onChangeText={setPrice}
+          placeholder="0.00"
+          placeholderTextColor="#9ca3af"
+        />
+
+        {/* STEP 1: CATEGORY */}
+        <Text style={styles.inputLabel}>Step 1: Category *</Text>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => setCategoryModalVisible(true)}
+          style={styles.dropdownButton}
+        >
+          <Text style={styles.dropdownText}>{category || "Select Category"}</Text>
+          <Ionicons name="chevron-down" size={20} color={COLORS.secondary || "#6b7280"} />
+        </TouchableOpacity>
+
+        {/* CATEGORY SELECT MODAL */}
+        <Modal visible={categoryModalVisible} animationType="slide" transparent>
+          <Pressable style={styles.modalOverlay} onPress={() => setCategoryModalVisible(false)}>
+            <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
+              <Text style={styles.modalTitle}>Select Category</Text>
+              <FlatList
+                data={categoriesList}
+                keyExtractor={(item) => String(item._id || item.name)}
+                renderItem={({ item }) => {
+                  const isSelected = category === item.name;
+                  return (
+                    <TouchableOpacity
+                      activeOpacity={0.8}
+                      style={[styles.modalItem, isSelected && styles.modalItemActive]}
+                      onPress={() => handleSelectCategory(item)}
+                    >
+                      <View style={styles.modalItemRow}>
+                        <View style={{ flexDirection: "row", alignItems: "center" }}>
+                          <Ionicons
+                            name={(item.icon as any) || "grid-outline"}
+                            size={18}
+                            color="#374151"
+                            style={{ marginRight: 8 }}
+                          />
+                          <Text
+                            style={[
+                              styles.modalItemText,
+                              isSelected && styles.modalItemTextActive,
+                            ]}
+                          >
+                            {item.name}
+                          </Text>
+                        </View>
+                        {isSelected && (
+                          <Ionicons
+                            name="checkmark"
+                            size={20}
+                            color={COLORS.primary || "#000"}
+                          />
+                        )}
+                      </View>
+                    </TouchableOpacity>
+                  );
+                }}
+              />
+            </Pressable>
+          </Pressable>
+        </Modal>
+
+        {/* STEP 2: SUBCATEGORY */}
+        <Text style={styles.inputLabel}>Step 2: Subcategory</Text>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => setSubcategoryModalVisible(true)}
+          style={styles.dropdownButton}
+        >
+          <Text style={styles.dropdownText}>
+            {subcategory || "Select Subcategory"}
+          </Text>
+          <Ionicons name="chevron-down" size={20} color={COLORS.secondary || "#6b7280"} />
+        </TouchableOpacity>
+
+        {/* SUBCATEGORY SELECT MODAL */}
+        <Modal visible={subcategoryModalVisible} animationType="slide" transparent>
+          <Pressable style={styles.modalOverlay} onPress={() => setSubcategoryModalVisible(false)}>
+            <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
+              <Text style={styles.modalTitle}>Select Subcategory ({category})</Text>
+              <FlatList
+                data={subcategoriesList}
+                keyExtractor={(item, index) => `${item}-${index}`}
+                renderItem={({ item }) => {
+                  const isSelected = subcategory === item;
+                  return (
+                    <TouchableOpacity
+                      activeOpacity={0.8}
+                      style={[styles.modalItem, isSelected && styles.modalItemActive]}
+                      onPress={() => {
+                        setSubcategory(item);
+                        setSubcategoryModalVisible(false);
+                      }}
+                    >
+                      <View style={styles.modalItemRow}>
+                        <Text
+                          style={[
+                            styles.modalItemText,
+                            isSelected && styles.modalItemTextActive,
+                          ]}
+                        >
+                          {item}
+                        </Text>
+                        {isSelected && (
+                          <Ionicons
+                            name="checkmark"
+                            size={20}
+                            color={COLORS.primary || "#000"}
+                          />
+                        )}
+                      </View>
+                    </TouchableOpacity>
+                  );
+                }}
+              />
+            </Pressable>
+          </Pressable>
+        </Modal>
+
+        {/* STEP 3: SIZES MULTI-SELECT CHIPS */}
+        <Text style={styles.inputLabel}>Step 3: Available Sizes (Multi-Select) *</Text>
+        <View style={styles.sizesChipContainer}>
+          {availableSizes.length > 0 ? (
+            availableSizes.map((szOption) => {
+              const isSelected = selectedSizes.includes(szOption);
+              return (
+                <TouchableOpacity
+                  key={szOption}
+                  activeOpacity={0.8}
+                  onPress={() => toggleSize(szOption)}
+                  style={[styles.sizeChip, isSelected && styles.sizeChipSelected]}
+                >
+                  <Text style={[styles.sizeChipText, isSelected && styles.sizeChipTextSelected]}>
+                    {szOption}
+                  </Text>
+                  {isSelected && (
+                    <Ionicons name="checkmark-circle" size={14} color="#ffffff" style={{ marginLeft: 4 }} />
+                  )}
+                </TouchableOpacity>
+              );
+            })
+          ) : (
+            <Text style={styles.emptySizesText}>No size options configured</Text>
+          )}
+        </View>
+
+        {/* STOCK LEVEL */}
+        <Text style={[styles.inputLabel, { marginTop: 14 }]}>Stock Level</Text>
+        <TextInput
+          style={styles.input}
+          keyboardType="number-pad"
+          value={stock}
+          onChangeText={setStock}
+        />
+
+        {/* IMAGES */}
+        <Text style={styles.inputLabel}>Product Images (max 5)</Text>
+        <View style={{ marginBottom: 16 }}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {existingImages.map((uri, index) => (
+              <View key={`existing-${index}`} style={styles.imageBox}>
+                <Image source={{ uri }} style={styles.imageThumbnail} />
+                <TouchableOpacity
+                  onPress={() => removeExistingImage(index)}
+                  style={styles.imageRemoveBadge}
+                >
+                  <Ionicons name="close" size={12} color="white" />
+                </TouchableOpacity>
+              </View>
+            ))}
+            {newImages.map((uri, index) => (
+              <View key={`new-${index}`} style={styles.imageBox}>
+                <Image
+                  source={{ uri }}
+                  style={[styles.imageThumbnail, { borderWidth: 2, borderColor: "#111827" }]}
+                />
+                <TouchableOpacity
+                  onPress={() => removeNewImage(index)}
+                  style={[styles.imageRemoveBadge, { backgroundColor: "#111827" }]}
+                >
+                  <Ionicons name="close" size={12} color="white" />
+                </TouchableOpacity>
+              </View>
+            ))}
+            {existingImages.length + newImages.length < 5 && (
+              <TouchableOpacity onPress={pickImages} style={styles.addImageBtn}>
+                <Ionicons name="add" size={24} color={COLORS.secondary || "#6b7280"} />
+                <Text style={styles.addImageBtnText}>Add</Text>
+              </TouchableOpacity>
+            )}
+          </ScrollView>
+        </View>
+
+        {/* DESCRIPTION */}
+        <Text style={styles.inputLabel}>Description</Text>
+        <TextInput
+          style={[styles.input, styles.multilineInput]}
+          multiline
+          value={description}
+          onChangeText={setDescription}
+        />
+
+        {/* FEATURED & BOGO */}
+        <View style={styles.switchRow}>
+          <Text style={styles.switchLabel}>Featured Product</Text>
+          <Switch
+            value={isFeatured}
+            onValueChange={setIsFeatured}
+            trackColor={{ false: "#eee", true: COLORS.primary || "#000" }}
+          />
+        </View>
+
+        <View style={styles.switchRow}>
+          <Text style={styles.switchLabel}>🎁 Buy 1 Get 1 Free Offer</Text>
+          <Switch
+            value={isBogo}
+            onValueChange={setIsBogo}
+            trackColor={{ false: "#eee", true: "#059669" }}
+          />
+        </View>
+
+        {/* SUBMIT BUTTON */}
+        <TouchableOpacity
+          style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
+          onPress={handleSubmit}
+          disabled={submitting}
+          activeOpacity={0.8}
+        >
+          {submitting ? (
+            <ActivityIndicator color="white" />
+          ) : (
+            <Text style={styles.submitButtonText}>Update Product</Text>
+          )}
+        </TouchableOpacity>
+      </View>
+    </ScrollView>
+  );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#f9fafb",
+  },
+  loaderContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f9fafb",
+  },
+  scrollContent: {
+    padding: 16,
+  },
+  card: {
+    backgroundColor: "#ffffff",
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 80,
+    borderWidth: 1,
+    borderColor: "#f3f4f6",
+    elevation: 2,
+  },
+  inputLabel: {
+    color: "#6b7280",
+    fontSize: 12,
+    fontWeight: "700",
+    marginBottom: 6,
+    textTransform: "uppercase",
+  },
+  input: {
+    backgroundColor: "#f3f4f6",
+    padding: 14,
+    borderRadius: 8,
+    color: "#111827",
+    fontSize: 15,
+    marginBottom: 16,
+  },
+  multilineInput: {
+    height: 96,
+    textAlignVertical: "top",
+    marginBottom: 24,
+  },
+  dropdownButton: {
+    backgroundColor: "#f3f4f6",
+    padding: 14,
+    borderRadius: 8,
+    marginBottom: 16,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  dropdownText: {
+    color: "#111827",
+    fontSize: 15,
+    fontWeight: "500",
+  },
+  sizesChipContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 16,
+  },
+  sizeChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#d1d5db",
+    backgroundColor: "#f9fafb",
+  },
+  sizeChipSelected: {
+    backgroundColor: "#111827",
+    borderColor: "#111827",
+  },
+  sizeChipText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#374151",
+  },
+  sizeChipTextSelected: {
+    color: "#ffffff",
+  },
+  emptySizesText: {
+    fontSize: 13,
+    color: "#9ca3af",
+    fontStyle: "italic",
+  },
+  imageBox: {
+    position: "relative",
+    marginRight: 8,
+  },
+  imageThumbnail: {
+    width: 96,
+    height: 96,
+    borderRadius: 8,
+  },
+  imageRemoveBadge: {
+    position: "absolute",
+    top: 4,
+    right: 4,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    borderRadius: 10,
+    padding: 3,
+  },
+  addImageBtn: {
+    width: 96,
+    height: 96,
+    borderRadius: 8,
+    backgroundColor: "#f3f4f6",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: "#d1d5db",
+  },
+  addImageBtnText: {
+    fontSize: 12,
+    color: "#6b7280",
+    marginTop: 4,
+  },
+  switchRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  switchLabel: {
+    color: "#111827",
+    fontWeight: "700",
+    fontSize: 15,
+  },
+  submitButton: {
+    backgroundColor: "#000000",
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  submitButtonDisabled: {
+    opacity: 0.7,
+  },
+  submitButtonText: {
+    color: "#ffffff",
+    fontWeight: "700",
+    fontSize: 17,
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  modalContent: {
+    backgroundColor: "#ffffff",
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    padding: 16,
+    maxHeight: "50%",
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    textAlign: "center",
+    marginBottom: 16,
+    color: "#111827",
+  },
+  modalItem: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f3f4f6",
+  },
+  modalItemActive: {
+    backgroundColor: "rgba(0, 0, 0, 0.03)",
+  },
+  modalItemRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  modalItemText: {
+    fontSize: 15,
+    color: "#111827",
+  },
+  modalItemTextActive: {
+    fontWeight: "700",
+    color: "#000000",
+  },
+});

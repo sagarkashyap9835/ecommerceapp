@@ -26,6 +26,17 @@ export interface Review {
     createdAt?: string;
 }
 
+export interface Category {
+    _id?: string;
+    id?: string | number;
+    name: string;
+    subcategories: string[];
+    sizes: string[];
+    icon?: string;
+    sortOrder?: number;
+    isActive?: boolean;
+}
+
 export interface Product {
     _id: string;
     name: string;
@@ -40,6 +51,7 @@ export interface Product {
               name: string;
           }
         | string;
+    subcategory?: string;
     stock: number;
     ratings: {
         average: number;
@@ -115,6 +127,7 @@ export interface Order {
     orderNumber: string;
     items: OrderItem[];
     shippingAddress: {
+        villageHouseCode?: string;
         street: string;
         city: string;
         state: string;

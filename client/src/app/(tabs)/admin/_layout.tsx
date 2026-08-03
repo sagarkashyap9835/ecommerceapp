@@ -69,6 +69,15 @@ export default function AdminLayout() {
                 }}
             />
             <Tabs.Screen
+                name="categories"
+                options={{
+                    title: "Categories",
+                    tabBarIcon: ({ color, size }) => (
+                        <Ionicons name="pricetags-outline" size={size} color={color} />
+                    )
+                }}
+            />
+            <Tabs.Screen
                 name="orders"
                 options={{
                     title: "Orders",

@@ -24,24 +24,39 @@ const bannerStep = bannerCardWidth + 12;
 export default function Home() {
   const bannerRef = React.useRef<ScrollView>(null);
   const [activeBanner, setActiveBanner] = useState(0);
-  const [products,setProducts]=useState<Product[]>([])
-  const [loading,setLoading]=useState(true)
-const categories=[{id:'all',name:'All', icon:"grid"},...CATEGORIES]
-const fetchProducts=async()=>{
-try {
-  const {data}=await api.get("products")
-  setProducts(data.data)
-} catch (error) {
-  console.error("Error fetching products", error)
-}finally{
-  setLoading(false)
-}
-}
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [categories, setCategories] = useState<any[]>([{ id: 'all', name: 'All', icon: 'grid' }, ...CATEGORIES]);
 
+  const fetchData = async () => {
+    try {
+      const [prodRes, catRes] = await Promise.all([
+        api.get("products"),
+        api.get("categories").catch(() => null),
+      ]);
 
-useEffect(()=>{
-fetchProducts()
-},[])
+      if (prodRes.data?.success) {
+        setProducts(prodRes.data.data);
+      }
+
+      if (catRes?.data?.success && catRes.data.data.length > 0) {
+        const dynamicCats = catRes.data.data.map((c: any) => ({
+          id: c._id || c.name,
+          name: c.name,
+          icon: c.icon || "grid-outline",
+        }));
+        setCategories([{ id: 'all', name: 'All', icon: 'grid' }, ...dynamicCats]);
+      }
+    } catch (error) {
+      console.error("Error fetching data", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   const handleScroll = (event: any) => {
     const contentOffsetX = event.nativeEvent.contentOffset.x;

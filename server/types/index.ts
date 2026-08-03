@@ -76,6 +76,17 @@ export interface IReview {
     createdAt?: Date;
 }
 
+export interface ICategory extends Document {
+    name: string;
+    subcategories: string[];
+    sizes: string[];
+    icon?: string;
+    sortOrder?: number;
+    isActive: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
 export interface IProduct extends Document {
     name: string;
     description: string;
@@ -83,7 +94,8 @@ export interface IProduct extends Document {
     comparePrice?: number;
     images: string[];
     sizes: string[];
-    category: "Men" | "Women" | "Kids" | "Shoes" | "Bags" | "Other";
+    category: string;
+    subcategory?: string;
     stock: number;
     ratings: {
         average: number;
