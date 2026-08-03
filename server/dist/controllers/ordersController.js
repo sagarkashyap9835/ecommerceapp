@@ -1,7 +1,7 @@
 import Order from "../models/order.js";
 import Cart from "../models/cart.js";
 import Product from "../models/products.js";
-import Stripe from "stripe";
+import Razorpay from "razorpay";
 export const getOrders = async (req, res) => {
     try {
         const query = { user: req.user._id };
@@ -59,11 +59,11 @@ export const createOrder = async (req, res) => {
             await product.save();
         }
         const subtotal = cart.totalAmount;
-        const shippingCost = 20;
+        const shippingCost = 0;
         const tax = 0;
         const totalAmount = subtotal + shippingCost + tax;
-        const isStripe = req.body.paymentMethod === "stripe";
-        const paymentStatus = req.body.paymentStatus || (isStripe ? "paid" : "pending");
+        const isRazorpay = req.body.paymentMethod === "razorpay";
+        const paymentStatus = req.body.paymentStatus || (isRazorpay ? "paid" : "pending");
         // Calculate guaranteed 3-day district delivery date
         const estimatedDeliveryDate = req.body.estimatedDeliveryDate
             ? new Date(req.body.estimatedDeliveryDate)
@@ -80,7 +80,8 @@ export const createOrder = async (req, res) => {
             totalAmount,
             notes,
             estimatedDeliveryDate,
-            paymentIntentId: req.body.paymentIntentId || (isStripe ? "pi_test_" + Date.now() : undefined),
+            paymentIntentId: req.body.paymentIntentId || (isRazorpay ? "pay_test_" + Date.now() : undefined),
+            razorpayOrderId: req.body.razorpayOrderId || (isRazorpay ? "order_test_" + Date.now() : undefined),
             orderNumber: "ORD-" + Date.now(),
         });
         cart.items = [];
@@ -92,54 +93,48 @@ export const createOrder = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 };
-// Create Stripe Checkout Session (Test Mode Support)
-export const createStripeCheckoutSession = async (req, res) => {
+// Create Razorpay Order (Test Mode Support)
+export const createRazorpayOrder = async (req, res) => {
     try {
         const cart = await Cart.findOne({ user: req.user._id }).populate("items.product");
         if (!cart || cart.items.length === 0) {
             return res.status(400).json({ success: false, message: "Cart is empty" });
         }
         const subtotal = cart.totalAmount;
-        const shippingCost = 20;
+        const shippingCost = 0;
         const totalAmount = subtotal + shippingCost;
-        let sessionUrl = "";
-        let sessionId = "cs_test_" + Date.now();
-        if (process.env.STRIPE_SECRET_KEY && !process.env.STRIPE_SECRET_KEY.includes("dummy")) {
+        const amountInPaisa = Math.round(totalAmount * 100);
+        let razorpayOrderId = "order_test_" + Date.now();
+        let currency = "INR";
+        const keyId = process.env.RAZORPAY_KEY_ID;
+        const keySecret = process.env.RAZORPAY_KEY_SECRET;
+        if (keyId && keySecret && !keyId.includes("dummy")) {
             try {
-                const stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY, {
-                    apiVersion: "2024-06-20",
+                const razorpay = new Razorpay({
+                    key_id: keyId,
+                    key_secret: keySecret,
                 });
-                const lineItems = cart.items.map((item) => ({
-                    price_data: {
-                        currency: "inr",
-                        product_data: {
-                            name: item.product?.name || "Product",
-                            images: item.product?.images ? [item.product.images[0]] : [],
-                        },
-                        unit_amount: Math.round(item.price * 100),
-                    },
-                    quantity: item.quantity,
-                }));
-                const session = await stripeClient.checkout.sessions.create({
-                    payment_method_types: ["card"],
-                    line_items: lineItems,
-                    mode: "payment",
-                    success_url: `${req.headers.origin || "http://localhost:8081"}/checkout?payment=success`,
-                    cancel_url: `${req.headers.origin || "http://localhost:8081"}/checkout?payment=cancelled`,
-                });
-                sessionUrl = session.url || "";
-                sessionId = session.id;
+                const options = {
+                    amount: amountInPaisa,
+                    currency: "INR",
+                    receipt: "receipt_" + Date.now(),
+                };
+                const order = await razorpay.orders.create(options);
+                razorpayOrderId = order.id;
+                currency = order.currency;
             }
-            catch (stripeErr) {
-                console.log("Stripe session creation note:", stripeErr.message);
+            catch (razorpayErr) {
+                console.log("Razorpay order creation note:", razorpayErr.message);
             }
         }
         res.status(200).json({
             success: true,
-            url: sessionUrl,
-            sessionId: sessionId,
+            orderId: razorpayOrderId,
             amount: totalAmount,
-            message: "Stripe payment initialized in Test Mode",
+            amountInPaisa: amountInPaisa,
+            currency: currency,
+            keyId: keyId || "rzp_test_dummyKeyId12345",
+            message: "Razorpay order initialized in Test Mode",
         });
     }
     catch (error) {

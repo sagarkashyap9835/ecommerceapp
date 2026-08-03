@@ -11,6 +11,8 @@ import orderRoutes from "./routes/ordersRoutes.js";
 import addressRoutes from "./routes/addressRoutes.js";
 import adminRoutes from "./routes/adminroutes.js";
 import wishlistRoutes from "./routes/wishlistRoutes.js";
+import categoryRoutes from "./routes/categoryRoutes.js";
+import { seedCategories } from "./scripts/seedCategories.js";
 const app = express();
 // Middleware
 app.use(cors());
@@ -23,9 +25,11 @@ app.get('/', (req, res) => {
 });
 connectDB();
 await makeAdmin();
+await seedCategories();
 // Seed dummy products if no products are present
 // await seedProducts(process.env.MONGODB_URI as string);
 app.use("/api/products", productRoutes);
+app.use("/api/categories", categoryRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/address", addressRoutes);

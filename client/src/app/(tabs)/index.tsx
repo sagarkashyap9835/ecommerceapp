@@ -68,7 +68,7 @@ export default function Home() {
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
-      <Header title="Forever" showMenu showCart showLogo />
+      <Header title="Gramo Kart" showMenu showCart showLogo />
 
       <ScrollView
         className="flex-1 px-4"

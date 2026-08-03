@@ -196,7 +196,7 @@ export default function Settings() {
           <TouchableOpacity
             style={styles.settingRow}
             activeOpacity={0.7}
-            onPress={() => Toast.show({ type: "info", text1: "Terms of Service", text2: "Forever E-Commerce Platform v1.0.0" })}
+            onPress={() => Toast.show({ type: "info", text1: "Terms of Service", text2: "Gramo Kart E-Commerce Platform v1.0.0" })}
           >
             <View style={styles.settingLeft}>
               <View style={[styles.iconBg, { backgroundColor: "#F3F4F6" }]}>

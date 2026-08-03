@@ -73,7 +73,7 @@ export default function Header({
         )}
       </View>
 
-      {/* 2. CENTER SECTION: Responsive Search Bar Capsule */}
+      {/* 2. CENTER SECTION: Search Bar Capsule or Page Title */}
       <View style={styles.centerSection}>
         {showLogo || showSearch ? (
           <View style={styles.searchBar}>
@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 8,
     backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
     borderBottomColor: "#F3F4F6",
@@ -159,12 +159,12 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   logoImage: {
-    width: 80,
-    height: 24,
+    width: 105,
+    height: 38,
   },
   centerSection: {
     flex: 1,
-    marginHorizontal: 6,
+    marginHorizontal: 8,
     minWidth: 0,
     justifyContent: "center",
   },
@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingLeft: 10,
     paddingRight: 8,
-    height: 36,
+    height: 38,
     borderWidth: 1,
     borderColor: "#E5E7EB",
     overflow: "hidden",
@@ -210,7 +210,7 @@ const styles = StyleSheet.create({
   filterButton: {
     position: "relative",
     padding: 4,
-    marginRight: 8,
+    marginRight: 6,
   },
   filterDot: {
     position: "absolute",

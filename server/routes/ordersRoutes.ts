@@ -6,7 +6,7 @@ import {
   createOrder,
   getAllOrders,
   updateOrderStatus,
-  createStripeCheckoutSession,
+  createRazorpayOrder,
 } from "../controllers/ordersController.js";
 
 import { protect, authorize } from "../middleware/auth.js";
@@ -43,9 +43,9 @@ router.put(
 // GET /api/orders
 router.get("/", protect, getOrders);
 
-// Create Stripe Session
-// POST /api/orders/create-stripe-session
-router.post("/create-stripe-session", protect, createStripeCheckoutSession);
+// Create Razorpay Order
+// POST /api/orders/create-razorpay-order
+router.post("/create-razorpay-order", protect, createRazorpayOrder);
 
 // Create Order
 // POST /api/orders

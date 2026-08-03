@@ -12,8 +12,8 @@ export default function Cart() {
   const { cartItems, cartTotal, removeFromCart, updateQuantity } = useCart()
   const router = useRouter()
 
-  // 1. शिपिंग चार्ज को ₹20 फिक्स कर दिया
-  const SHIPPING_CHARGE = 20;
+  // 1. शिपिंग चार्ज मुफ़्त (Free Shipping)
+  const SHIPPING_CHARGE = 0;
 
   // 2. फाइनल टोटल = कार्ट का कुल दाम + शिपिंग चार्ज
   const finalTotal = (cartTotal || 0) + SHIPPING_CHARGE;
@@ -74,7 +74,7 @@ export default function Cart() {
             {/* 4. शिपिंग चार्ज लाइन */}
             <View style={styles.priceRow}>
               <Text style={styles.priceLabel}>Shipping Charge:</Text>
-              <Text style={styles.priceValue}>₹{SHIPPING_CHARGE.toFixed(2)}</Text>
+              <Text style={[styles.priceValue, { color: "#059669", fontWeight: "700" }]}>FREE 🎉</Text>
             </View>
 
             {/* डिवाइडर लाइन */}

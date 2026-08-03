@@ -6,7 +6,7 @@ export const getProducts = async (req, res) => {
     try {
         const page = Number(req.query.page) || 1;
         const limit = Number(req.query.limit) || 10;
-        const { search, category, minPrice, maxPrice, sortBy, isBogo } = req.query;
+        const { search, category, subcategory, size, minPrice, maxPrice, sortBy, isBogo } = req.query;
         // केवल वही प्रोडक्ट्स जो एक्टिव हैं
         const query = { isActive: true };
         // 0. BOGO / Offer Filter
@@ -16,6 +16,17 @@ export const getProducts = async (req, res) => {
         // 1. Category Filter
         if (category && typeof category === "string" && category.toLowerCase() !== "all" && category.trim() !== "") {
             query.category = { $regex: new RegExp(`^${category.trim()}$`, "i") };
+        }
+        // 1b. Subcategory Filter
+        if (subcategory && typeof subcategory === "string" && subcategory.toLowerCase() !== "all" && subcategory.trim() !== "") {
+            query.subcategory = { $regex: new RegExp(`^${subcategory.trim()}$`, "i") };
+        }
+        // 1c. Size Filter
+        if (size && typeof size === "string" && size.toLowerCase() !== "all" && size.trim() !== "") {
+            const sizeArray = size.split(",").map(s => s.trim()).filter(Boolean);
+            if (sizeArray.length > 0) {
+                query.sizes = { $in: sizeArray };
+            }
         }
         // 2. Search Filter (name & description)
         if (search && typeof search === "string" && search.trim() !== "") {
@@ -151,6 +162,7 @@ export const createProduct = async (req, res) => {
             price: Number(req.body.price),
             stock: Number(req.body.stock || 0),
             category: req.body.category || "Other",
+            subcategory: req.body.subcategory || "",
             isFeatured: req.body.isFeatured === "true" || req.body.isFeatured === true,
             isBogo: req.body.isBogo === "true" || req.body.isBogo === true,
             sizes: sizes,
@@ -251,6 +263,8 @@ export const updateProduct = async (req, res) => {
             updatedData.stock = Number(req.body.stock);
         if (req.body.category)
             updatedData.category = req.body.category;
+        if (req.body.subcategory !== undefined)
+            updatedData.subcategory = req.body.subcategory;
         if (req.body.isFeatured !== undefined)
             updatedData.isFeatured = req.body.isFeatured === "true" || req.body.isFeatured === true;
         if (req.body.isBogo !== undefined)

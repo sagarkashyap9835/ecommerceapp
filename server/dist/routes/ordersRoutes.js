@@ -1,5 +1,5 @@
 import express from "express";
-import { getOrders, getOrder, createOrder, getAllOrders, updateOrderStatus, createStripeCheckoutSession, } from "../controllers/ordersController.js";
+import { getOrders, getOrder, createOrder, getAllOrders, updateOrderStatus, createRazorpayOrder, } from "../controllers/ordersController.js";
 import { protect, authorize } from "../middleware/auth.js";
 const router = express.Router();
 /* ===========================
@@ -17,9 +17,9 @@ router.put("/admin/:id", protect, authorize("admin"), updateOrderStatus);
 // Get Logged In User Orders
 // GET /api/orders
 router.get("/", protect, getOrders);
-// Create Stripe Session
-// POST /api/orders/create-stripe-session
-router.post("/create-stripe-session", protect, createStripeCheckoutSession);
+// Create Razorpay Order
+// POST /api/orders/create-razorpay-order
+router.post("/create-razorpay-order", protect, createRazorpayOrder);
 // Create Order
 // POST /api/orders
 router.post("/", protect, createOrder);

@@ -15,7 +15,7 @@ export default function DeliveryEstimateCard({
   price = 0,
 }: DeliveryEstimateCardProps) {
   const estimate = getEstimatedDelivery(3, 3);
-  const isFreeDelivery = price >= 499 || price === 0;
+  const isFreeDelivery = true;
 
   return (
     <View style={styles.container}>

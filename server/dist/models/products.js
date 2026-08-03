@@ -17,8 +17,11 @@ const productSchema = new Schema({
     category: {
         type: String,
         required: true,
-        enum: ["Men", "Women", "Kids", "Shoes", "Bags", "Other"],
-        default: "Other"
+        trim: true
+    },
+    subcategory: {
+        type: String,
+        trim: true
     },
     stock: { type: Number, required: true, default: 0, min: 0 },
     ratings: {

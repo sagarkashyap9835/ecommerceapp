@@ -32,17 +32,16 @@ export default function Checkout() {
   const [loading, setLoading] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<"cash" | "stripe">("cash");
+  const [paymentMethod, setPaymentMethod] = useState<"cash" | "razorpay">("cash");
 
-  // Stripe Test Card Form States
-  const [stripeModalVisible, setStripeModalVisible] = useState(false);
-  const [cardNumber, setCardNumber] = useState("4242 4242 4242 4242");
-  const [cardExpiry, setCardExpiry] = useState("12/28");
-  const [cardCvc, setCardCvc] = useState("123");
-  const [cardName, setCardName] = useState("Test User");
-  const [processingStripe, setProcessingStripe] = useState(false);
+  // Razorpay Test Form States
+  const [razorpayModalVisible, setRazorpayModalVisible] = useState(false);
+  const [razorpayOption, setRazorpayOption] = useState<"upi" | "card" | "netbanking">("upi");
+  const [upiId, setUpiId] = useState("success@razorpay");
+  const [razorpayOrderId, setRazorpayOrderId] = useState<string>("");
+  const [processingRazorpay, setProcessingRazorpay] = useState(false);
 
-  const shipping = 20;
+  const shipping = 0;
   const tax = 0;
   const total = cartTotal + shipping + tax;
 
@@ -75,8 +74,29 @@ export default function Checkout() {
       });
     }
 
-    if (paymentMethod === "stripe") {
-      setStripeModalVisible(true);
+    if (paymentMethod === "razorpay") {
+      try {
+        setLoading(true);
+        const token = await getToken();
+        const { data } = await api.post(
+          "/orders/create-razorpay-order",
+          {},
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (data.success) {
+          setRazorpayOrderId(data.orderId);
+          setRazorpayModalVisible(true);
+        }
+      } catch (err: any) {
+        Toast.show({
+          type: "error",
+          text1: "Razorpay Error",
+          text2: err.response?.data?.message || "Failed to initialize Razorpay order",
+          position: "top",
+        });
+      } finally {
+        setLoading(false);
+      }
       return;
     }
 
@@ -126,21 +146,12 @@ export default function Checkout() {
     }
   };
 
-  // Process Stripe Payment in Test Mode
-  const handleStripeTestPayment = async () => {
-    if (!cardNumber.trim() || !cardExpiry.trim() || !cardCvc.trim()) {
-      return Toast.show({
-        type: "error",
-        text1: "Incomplete Card Details",
-        text2: "Please fill in all test card fields.",
-        position: "top",
-      });
-    }
-
-    setProcessingStripe(true);
+  // Process Razorpay Payment in Test Mode
+  const handleRazorpayTestPayment = async () => {
+    setProcessingRazorpay(true);
     try {
       const token = await getToken();
-      const testPaymentIntentId = "pi_test_" + Date.now();
+      const testPaymentId = "pay_test_" + Date.now();
 
       const { data } = await api.post(
         "/orders",
@@ -153,9 +164,10 @@ export default function Checkout() {
             zipCode: selectedAddress?.zipCode,
             country: selectedAddress?.country,
           },
-          paymentMethod: "stripe",
+          paymentMethod: "razorpay",
           paymentStatus: "paid",
-          paymentIntentId: testPaymentIntentId,
+          paymentIntentId: testPaymentId,
+          razorpayOrderId: razorpayOrderId || ("order_test_" + Date.now()),
           estimatedDeliveryDate: deliveryEstimate.startDate,
         },
         {
@@ -164,26 +176,26 @@ export default function Checkout() {
       );
 
       if (data.success) {
-        setStripeModalVisible(false);
+        setRazorpayModalVisible(false);
         Toast.show({
           type: "success",
-          text1: "Stripe Payment Successful! 💳",
-          text2: `Payment of ₹${total.toFixed(2)} completed in Test Mode.`,
+          text1: "Razorpay Payment Successful! 💳",
+          text2: `Payment of ₹${total.toFixed(2)} completed via Razorpay.`,
           position: "top",
         });
         await clearCart();
         router.replace("/orders" as any);
       }
     } catch (error: any) {
-      console.error("Error processing Stripe payment:", error);
+      console.error("Error processing Razorpay payment:", error);
       Toast.show({
         type: "error",
         text1: "Payment Failed",
-        text2: error.response?.data?.message || "Stripe payment could not be completed",
+        text2: error.response?.data?.message || "Razorpay payment could not be completed",
         position: "top",
       });
     } finally {
-      setProcessingStripe(false);
+      setProcessingRazorpay(false);
     }
   };
 
@@ -279,25 +291,25 @@ export default function Checkout() {
           style={[
             styles.card,
             styles.selectableCard,
-            paymentMethod === "stripe" && styles.selectedCard,
+            paymentMethod === "razorpay" && styles.selectedCard,
           ]}
-          onPress={() => setPaymentMethod("stripe")}
+          onPress={() => setPaymentMethod("razorpay")}
         >
           <View style={styles.row}>
             <Ionicons
-              name={paymentMethod === "stripe" ? "radio-button-on" : "radio-button-off"}
+              name={paymentMethod === "razorpay" ? "radio-button-on" : "radio-button-off"}
               size={22}
-              color={paymentMethod === "stripe" ? "#111827" : "#9CA3AF"}
+              color={paymentMethod === "razorpay" ? "#0C2340" : "#9CA3AF"}
             />
             <View style={styles.paymentDetails}>
               <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <Text style={styles.paymentTitle}>Credit / Debit Card (Stripe)</Text>
+                <Text style={styles.paymentTitle}>Razorpay (UPI / Cards / NetBanking)</Text>
                 <View style={styles.testBadge}>
                   <Text style={styles.testBadgeText}>Test Mode</Text>
                 </View>
               </View>
               <Text style={styles.paymentSubtitle}>
-                Instant test payment with Stripe Card Gateway.
+                Instant Indian payments with Razorpay Gateway.
               </Text>
             </View>
           </View>
@@ -334,7 +346,7 @@ export default function Checkout() {
           </View>
           <View style={styles.priceRow}>
             <Text style={styles.priceLabel}>Shipping</Text>
-            <Text style={styles.priceValue}>₹{shipping.toFixed(2)}</Text>
+            <Text style={[styles.priceValue, { color: "#059669", fontWeight: "700" }]}>FREE 🎉</Text>
           </View>
           <View style={styles.priceRow}>
             <Text style={styles.priceLabel}>Tax</Text>
@@ -360,110 +372,147 @@ export default function Checkout() {
             <ActivityIndicator size="small" color="#fff" />
           ) : (
             <Text style={styles.placeOrderButtonText}>
-              {paymentMethod === "cash" ? "Place Order (COD)" : `Pay ₹${total.toFixed(2)} with Stripe`}
+              {paymentMethod === "cash" ? "Place Order (COD)" : `Pay ₹${total.toFixed(2)} with Razorpay`}
             </Text>
           )}
         </TouchableOpacity>
       </View>
 
-      {/* STRIPE TEST MODE MODAL */}
-      <Modal visible={stripeModalVisible} transparent animationType="slide">
-        <Pressable style={styles.modalOverlay} onPress={() => setStripeModalVisible(false)}>
+      {/* RAZORPAY TEST MODE MODAL */}
+      <Modal visible={razorpayModalVisible} transparent animationType="slide">
+        <Pressable style={styles.modalOverlay} onPress={() => setRazorpayModalVisible(false)}>
           <Pressable style={styles.modalContentCard} onPress={(e) => e.stopPropagation()}>
             {/* Modal Header */}
             <View style={styles.modalHeader}>
               <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <Ionicons name="card-outline" size={24} color="#111827" style={{ marginRight: 8 }} />
-                <Text style={styles.modalTitle}>Stripe Test Payment</Text>
+                <Ionicons name="wallet-outline" size={24} color="#0C2340" style={{ marginRight: 8 }} />
+                <Text style={styles.modalTitle}>Razorpay Payment Gateway</Text>
               </View>
-              <TouchableOpacity onPress={() => setStripeModalVisible(false)}>
+              <TouchableOpacity onPress={() => setRazorpayModalVisible(false)}>
                 <Ionicons name="close" size={22} color="#6B7280" />
               </TouchableOpacity>
             </View>
 
             {/* Test Credentials Banner */}
             <View style={styles.testModeInfoBanner}>
-              <Ionicons name="information-circle-outline" size={20} color="#1D4ED8" style={{ marginRight: 8 }} />
+              <Ionicons name="information-circle-outline" size={20} color="#0284C7" style={{ marginRight: 8 }} />
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 12, fontWeight: "700", color: "#1E40AF" }}>
-                  Stripe Test Mode Enabled
+                <Text style={{ fontSize: 12, fontWeight: "700", color: "#0369A1" }}>
+                  Razorpay Test Mode Active
                 </Text>
-                <Text style={{ fontSize: 11, color: "#1D4ED8", marginTop: 2 }}>
-                  Dummy Key in use. Use test card number <Text style={{ fontWeight: "700" }}>4242 4242 4242 4242</Text>
+                <Text style={{ fontSize: 11, color: "#0284C7", marginTop: 2 }}>
+                  Key ID: <Text style={{ fontWeight: "700" }}>{process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_dummyKeyId12345"}</Text>
                 </Text>
               </View>
             </View>
 
             {/* Total Amount Display */}
             <View style={styles.amountDisplayBox}>
-              <Text style={{ fontSize: 13, color: "#6B7280" }}>Total to Pay:</Text>
-              <Text style={{ fontSize: 22, fontWeight: "800", color: "#111827" }}>
+              <Text style={{ fontSize: 13, color: "#6B7280" }}>Amount to Pay:</Text>
+              <Text style={{ fontSize: 22, fontWeight: "800", color: "#0C2340" }}>
                 ₹{total.toFixed(2)}
               </Text>
             </View>
 
-            {/* Cardholder Name */}
-            <View style={{ marginBottom: 12 }}>
-              <Text style={styles.inputLabel}>Cardholder Name</Text>
-              <TextInput
-                style={styles.stripeInput}
-                value={cardName}
-                onChangeText={setCardName}
-                placeholder="Name on card"
-                placeholderTextColor="#9CA3AF"
-              />
+            {/* Razorpay Options Tabs (UPI / Card / NetBanking) */}
+            <View style={{ flexDirection: "row", marginBottom: 14, backgroundColor: "#F3F4F6", borderRadius: 8, padding: 3 }}>
+              <TouchableOpacity
+                onPress={() => setRazorpayOption("upi")}
+                style={{
+                  flex: 1,
+                  paddingVertical: 8,
+                  alignItems: "center",
+                  borderRadius: 6,
+                  backgroundColor: razorpayOption === "upi" ? "#0C2340" : "transparent",
+                }}
+              >
+                <Text style={{ fontSize: 12, fontWeight: "700", color: razorpayOption === "upi" ? "#FFF" : "#4B5563" }}>
+                  UPI / GPay
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setRazorpayOption("card")}
+                style={{
+                  flex: 1,
+                  paddingVertical: 8,
+                  alignItems: "center",
+                  borderRadius: 6,
+                  backgroundColor: razorpayOption === "card" ? "#0C2340" : "transparent",
+                }}
+              >
+                <Text style={{ fontSize: 12, fontWeight: "700", color: razorpayOption === "card" ? "#FFF" : "#4B5563" }}>
+                  Cards
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setRazorpayOption("netbanking")}
+                style={{
+                  flex: 1,
+                  paddingVertical: 8,
+                  alignItems: "center",
+                  borderRadius: 6,
+                  backgroundColor: razorpayOption === "netbanking" ? "#0C2340" : "transparent",
+                }}
+              >
+                <Text style={{ fontSize: 12, fontWeight: "700", color: razorpayOption === "netbanking" ? "#FFF" : "#4B5563" }}>
+                  NetBanking
+                </Text>
+              </TouchableOpacity>
             </View>
 
-            {/* Card Number */}
-            <View style={{ marginBottom: 12 }}>
-              <Text style={styles.inputLabel}>Card Number</Text>
-              <TextInput
-                style={styles.stripeInput}
-                value={cardNumber}
-                onChangeText={setCardNumber}
-                placeholder="4242 4242 4242 4242"
-                placeholderTextColor="#9CA3AF"
-                keyboardType="numeric"
-              />
-            </View>
+            {/* Tab Body */}
+            {razorpayOption === "upi" && (
+              <View style={{ marginBottom: 16 }}>
+                <Text style={styles.inputLabel}>UPI ID / VPA</Text>
+                <TextInput
+                  style={styles.stripeInput}
+                  value={upiId}
+                  onChangeText={setUpiId}
+                  placeholder="success@razorpay"
+                  placeholderTextColor="#9CA3AF"
+                />
+                <Text style={{ fontSize: 11, color: "#6B7280", marginTop: 4 }}>
+                  In test mode, any valid format like success@razorpay works instantly.
+                </Text>
+              </View>
+            )}
 
-            {/* Expiry & CVC Row */}
-            <View style={{ flexDirection: "row", gap: 12, marginBottom: 20 }}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.inputLabel}>Expiry (MM/YY)</Text>
+            {razorpayOption === "card" && (
+              <View style={{ marginBottom: 16 }}>
+                <Text style={styles.inputLabel}>Test Card</Text>
                 <TextInput
                   style={styles.stripeInput}
-                  value={cardExpiry}
-                  onChangeText={setCardExpiry}
-                  placeholder="12/28"
-                  placeholderTextColor="#9CA3AF"
+                  value="4111 1111 1111 1111"
+                  editable={false}
                 />
+                <Text style={{ fontSize: 11, color: "#6B7280", marginTop: 4 }}>
+                  Razorpay Standard Test Card auto-filled.
+                </Text>
               </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.inputLabel}>CVC / CVV</Text>
-                <TextInput
-                  style={styles.stripeInput}
-                  value={cardCvc}
-                  onChangeText={setCardCvc}
-                  placeholder="123"
-                  placeholderTextColor="#9CA3AF"
-                  keyboardType="numeric"
-                  secureTextEntry
-                />
+            )}
+
+            {razorpayOption === "netbanking" && (
+              <View style={{ marginBottom: 16 }}>
+                <Text style={styles.inputLabel}>Bank Selected</Text>
+                <View style={[styles.stripeInput, { justifyContent: "center" }]}>
+                  <Text style={{ fontSize: 14, color: "#111827", fontWeight: "600" }}>
+                    HDFC / ICICI / SBI (Test Bank)
+                  </Text>
+                </View>
               </View>
-            </View>
+            )}
 
             {/* Pay Button */}
             <TouchableOpacity
-              onPress={handleStripeTestPayment}
-              disabled={processingStripe}
-              style={[styles.stripePayBtn, processingStripe && { backgroundColor: "#4B5563" }]}
+              onPress={handleRazorpayTestPayment}
+              disabled={processingRazorpay}
+              style={[styles.stripePayBtn, { backgroundColor: "#0C2340" }, processingRazorpay && { backgroundColor: "#4B5563" }]}
             >
-              {processingStripe ? (
+              {processingRazorpay ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
                 <Text style={styles.stripePayBtnText}>
-                  Pay ₹{total.toFixed(2)} via Stripe (Test)
+                  Complete Razorpay Payment (₹{total.toFixed(2)})
                 </Text>
               )}
             </TouchableOpacity>

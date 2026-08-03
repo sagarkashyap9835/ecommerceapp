@@ -21,7 +21,7 @@
     "express": "^5.2.1",
     "mongoose": "^8.24.2",
     "multer": "^2.2.0",
-    "stripe": "^22.4.0"
+    "razorpay": "^2.9.8"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
