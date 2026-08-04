@@ -4,9 +4,11 @@ import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "@/assets/constants";
 import { useCart } from "../../../context/CartContext";
+import { useWishlist } from "../../../context/WishlistContext";
 
 export default function TabLayout() {
   const { itemCount } = useCart();
+  const { wishlist } = useWishlist();
 
   return (
     <Tabs
@@ -106,6 +108,13 @@ export default function TabLayout() {
                 size={22}
                 color={focused ? "#EF4444" : color}
               />
+              {wishlist.length > 0 && (
+                <View style={styles.wishlistBadge}>
+                  <Text style={styles.wishlistBadgeText}>
+                    {wishlist.length > 99 ? "99+" : wishlist.length}
+                  </Text>
+                </View>
+              )}
             </View>
           ),
         }}
@@ -157,6 +166,25 @@ const styles = StyleSheet.create({
     borderColor: "#FFFFFF",
   },
   cartBadgeText: {
+    color: "#FFFFFF",
+    fontSize: 9,
+    fontWeight: "800",
+  },
+  wishlistBadge: {
+    position: "absolute",
+    top: -4,
+    right: -7,
+    backgroundColor: "#8B5CF6",
+    borderRadius: 9,
+    minWidth: 16,
+    height: 16,
+    paddingHorizontal: 4,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1.5,
+    borderColor: "#FFFFFF",
+  },
+  wishlistBadgeText: {
     color: "#FFFFFF",
     fontSize: 9,
     fontWeight: "800",

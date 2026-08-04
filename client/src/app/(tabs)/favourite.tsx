@@ -14,7 +14,7 @@ export default function Favourite() {
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       {/* हेडर */}
-      <Header title='Wishlist' showMenu showCart />
+      <Header title={`Wishlist (${wishlist.length})`} showMenu showCart />
 
       {wishlist && wishlist.length > 0 ? (
         /* ग्रिड लिस्ट (2-Column Grid Layout) */

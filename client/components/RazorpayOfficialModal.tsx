@@ -82,7 +82,7 @@ export const RazorpayOfficialModal: React.FC<RazorpayOfficialModalProps> = ({
               key: keyId,
               amount: amountInPaisa,
               currency: currency,
-              name: "Apna Ecommerce",
+              name: "Gramo Kart",
               description: "Order Payment",
               order_id: orderId,
               handler: function (response: any) {
