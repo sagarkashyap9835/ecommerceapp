@@ -21,6 +21,8 @@ import Toast from "react-native-toast-message";
 import { useAuth } from "@clerk/expo";
 import api from "../../constants/api";
 import { getEstimatedDelivery } from "../../utils/delivery";
+import paymentService from "../../services/paymentService";
+import RazorpayOfficialModal from "../../components/RazorpayOfficialModal";
 
 export default function Checkout() {
   const { getToken } = useAuth();
@@ -39,6 +41,7 @@ export default function Checkout() {
   const [razorpayOption, setRazorpayOption] = useState<"upi" | "card" | "netbanking">("upi");
   const [upiId, setUpiId] = useState("success@razorpay");
   const [razorpayOrderId, setRazorpayOrderId] = useState<string>("");
+  const [razorpayKeyId, setRazorpayKeyId] = useState<string>("");
   const [processingRazorpay, setProcessingRazorpay] = useState(false);
 
   const shipping = 0;
@@ -77,21 +80,19 @@ export default function Checkout() {
     if (paymentMethod === "razorpay") {
       try {
         setLoading(true);
-        const token = await getToken();
-        const { data } = await api.post(
-          "/orders/create-razorpay-order",
-          {},
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        if (data.success) {
-          setRazorpayOrderId(data.orderId);
+        const token = (await getToken()) || undefined;
+        // Step 1: Create Razorpay Order via Payment Service
+        const res = await paymentService.createRazorpayOrder(total, token);
+        if (res.success && res.order_id) {
+          setRazorpayOrderId(res.order_id);
+          setRazorpayKeyId(res.key_id);
           setRazorpayModalVisible(true);
         }
       } catch (err: any) {
         Toast.show({
           type: "error",
           text1: "Razorpay Error",
-          text2: err.response?.data?.message || "Failed to initialize Razorpay order",
+          text2: err.message || "Failed to initialize Razorpay order",
           position: "top",
         });
       } finally {
@@ -146,13 +147,17 @@ export default function Checkout() {
     }
   };
 
-  // Process Razorpay Payment in Test Mode
-  const handleRazorpayTestPayment = async () => {
-    setProcessingRazorpay(true);
+  // Process Official Razorpay Payment Success
+  const handleOfficialRazorpaySuccess = async (paymentData: {
+    razorpay_order_id: string;
+    razorpay_payment_id: string;
+    razorpay_signature: string;
+  }) => {
+    setLoading(true);
     try {
-      const token = await getToken();
-      const testPaymentId = "pay_test_" + Date.now();
+      const token = (await getToken()) || undefined;
 
+      // 1. Create order in MongoDB (paymentStatus "pending")
       const { data } = await api.post(
         "/orders",
         {
@@ -165,38 +170,69 @@ export default function Checkout() {
             country: selectedAddress?.country,
           },
           paymentMethod: "razorpay",
-          paymentStatus: "paid",
-          paymentIntentId: testPaymentId,
-          razorpayOrderId: razorpayOrderId || ("order_test_" + Date.now()),
+          paymentStatus: "pending",
+          paymentIntentId: paymentData.razorpay_payment_id,
+          razorpayOrderId: paymentData.razorpay_order_id,
           estimatedDeliveryDate: deliveryEstimate.startDate,
         },
         {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
         }
       );
 
-      if (data.success) {
-        setRazorpayModalVisible(false);
-        Toast.show({
-          type: "success",
-          text1: "Razorpay Payment Successful! 💳",
-          text2: `Payment of ₹${total.toFixed(2)} completed via Razorpay.`,
-          position: "top",
-        });
-        await clearCart();
-        router.replace("/orders" as any);
+      if (data.success && data.data?._id) {
+        // 2. Verify signature on backend (/api/payment/verify)
+        const verification = await paymentService.verifyPaymentSignature(
+          {
+            razorpay_order_id: paymentData.razorpay_order_id,
+            razorpay_payment_id: paymentData.razorpay_payment_id,
+            razorpay_signature: paymentData.razorpay_signature,
+            mongoOrderId: data.data._id,
+          },
+          token
+        );
+
+        if (verification.success) {
+          setRazorpayModalVisible(false);
+          Toast.show({
+            type: "success",
+            text1: "Payment Verified! 🎉",
+            text2: `Payment of ₹${total.toFixed(2)} completed successfully via Razorpay.`,
+            position: "top",
+          });
+          await clearCart();
+          router.replace("/orders" as any);
+        } else {
+          Toast.show({
+            type: "error",
+            text1: "Payment Verification Failed",
+            text2: verification.message || "Razorpay signature verification failed.",
+            position: "top",
+          });
+        }
       }
     } catch (error: any) {
-      console.error("Error processing Razorpay payment:", error);
+      console.error("Error processing Razorpay success:", error);
       Toast.show({
         type: "error",
-        text1: "Payment Failed",
-        text2: error.response?.data?.message || "Razorpay payment could not be completed",
+        text1: "Payment Error",
+        text2: error.message || "Failed to process Razorpay payment.",
         position: "top",
       });
     } finally {
-      setProcessingRazorpay(false);
+      setLoading(false);
     }
+  };
+
+  // Process Official Razorpay Payment Failure
+  const handleOfficialRazorpayFailure = (error: { code: string; description: string }) => {
+    setRazorpayModalVisible(false);
+    Toast.show({
+      type: "error",
+      text1: "Payment Failed ❌",
+      text2: error.description || "The payment was cancelled or failed on Razorpay Gateway.",
+      position: "top",
+    });
   };
 
   useEffect(() => {
@@ -378,147 +414,16 @@ export default function Checkout() {
         </TouchableOpacity>
       </View>
 
-      {/* RAZORPAY TEST MODE MODAL */}
-      <Modal visible={razorpayModalVisible} transparent animationType="slide">
-        <Pressable style={styles.modalOverlay} onPress={() => setRazorpayModalVisible(false)}>
-          <Pressable style={styles.modalContentCard} onPress={(e) => e.stopPropagation()}>
-            {/* Modal Header */}
-            <View style={styles.modalHeader}>
-              <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <Ionicons name="wallet-outline" size={24} color="#0C2340" style={{ marginRight: 8 }} />
-                <Text style={styles.modalTitle}>Razorpay Payment Gateway</Text>
-              </View>
-              <TouchableOpacity onPress={() => setRazorpayModalVisible(false)}>
-                <Ionicons name="close" size={22} color="#6B7280" />
-              </TouchableOpacity>
-            </View>
-
-            {/* Test Credentials Banner */}
-            <View style={styles.testModeInfoBanner}>
-              <Ionicons name="information-circle-outline" size={20} color="#0284C7" style={{ marginRight: 8 }} />
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 12, fontWeight: "700", color: "#0369A1" }}>
-                  Razorpay Test Mode Active
-                </Text>
-                <Text style={{ fontSize: 11, color: "#0284C7", marginTop: 2 }}>
-                  Key ID: <Text style={{ fontWeight: "700" }}>{process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_dummyKeyId12345"}</Text>
-                </Text>
-              </View>
-            </View>
-
-            {/* Total Amount Display */}
-            <View style={styles.amountDisplayBox}>
-              <Text style={{ fontSize: 13, color: "#6B7280" }}>Amount to Pay:</Text>
-              <Text style={{ fontSize: 22, fontWeight: "800", color: "#0C2340" }}>
-                ₹{total.toFixed(2)}
-              </Text>
-            </View>
-
-            {/* Razorpay Options Tabs (UPI / Card / NetBanking) */}
-            <View style={{ flexDirection: "row", marginBottom: 14, backgroundColor: "#F3F4F6", borderRadius: 8, padding: 3 }}>
-              <TouchableOpacity
-                onPress={() => setRazorpayOption("upi")}
-                style={{
-                  flex: 1,
-                  paddingVertical: 8,
-                  alignItems: "center",
-                  borderRadius: 6,
-                  backgroundColor: razorpayOption === "upi" ? "#0C2340" : "transparent",
-                }}
-              >
-                <Text style={{ fontSize: 12, fontWeight: "700", color: razorpayOption === "upi" ? "#FFF" : "#4B5563" }}>
-                  UPI / GPay
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => setRazorpayOption("card")}
-                style={{
-                  flex: 1,
-                  paddingVertical: 8,
-                  alignItems: "center",
-                  borderRadius: 6,
-                  backgroundColor: razorpayOption === "card" ? "#0C2340" : "transparent",
-                }}
-              >
-                <Text style={{ fontSize: 12, fontWeight: "700", color: razorpayOption === "card" ? "#FFF" : "#4B5563" }}>
-                  Cards
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => setRazorpayOption("netbanking")}
-                style={{
-                  flex: 1,
-                  paddingVertical: 8,
-                  alignItems: "center",
-                  borderRadius: 6,
-                  backgroundColor: razorpayOption === "netbanking" ? "#0C2340" : "transparent",
-                }}
-              >
-                <Text style={{ fontSize: 12, fontWeight: "700", color: razorpayOption === "netbanking" ? "#FFF" : "#4B5563" }}>
-                  NetBanking
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Tab Body */}
-            {razorpayOption === "upi" && (
-              <View style={{ marginBottom: 16 }}>
-                <Text style={styles.inputLabel}>UPI ID / VPA</Text>
-                <TextInput
-                  style={styles.stripeInput}
-                  value={upiId}
-                  onChangeText={setUpiId}
-                  placeholder="success@razorpay"
-                  placeholderTextColor="#9CA3AF"
-                />
-                <Text style={{ fontSize: 11, color: "#6B7280", marginTop: 4 }}>
-                  In test mode, any valid format like success@razorpay works instantly.
-                </Text>
-              </View>
-            )}
-
-            {razorpayOption === "card" && (
-              <View style={{ marginBottom: 16 }}>
-                <Text style={styles.inputLabel}>Test Card</Text>
-                <TextInput
-                  style={styles.stripeInput}
-                  value="4111 1111 1111 1111"
-                  editable={false}
-                />
-                <Text style={{ fontSize: 11, color: "#6B7280", marginTop: 4 }}>
-                  Razorpay Standard Test Card auto-filled.
-                </Text>
-              </View>
-            )}
-
-            {razorpayOption === "netbanking" && (
-              <View style={{ marginBottom: 16 }}>
-                <Text style={styles.inputLabel}>Bank Selected</Text>
-                <View style={[styles.stripeInput, { justifyContent: "center" }]}>
-                  <Text style={{ fontSize: 14, color: "#111827", fontWeight: "600" }}>
-                    HDFC / ICICI / SBI (Test Bank)
-                  </Text>
-                </View>
-              </View>
-            )}
-
-            {/* Pay Button */}
-            <TouchableOpacity
-              onPress={handleRazorpayTestPayment}
-              disabled={processingRazorpay}
-              style={[styles.stripePayBtn, { backgroundColor: "#0C2340" }, processingRazorpay && { backgroundColor: "#4B5563" }]}
-            >
-              {processingRazorpay ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
-              ) : (
-                <Text style={styles.stripePayBtnText}>
-                  Complete Razorpay Payment (₹{total.toFixed(2)})
-                </Text>
-              )}
-            </TouchableOpacity>
-          </Pressable>
-        </Pressable>
-      </Modal>
+      {/* OFFICIAL RAZORPAY GATEWAY MODAL */}
+      <RazorpayOfficialModal
+        visible={razorpayModalVisible}
+        onClose={() => setRazorpayModalVisible(false)}
+        orderId={razorpayOrderId}
+        keyId={razorpayKeyId || process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_TLWuXzr2B5D1hJ"}
+        amount={total}
+        onSuccess={handleOfficialRazorpaySuccess}
+        onFailure={handleOfficialRazorpayFailure}
+      />
     </SafeAreaView>
   );
 }
