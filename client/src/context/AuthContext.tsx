@@ -9,6 +9,7 @@ type ClerkUser = {
   fullName: string;
   firstName: string;
   lastName: string;
+  username: string | null;
   emailAddresses: { emailAddress: string }[];
   primaryEmailAddress: { emailAddress: string } | null;
   imageUrl: string;
@@ -81,6 +82,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     fullName: firebaseUser.displayName || "User",
     firstName: firebaseUser.displayName?.split(" ")[0] || "User",
     lastName: firebaseUser.displayName?.split(" ").slice(1).join(" ") || "",
+    username: firebaseUser.email?.split("@")[0] || "user",
     emailAddresses: firebaseUser.email ? [{ emailAddress: firebaseUser.email }] : [],
     primaryEmailAddress: firebaseUser.email ? { emailAddress: firebaseUser.email } : null,
     imageUrl: firebaseUser.photoURL || "",
