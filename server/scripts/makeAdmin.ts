@@ -19,7 +19,15 @@ const makeAdmin = async () => {
       return;
     }
 
-    if (!user) {
+    if (user) {
+      if (user.role !== "admin") {
+        user.role = "admin";
+        await user.save();
+        console.log("✅ Admin promoted successfully in DB");
+      } else {
+        console.log("✅ Admin role verified in DB");
+      }
+    } else {
       console.log(`🔍 User ${email} not found in DB. Creating from Firebase...`);
       console.log(`📥 Syncing admin user from Firebase to DB...`);
       user = await User.create({
@@ -29,11 +37,6 @@ const makeAdmin = async () => {
         image: firebaseUser.photoURL || "",
         role: "admin",
       });
-    } else {
-      user.role = "admin";
-      // Update firebaseUid for old users who might not have it set properly
-      user.firebaseUid = firebaseUser.uid;
-      await user.save();
     }
 
     // Set custom claims in Firebase Auth for admin
@@ -45,7 +48,6 @@ const makeAdmin = async () => {
       console.log("⚠️ Could not set custom claims in Firebase Auth. Ensure Firebase Admin is fully configured with credentials.");
     }
 
-    console.log("✅ Admin promoted successfully in DB");
   } catch (error: any) {
     console.error("❌ Admin promotion failed:", error.message);
   }

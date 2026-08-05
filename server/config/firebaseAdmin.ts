@@ -1,11 +1,37 @@
-import { initializeApp, getApps, getApp } from 'firebase-admin/app';
+import { initializeApp, getApps, getApp, cert } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import dotenv from 'dotenv';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
 dotenv.config();
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Path to the service account JSON file
+const serviceAccountPath = path.join(__dirname, 'firebase-service-account.json');
+
+let adminApp;
 const apps = getApps();
-const adminApp = apps.length === 0 ? initializeApp({
-  projectId: 'gramokart',
-}) : getApp();
+
+if (apps.length === 0) {
+  if (fs.existsSync(serviceAccountPath)) {
+    const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
+    adminApp = initializeApp({
+      credential: cert(serviceAccount),
+      projectId: 'gramokart',
+    });
+    console.log('✅ Firebase Admin Initialized with Service Account');
+  } else {
+    console.warn('⚠️ firebase-service-account.json not found! Initializing without credentials.');
+    adminApp = initializeApp({
+      projectId: 'gramokart',
+    });
+  }
+} else {
+  adminApp = getApp();
+}
 
 export const adminAuth = getAuth(adminApp);

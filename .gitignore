@@ -1,2 +1,18 @@
-node_modules
+node_modules/
+.env
+.env.*
 *.env
+
+# Firebase credentials
+firebase-service-account.json
+*firebase-adminsdk*.json
+
+# Expo/React Native generated
+.expo/
+dist/
+web-build/
+/client/ios/
+/client/android/
+
+# Misc
+.DS_Store

@@ -41,10 +41,6 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/wishlist", wishlistRoutes);
 app.use("/api/payment", paymentRoutes);
 
-import { protect } from "./middleware/auth.js";
-app.get("/api/users/me", protect, (req: any, res: any) => {
-    res.json({ success: true, data: req.user });
-});
 app.listen(port, () => {
     console.log(`Server is running at http://localhost:${port}`);
 });

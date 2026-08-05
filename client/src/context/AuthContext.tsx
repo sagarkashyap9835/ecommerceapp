@@ -42,21 +42,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setFirebaseUser(user);
       if (user) {
         try {
-          const token = await user.getIdToken();
-          // Fetch user profile from backend to get the role
-          const response = await fetch(`${api.defaults.baseURL}/users/me`, {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          });
-          const result = await response.json();
-          if (result.success && result.data?.role) {
-            setUserRole(result.data.role);
+          // Fetch token and force refresh to get latest claims if needed, but normally getIdTokenResult() is fine.
+          const tokenResult = await user.getIdTokenResult();
+          
+          if (tokenResult.claims.role) {
+            setUserRole(tokenResult.claims.role as string);
           } else {
+            // If no claim is found, default to 'user'
             setUserRole('user');
           }
         } catch (e) {
-          console.error("Failed to fetch user profile", e);
+          console.error("Failed to fetch user role from Firebase", e);
           setUserRole('user');
         }
       } else {
@@ -91,16 +87,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     publicMetadata: { role: userRole },
     reload: async () => {
       await firebaseUser.reload();
-      const token = await firebaseUser.getIdToken(true);
-      try {
-        const response = await fetch(`${api.defaults.baseURL}/users/me`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const result = await response.json();
-        if (result.success && result.data?.role) {
-          setUserRole(result.data.role);
-        }
-      } catch (e) {}
+      const tokenResult = await firebaseUser.getIdTokenResult(true);
+      if (tokenResult.claims.role) {
+        setUserRole(tokenResult.claims.role as string);
+      }
     }
   } : null;
 
