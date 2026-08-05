@@ -39,11 +39,20 @@ export default function Page() {
             await signInWithEmailAndPassword(auth, emailAddress, password);
             router.replace("/");
         } catch (err: any) {
-            console.error("Sign in error:", err);
+            console.log("Sign in error:", err.message);
+            
+            let errorMessage = "Something went wrong. Please try again.";
+            
+            if (err?.code === 'auth/wrong-password' || err?.code === 'auth/invalid-credential') {
+                errorMessage = "Invalid password.";
+            } else if (err?.code === 'auth/user-not-found') {
+                errorMessage = "Email doesn't exist, first sign up.";
+            }
+
             Toast.show({
                 type: 'error',
                 text1: 'Sign In Failed',
-                text2: err?.message || "Invalid email or password"
+                text2: errorMessage
             });
         } finally {
             setLoading(false);
