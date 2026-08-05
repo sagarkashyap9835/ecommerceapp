@@ -3,7 +3,7 @@ import { ScrollView, Text, TouchableOpacity, View, ActivityIndicator, RefreshCon
 import { COLORS, getStatusColor } from "@/assets/constants";
 import { Ionicons } from "@expo/vector-icons";
 // import { dummyOrders, dummyUser } from "@/assets/assets";
-import { useAuth } from "@clerk/expo";
+import { useAuth } from "@/context/AuthContext";
 import api from "../../../../constants/api";
 export default function AdminOrders() {
     const {getToken}=useAuth()

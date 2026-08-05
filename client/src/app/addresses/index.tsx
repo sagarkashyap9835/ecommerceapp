@@ -5,7 +5,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import Header from "../../../components/Header";
 import { COLORS } from "@/assets/constants";
 import type { Address } from "@/assets/constants/types";
-import { useAuth } from "@clerk/expo";
+import { useAuth } from "@/context/AuthContext";
 import Toast from "react-native-toast-message";
 import api from "../../../constants/api";
 

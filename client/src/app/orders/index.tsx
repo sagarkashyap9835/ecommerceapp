@@ -7,7 +7,7 @@ import Header from "../../../components/Header";
 import { COLORS, getStatusColor } from "@/assets/constants";
 import type { Order } from "@/assets/constants/types";
 import { formatDate } from "@/assets/assets";
-import { useAuth } from "@clerk/expo";
+import { useAuth } from "@/context/AuthContext";
 import api from "../../../constants/api";
 import { getDeliveryDateForOrder } from "../../../utils/delivery";
 

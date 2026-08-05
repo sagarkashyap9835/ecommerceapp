@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View, ActivityIndicator, RefreshControl, Image, StyleSheet, Modal, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "@/assets/constants";
-import { useAuth } from "@clerk/expo";
+import { useAuth } from "@/context/AuthContext";
 import Toast from 'react-native-toast-message';
 import api from "../../../../../constants/api";
 

@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { getAuth, clerkClient } from "@clerk/express";
+import { adminAuth } from "../config/firebaseAdmin.js";
 import User from "../models/User.js";
 
 export const protect = async (
@@ -8,39 +8,55 @@ export const protect = async (
   next: NextFunction
 ) => {
   try {
-    const { userId } = getAuth(req);
-
-    if (!userId) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return res.status(401).json({
         success: false,
-        message: "Not authorized",
+        message: "Not authorized, no token",
       });
     }
 
-    let user = await User.findOne({ clerkId: userId });
+    const idToken = authHeader.split("Bearer ")[1];
+    let decodedToken;
+
+    try {
+      decodedToken = await adminAuth.verifyIdToken(idToken);
+    } catch (error: any) {
+      console.error("Token verification failed:", error);
+      return res.status(401).json({
+        success: false,
+        message: "Not authorized, token failed",
+        error: error.message,
+      });
+    }
+
+    const userId = decodedToken.uid;
+    const email = decodedToken.email;
+
+    let user = await User.findOne({ firebaseUid: userId });
+
+    if (!user && email) {
+      // Try to find by email (for users migrated from Clerk)
+      user = await User.findOne({ email: email.toLowerCase() });
+      if (user) {
+        // Link the existing account to the new Firebase UID
+        user.firebaseUid = userId;
+        await user.save();
+      }
+    }
 
     if (!user) {
-      try {
-        const clerkUser = await clerkClient.users.getUser(userId);
-        const email = clerkUser.emailAddresses[0]?.emailAddress;
-        const adminEmail = process.env.ADMIN_EMAIL;
-        const role = (adminEmail && email === adminEmail) ? "admin" : "user";
+      // Create user if not exists (fallback)
+      const adminEmail = process.env.ADMIN_EMAIL;
+      const role = (adminEmail && email === adminEmail) ? "admin" : "user";
 
-        user = await User.create({
-          clerkId: userId,
-          name: `${clerkUser.firstName ?? ""} ${clerkUser.lastName ?? ""}`.trim() || "User",
-          email: email || `${userId}@clerk.user`,
-          image: clerkUser.imageUrl,
-          role: role,
-        });
-      } catch (e) {
-        user = await User.create({
-          clerkId: userId,
-          name: "User",
-          email: `${userId}@clerk.user`,
-          role: "user",
-        });
-      }
+      user = await User.create({
+        firebaseUid: userId,
+        name: decodedToken.name || "User",
+        email: email || `${userId}@firebase.user`,
+        image: decodedToken.picture || "",
+        role: role,
+      });
     }
 
     if (process.env.ADMIN_EMAIL && user.email === process.env.ADMIN_EMAIL && user.role !== "admin") {
@@ -52,9 +68,11 @@ export const protect = async (
 
     next();
   } catch (error: any) {
+    console.error("Auth middleware error:", error);
     return res.status(401).json({
       success: false,
       message: error.message || "Authentication failed",
+      error: error.message || String(error),
     });
   }
 };

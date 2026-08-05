@@ -4,11 +4,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import Toast from 'react-native-toast-message';
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, Link } from "expo-router";
-import { useSignUp, useAuth } from "@clerk/expo";
+import { useAuth } from "@/context/AuthContext";
+import { auth } from "@/config/firebase";
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { COLORS } from "@/assets/constants";
 
 export default function SignUpScreen() {
-    const { signUp } = useSignUp();
     const { isLoaded } = useAuth();
     const router = useRouter();
 
@@ -16,8 +17,6 @@ export default function SignUpScreen() {
     const [password, setPassword] = useState("");
     const [firstName, setFirstName] = useState("");
     const [lastName, setLastName] = useState("");
-    const [code, setCode] = useState("");
-    const [pendingVerification, setPendingVerification] = useState(false);
     const [loading, setLoading] = useState(false);
 
     const onSignUpPress = async () => {
@@ -34,73 +33,27 @@ export default function SignUpScreen() {
 
         setLoading(true);
         try {
-            const createResult = await signUp.create({
-                emailAddress,
-                password,
-                firstName,
-                lastName,
+            const userCredential = await createUserWithEmailAndPassword(auth, emailAddress, password);
+            
+            // Update profile with name
+            if (userCredential.user) {
+                await updateProfile(userCredential.user, {
+                    displayName: `${firstName} ${lastName}`.trim()
+                });
+            }
+
+            // Sync with backend on first load will happen when token is sent, or we can just let the middleware handle it on the next protected API call.
+            Toast.show({
+                type: 'success',
+                text1: 'Account Created',
+                text2: 'Welcome to the app!'
             });
-            console.log("Create Result:", createResult);
-
-            if (createResult.error) {
-                throw createResult.error;
-            }
-
-            const sendCodeResult = await signUp.verifications.sendEmailCode();
-            if (sendCodeResult.error) {
-                throw sendCodeResult.error;
-            }
-
-            setPendingVerification(true);
+            router.replace("/");
         } catch (err: any) {
             Toast.show({
                 type: 'error',
                 text1: 'Failed to Sign Up',
-                text2: err?.message ?? err?.errors?.[0]?.message ?? "Something went wrong"
-            });
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const onVerifyPress = async () => {
-        if (!isLoaded) return;
-
-        if (!code) {
-            Toast.show({
-                type: 'error',
-                text1: 'Missing Fields',
-                text2: 'Enter verification code'
-            });
-            return;
-        }
-
-        setLoading(true);
-        try {
-            const result = await signUp.verifications.verifyEmailCode({ code });
-
-            if (result.error) {
-                throw result.error;
-            }
-
-            if (signUp.status === "complete") {
-                const finalizeResult = await signUp.finalize();
-                 console.log("Finalize Result:", finalizeResult);
-                if (finalizeResult.error) {
-                    throw finalizeResult.error;
-                }
-                router.replace("/");
-            } else {
-                Toast.show({
-                    type: 'error',
-                    text1: 'Verification incomplete'
-                });
-            }
-        } catch (err: any) {
-            Toast.show({
-                type: 'error',
-                text1: 'Failed to Verify',
-                text2: err?.message ?? err?.errors?.[0]?.message ?? "Invalid code"
+                text2: err?.message || "Something went wrong"
             });
         } finally {
             setLoading(false);
@@ -109,85 +62,52 @@ export default function SignUpScreen() {
 
     return (
         <SafeAreaView className="flex-1 bg-white justify-center" style={{ padding: 28 }}>
-            {!pendingVerification ? (
-                <>
-                    <TouchableOpacity onPress={() => router.push("/")} className="absolute top-12 z-10">
-                        <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
-                    </TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push("/")} className="absolute top-12 z-10">
+                <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
+            </TouchableOpacity>
 
-                    {/* Header */}
-                    <View className="items-center mb-8">
-                        <Text className="text-3xl font-bold text-primary mb-2">Create Account</Text>
-                        <Text className="text-secondary">Sign up to get started</Text>
-                    </View>
+            {/* Header */}
+            <View className="items-center mb-8">
+                <Text className="text-3xl font-bold text-primary mb-2">Create Account</Text>
+                <Text className="text-secondary">Sign up to get started</Text>
+            </View>
 
-                    {/* First Name */}
-                    <View className="mb-4">
-                        <Text className="text-primary font-medium mb-2">First Name</Text>
-                        <TextInput className="w-full bg-surface p-4 rounded-xl text-primary" placeholder="John" placeholderTextColor="#999" value={firstName} onChangeText={setFirstName} />
-                    </View>
+            {/* First Name */}
+            <View className="mb-4">
+                <Text className="text-primary font-medium mb-2">First Name</Text>
+                <TextInput className="w-full bg-surface p-4 rounded-xl text-primary" placeholder="John" placeholderTextColor="#999" value={firstName} onChangeText={setFirstName} />
+            </View>
 
-                    {/* Last Name */}
-                    <View className="mb-6">
-                        <Text className="text-primary font-medium mb-2">Last Name</Text>
-                        <TextInput className="w-full bg-surface p-4 rounded-xl text-primary" placeholder="Doe" placeholderTextColor="#999" value={lastName} onChangeText={setLastName} />
-                    </View>
+            {/* Last Name */}
+            <View className="mb-6">
+                <Text className="text-primary font-medium mb-2">Last Name</Text>
+                <TextInput className="w-full bg-surface p-4 rounded-xl text-primary" placeholder="Doe" placeholderTextColor="#999" value={lastName} onChangeText={setLastName} />
+            </View>
 
-                    {/* Email */}
-                    <View className="mb-4">
-                        <Text className="text-primary font-medium mb-2">Email</Text>
-                        <TextInput className="w-full bg-surface p-4 rounded-xl text-primary" placeholder="user@example.com" placeholderTextColor="#999" autoCapitalize="none" keyboardType="email-address" value={emailAddress} onChangeText={setEmailAddress} />
-                    </View>
+            {/* Email */}
+            <View className="mb-4">
+                <Text className="text-primary font-medium mb-2">Email</Text>
+                <TextInput className="w-full bg-surface p-4 rounded-xl text-primary" placeholder="user@example.com" placeholderTextColor="#999" autoCapitalize="none" keyboardType="email-address" value={emailAddress} onChangeText={setEmailAddress} />
+            </View>
 
-                    {/* Password */}
-                    <View className="mb-6">
-                        <Text className="text-primary font-medium mb-2">Password</Text>
-                        <TextInput className="w-full bg-surface p-4 rounded-xl text-primary" placeholder="********" placeholderTextColor="#999" secureTextEntry value={password} onChangeText={setPassword} />
-                    </View>
+            {/* Password */}
+            <View className="mb-6">
+                <Text className="text-primary font-medium mb-2">Password</Text>
+                <TextInput className="w-full bg-surface p-4 rounded-xl text-primary" placeholder="********" placeholderTextColor="#999" secureTextEntry value={password} onChangeText={setPassword} />
+            </View>
 
-                    {/* Submit */}
-                    <TouchableOpacity className="w-full bg-primary py-4 rounded-full items-center mb-10" onPress={onSignUpPress} disabled={loading}>
-                        {loading ? <ActivityIndicator color="#fff" /> : <Text className="text-white font-bold text-lg">Continue</Text>}
-                    </TouchableOpacity>
+            {/* Submit */}
+            <TouchableOpacity className="w-full bg-primary py-4 rounded-full items-center mb-10" onPress={onSignUpPress} disabled={loading}>
+                {loading ? <ActivityIndicator color="#fff" /> : <Text className="text-white font-bold text-lg">Continue</Text>}
+            </TouchableOpacity>
 
-                    {/* Footer */}
-                    <View className="flex-row justify-center">
-                        <Text className="text-secondary">Already have an account? </Text>
-                        <Link href="/sign-in">
-                            <Text className="text-primary font-bold">Login</Text>
-                        </Link>
-                    </View>
-                </>
-            ) : (
-                <>
-                    <TouchableOpacity 
-                        onPress={() => {
-                            if (router.canGoBack()) {
-                                router.back();
-                            } else {
-                                router.replace("/(auth)/sign-in");
-                            }
-                        }} 
-                        className="absolute top-12 z-10"
-                    >
-                        <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
-                    </TouchableOpacity>
-
-                    {/* Verification */}
-                    <View className="items-center mb-8">
-                        <Text className="text-3xl font-bold text-primary mb-2">Verify Email</Text>
-                        <Text className="text-secondary text-center">Enter the code sent to your email</Text>
-                    </View>
-
-                    <View className="mb-6">
-                        <TextInput className="w-full bg-surface p-4 rounded-xl text-primary text-center tracking-widest" placeholder="123456" placeholderTextColor="#999" keyboardType="number-pad" value={code} onChangeText={setCode} />
-                    </View>
-
-                    <TouchableOpacity className="w-full bg-primary py-4 rounded-full items-center" onPress={onVerifyPress} disabled={loading}>
-                        {loading ? <ActivityIndicator color="#fff" /> : <Text className="text-white font-bold text-lg">Verify</Text>}
-                    </TouchableOpacity>
-                </>
-            )}
+            {/* Footer */}
+            <View className="flex-row justify-center">
+                <Text className="text-secondary">Already have an account? </Text>
+                <Link href="/sign-in">
+                    <Text className="text-primary font-bold">Login</Text>
+                </Link>
+            </View>
         </SafeAreaView>
     );
 }

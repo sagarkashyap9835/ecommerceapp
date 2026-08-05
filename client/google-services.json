@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "225141346573",
+    "project_id": "gramokart",
+    "storage_bucket": "gramokart.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:225141346573:android:a2a299361df0e206df6044",
+        "android_client_info": {
+          "package_name": "com.anonymous.client"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "225141346573-el20qehho1v4hi69bo1rn8sbqf1pgjd9.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyATxiZIXxOKB2vIcmAsf1SnNvAKN3iee48"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "225141346573-el20qehho1v4hi69bo1rn8sbqf1pgjd9.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

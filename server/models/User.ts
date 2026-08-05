@@ -3,7 +3,7 @@ import { IUser } from "../types/index.js";
 
 const userSchema = new Schema<IUser>(
   {
-    clerkId: {
+    firebaseUid: {
       type: String,
       required: true,
       unique: true,

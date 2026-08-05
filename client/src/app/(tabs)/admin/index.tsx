@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { ScrollView, Text, View, ActivityIndicator, RefreshControl, StyleSheet } from "react-native";
 import { COLORS, getStatusColor } from "@/assets/constants";
 // import { dummyAdminStats } from "@/assets/assets";
-import { useAuth } from "@clerk/expo";
+import { useAuth } from "@/context/AuthContext";
 import api from "../../../../constants/api";
 
 export default function AdminDashboard() {

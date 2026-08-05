@@ -19,7 +19,7 @@ import Toast from "react-native-toast-message";
 import { COLORS } from "@/assets/constants";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
-import { useAuth } from "@clerk/expo";
+import { useAuth } from "@/context/AuthContext";
 import api from "../../../../../../constants/api";
 import { Category } from "@/assets/constants/types";
 

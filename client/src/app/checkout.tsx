@@ -18,7 +18,7 @@ import Header from "../../components/Header";
 import { COLORS } from "@/assets/constants";
 import { Ionicons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
-import { useAuth } from "@clerk/expo";
+import { useAuth } from "@/context/AuthContext";
 import api from "../../constants/api";
 import { getEstimatedDelivery } from "../../utils/delivery";
 import paymentService from "../../services/paymentService";

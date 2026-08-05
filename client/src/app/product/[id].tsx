@@ -23,7 +23,7 @@ import { COLORS } from "@/assets/constants";
 import { Ionicons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
 import api from "../../../constants/api";
-import { useAuth } from "@clerk/expo";
+import { useAuth } from "@/context/AuthContext";
 import DeliveryEstimateCard from "../../../components/DeliveryEstimateCard";
 
 const { width } = Dimensions.get("window");

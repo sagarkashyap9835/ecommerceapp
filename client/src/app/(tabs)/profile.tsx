@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router'
 import Header from '../../../components/Header'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-import { useUser, useAuth } from '@clerk/expo'
+import { useUser, useAuth } from "@/context/AuthContext";
 import Toast from 'react-native-toast-message'
 
 // constants फ़ोल्डर से PROFILE_MENU को इम्पोर्ट किया
@@ -16,6 +16,12 @@ export default function Profile() {
   const { isLoaded, isSignedIn, user } = useUser()
   const { signOut } = useAuth()
   const [loggingOut, setLoggingOut] = useState(false)
+  
+  React.useEffect(() => {
+    if (user) {
+      user.reload().catch(console.error);
+    }
+  }, [user]);
 
   const handleLogout = async () => {
     setLoggingOut(true)

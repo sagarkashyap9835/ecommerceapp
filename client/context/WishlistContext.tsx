@@ -1,6 +1,6 @@
 import React, { createContext, ReactNode, useContext, useEffect, useState } from "react";
 import { WishlistContextType, Product } from "../constants/types";
-import { useAuth } from "@clerk/expo";
+import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "expo-router";
 import Toast from "react-native-toast-message";
 import api from "../constants/api";

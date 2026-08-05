@@ -1,4 +1,4 @@
-import { clerkClient } from "@clerk/express";
+import { adminAuth } from "../config/firebaseAdmin.js";
 import User from "../models/User.js";
 
 const makeAdmin = async () => {
@@ -10,40 +10,42 @@ const makeAdmin = async () => {
     }
 
     let user = await User.findOne({ email });
-    const client = clerkClient;
+    let firebaseUser;
+
+    try {
+      firebaseUser = await adminAuth.getUserByEmail(email);
+    } catch (err: any) {
+      console.log(`❌ Admin user ${email} not found in Firebase Auth`);
+      return;
+    }
 
     if (!user) {
-      console.log(`🔍 User ${email} not found in DB. Checking Clerk...`);
-      const clerkUsers = await client.users.getUserList({
-        emailAddress: [email],
-      });
-
-      if (!clerkUsers.data || clerkUsers.data.length === 0) {
-        console.log("❌ Admin user not found in DB or Clerk");
-        return;
-      }
-
-      const clerkUser = clerkUsers.data[0];
-      console.log(`📥 Syncing admin user from Clerk to DB...`);
+      console.log(`🔍 User ${email} not found in DB. Creating from Firebase...`);
+      console.log(`📥 Syncing admin user from Firebase to DB...`);
       user = await User.create({
-        clerkId: clerkUser.id,
-        name: `${clerkUser.firstName ?? ""} ${clerkUser.lastName ?? ""}`.trim() || "Admin",
-        email: clerkUser.emailAddresses[0]?.emailAddress,
-        image: clerkUser.imageUrl,
+        firebaseUid: firebaseUser.uid,
+        name: firebaseUser.displayName || "Admin",
+        email: firebaseUser.email,
+        image: firebaseUser.photoURL || "",
         role: "admin",
       });
     } else {
       user.role = "admin";
+      // Update firebaseUid for old users who might not have it set properly
+      user.firebaseUid = firebaseUser.uid;
       await user.save();
     }
 
-    await client.users.updateUserMetadata(user.clerkId, {
-      publicMetadata: {
-        role: "admin",
-      },
-    });
+    // Set custom claims in Firebase Auth for admin
+    try {
+      if (user && user.firebaseUid) {
+        await adminAuth.setCustomUserClaims(user.firebaseUid, { role: 'admin' });
+      }
+    } catch (err: any) {
+      console.log("⚠️ Could not set custom claims in Firebase Auth. Ensure Firebase Admin is fully configured with credentials.");
+    }
 
-    console.log("✅ Admin promoted successfully in DB and Clerk");
+    console.log("✅ Admin promoted successfully in DB");
   } catch (error: any) {
     console.error("❌ Admin promotion failed:", error.message);
   }

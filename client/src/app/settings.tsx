@@ -13,7 +13,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import Header from "../../components/Header";
 import { Ionicons } from "@expo/vector-icons";
-import { useUser, useAuth } from "@clerk/expo";
+import { useUser, useAuth } from "@/context/AuthContext";
 import { useRouter } from "expo-router";
 import Toast from "react-native-toast-message";
 

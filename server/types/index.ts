@@ -122,7 +122,7 @@ export interface IProduct extends Document {
 export interface IUser extends Document {
     name: string;
     email: string;
-    clerkId: string;
+    firebaseUid: string;
     image?: string;
     role: "user" | "admin";
     createdAt: Date;
