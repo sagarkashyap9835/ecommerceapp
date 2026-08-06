@@ -54,6 +54,7 @@ export interface Product {
 
 export type ProductCardProps = {
     product: Product;
+    index?: number;
 };
 
 export interface CartItem {

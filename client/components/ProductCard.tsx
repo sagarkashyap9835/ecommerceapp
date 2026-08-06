@@ -6,6 +6,8 @@ import {
   Image,
   Dimensions,
 } from "react-native";
+import Animated, { FadeInDown } from "react-native-reanimated";
+import { LinearGradient } from "expo-linear-gradient";
 import { Link } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "../constants";
@@ -14,50 +16,49 @@ import { useWishlist } from "../context/WishlistContext";
 
 const { width } = Dimensions.get("window");
 
-export default function ProductCard({ product }: ProductCardProps) {
-const {toggleWishlist,isInWishlist}=useWishlist()
-const isLiked=isInWishlist(product._id)
-
-
-  // const isLiked = true;
+export default function ProductCard({ product, index = 0 }: ProductCardProps) {
+  const { toggleWishlist, isInWishlist } = useWishlist();
+  const isLiked = isInWishlist(product._id);
 
   return (
-    <View
+    <Animated.View
+      entering={FadeInDown.delay(index * 100).springify()}
       style={{
-        width: (width - 56) / 2,
-        marginBottom: 16,
+        width: (width - 44) / 2, // Adjusted for 2 columns
+        marginBottom: 20,
       }}
     >
-<Link
-  href={{
-    pathname: "/product/[id]",
-    params: {
-      id: product._id,
-    },
-  }}
-  asChild
->
-    <TouchableOpacity
-      activeOpacity={0.88}
-      className="bg-white rounded-2xl overflow-hidden border border-gray-100"
-      style={{
-        elevation: 4,
-        shadowColor: "#000",
-        shadowOpacity: 0.06,
-        shadowRadius: 8,
-        shadowOffset: {
-          width: 0,
-          height: 3,
-        },
-      }}
-    >
-          {/* Product Image */}
-          <View className="relative">
+      <Link
+        href={{
+          pathname: "/product/[id]",
+          params: { id: product._id },
+        }}
+        asChild
+      >
+        <TouchableOpacity activeOpacity={0.88}>
+          {/* Product Image Container */}
+          <View
+            style={{
+              backgroundColor: "#F1F5F9", // Soft light gray like the screenshot
+              borderTopLeftRadius: 16,
+              borderTopRightRadius: 16,
+              overflow: "hidden",
+              position: "relative",
+              height: 220, 
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
             <Image
-              source={{ uri: product.images && product.images.length > 0 ? product.images[0] : 'https://placehold.co/180x180/png?text=Product' }}
+              source={{
+                uri:
+                  product.images && product.images.length > 0
+                    ? product.images[0]
+                    : "https://placehold.co/180x180/png?text=Product",
+              }}
               style={{
                 width: "100%",
-                height: 175,
+                height: "100%",
               }}
               resizeMode="cover"
             />
@@ -71,74 +72,102 @@ const isLiked=isInWishlist(product._id)
               </View>
             )}
 
-            {/* Favourite */}
-            <TouchableOpacity className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/90 items-center justify-center shadow-sm" 
-             onPress={(e) => {
-    e.stopPropagation();
-    toggleWishlist(product);
-  }}
+            {/* Favourite (Wishlist) Button */}
+            <TouchableOpacity
+              style={{
+                position: "absolute",
+                top: 10,
+                right: 10,
+                width: 32,
+                height: 32,
+                borderRadius: 16,
+                backgroundColor: "#FFFFFF",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+              onPress={(e) => {
+                e.stopPropagation();
+                toggleWishlist(product);
+              }}
             >
               <Ionicons
                 name={isLiked ? "heart" : "heart-outline"}
-                size={20}
-                color={isLiked ? COLORS.accent : COLORS.primary}
+                size={18}
+                color={isLiked ? COLORS.accent : "#475569"}
               />
             </TouchableOpacity>
 
-            {/* BUY 1 GET 1 / BOGO BADGE */}
+            {/* BUY 1 GET 1 / BOGO BADGE (Optional) */}
             {product.isBogo ? (
-              <View className="absolute top-3 left-3 bg-emerald-600 px-2.5 py-1 rounded-md shadow-sm">
-                <Text className="text-white text-[10px] font-extrabold">
-                  🎁 BUY 1 GET 1
-                </Text>
-              </View>
-            ) : product.isFeatured ? (
-              <View className="absolute top-3 left-3 bg-red-500 px-2 py-1 rounded-full">
-                <Text className="text-white text-[10px] font-semibold">
-                  Featured
+              <View style={{ backgroundColor: "#0284C7" }} className="absolute top-3 left-3 px-2.5 py-1 rounded-md shadow-sm">
+                <Text className="text-white text-[10px] font-extrabold" style={{ fontFamily: "Outfit_800" }}>
+                  BUY 1 FREE
                 </Text>
               </View>
             ) : null}
           </View>
 
           {/* Details */}
-          <View className="p-3">
+          <LinearGradient
+            colors={["#FFF0F5", "#FCE7F3"]}
+            style={{
+              paddingVertical: 10,
+              paddingHorizontal: 12,
+              borderBottomLeftRadius: 16,
+              borderBottomRightRadius: 16,
+              shadowColor: "#000",
+              shadowOpacity: 0.05,
+              shadowRadius: 4,
+              elevation: 2,
+            }}
+          >
+            {/* Title - Blue color */}
             <Text
               numberOfLines={1}
-              className="text-base font-bold text-gray-900"
+              style={{
+                fontSize: 12,
+                fontWeight: "700",
+                color: "#0284C7", 
+                fontFamily: "Outfit_700",
+                marginBottom: 4,
+              }}
             >
               {product.name}
             </Text>
 
-            <Text
-              numberOfLines={2}
-              className="text-xs text-gray-500 mt-1"
+            {/* Price and Add Button Row */}
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
             >
-              {product.description}
-            </Text>
-
-            <View className="flex-row justify-between items-center mt-3">
-              <Text className="text-lg font-bold text-red-500">
+              <Text
+                style={{
+                  fontSize: 14,
+                  fontWeight: "800",
+                  color: "#111827",
+                  fontFamily: "Outfit_800",
+                }}
+              >
                 ₹{product.price}
               </Text>
 
-              <View className="flex-row items-center">
-                <Ionicons
-                  name="star"
-                  size={14}
-                  color="#FBBF24"
-                />
-                <Text className="ml-1 text-xs font-bold text-gray-800">
+              {/* Ratings and Reviews */}
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <Ionicons name="star" size={12} color="#FBBF24" />
+                <Text style={{ fontSize: 12, fontWeight: "600", color: "#6B7280", marginLeft: 4 }}>
                   {product.ratings?.count ? product.ratings.average.toFixed(1) : "0.0"}
                 </Text>
-                <Text className="text-[11px] text-gray-400 ml-0.5">
+                <Text style={{ fontSize: 10, color: "#9CA3AF", marginLeft: 4 }}>
                   ({product.ratings?.count ?? 0})
                 </Text>
               </View>
             </View>
-          </View>
+          </LinearGradient>
         </TouchableOpacity>
       </Link>
-    </View>
+    </Animated.View>
   );
 }

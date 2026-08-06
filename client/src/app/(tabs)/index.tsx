@@ -7,7 +7,11 @@ import {
   Dimensions,
   TouchableOpacity,
   ActivityIndicator,
+  TextInput,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useCart } from "../../../context/CartContext";
+import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Header from "../../../components/Header";
 import { BANNERS } from "@/assets/assets";
@@ -22,6 +26,9 @@ const bannerCardWidth = width - 32;
 const bannerStep = bannerCardWidth + 12;
 
 export default function Home() {
+  const { itemCount } = useCart();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [scrollY, setScrollY] = useState(0);
   const bannerRef = React.useRef<ScrollView>(null);
   const [activeBanner, setActiveBanner] = useState(0);
   const [products, setProducts] = useState<Product[]>([]);
@@ -58,6 +65,22 @@ export default function Home() {
     fetchData();
   }, []);
 
+  // Auto-scroll logic for banners
+  useEffect(() => {
+    if (BANNERS.length === 0) return;
+    const interval = setInterval(() => {
+      setActiveBanner((prev) => {
+        const nextIndex = (prev + 1) % BANNERS.length;
+        bannerRef.current?.scrollTo({
+          x: nextIndex * bannerStep,
+          animated: true,
+        });
+        return nextIndex;
+      });
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
   const handleScroll = (event: any) => {
     const contentOffsetX = event.nativeEvent.contentOffset.x;
     const index = Math.round(contentOffsetX / bannerStep);
@@ -67,14 +90,127 @@ export default function Home() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
-      <Header title="Gramo Kart" showMenu showCart showLogo />
+    <View style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
+      <SafeAreaView edges={["top"]} style={{ backgroundColor: "#FFFFFF" }} />
 
-      <ScrollView
-        className="flex-1 px-4"
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Banner Slider */}
+      <View style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
+        {/* Custom Header (White) */}
+        <View
+          style={{
+            backgroundColor: "#FFFFFF",
+            paddingHorizontal: 20,
+            paddingBottom: 24,
+            paddingTop: 10,
+            borderBottomWidth: 1,
+            borderBottomColor: "#F3F4F6",
+            zIndex: 10,
+          }}
+        >
+          {/* Top Row: Logo & Cart */}
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+            <Image 
+              source={require("@/assets/logo.png")} 
+              style={{ 
+                width: 120, 
+                height: 40,
+                marginLeft: -8 
+              }} 
+              resizeMode="contain" 
+            />
+            
+            <TouchableOpacity
+              onPress={() => router.push("/cart")}
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                backgroundColor: "#F3F4F6",
+                justifyContent: "center",
+                alignItems: "center",
+                position: "relative",
+              }}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="bag-handle-outline" size={22} color="#111827" />
+              {itemCount > 0 && (
+                <View style={{
+                  position: "absolute",
+                  top: -2,
+                  right: -2,
+                  backgroundColor: "#EF4444",
+                  borderRadius: 10,
+                  minWidth: 20,
+                  height: 20,
+                  justifyContent: "center",
+                  alignItems: "center",
+                  borderWidth: 2,
+                  borderColor: "#FFFFFF",
+                }}>
+                  <Text style={{ color: "#FFFFFF", fontSize: 10, fontWeight: "bold", fontFamily: "Outfit_700" }}>
+                    {itemCount > 99 ? "99+" : itemCount}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          {/* Bottom Row: Search & Filter */}
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <View style={{
+              flex: 1,
+              flexDirection: "row",
+              alignItems: "center",
+              backgroundColor: "#F3F4F6",
+              borderRadius: 25,
+              paddingHorizontal: 16,
+              height: 50,
+              marginRight: 12,
+            }}>
+              <Ionicons name="search-outline" size={20} color="#6B7280" />
+              <TextInput
+                placeholder="Search Product"
+                placeholderTextColor="#9CA3AF"
+                style={{
+                  flex: 1,
+                  marginLeft: 10,
+                  color: "#111827",
+                  fontSize: 15,
+                  fontFamily: "Outfit",
+                  outlineStyle: "none"
+                } as any}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                onSubmitEditing={() => {
+                  if (searchQuery.trim().length > 0) {
+                    router.push({ pathname: "/shop", params: { search: searchQuery } });
+                  }
+                }}
+                returnKeyType="search"
+              />
+            </View>
+            <TouchableOpacity 
+              onPress={() => router.push("/shop")}
+              style={{
+                width: 50,
+                height: 50,
+                borderRadius: 25,
+                backgroundColor: "#F3F4F6",
+                justifyContent: "center",
+                alignItems: "center",
+            }} activeOpacity={0.8}>
+              <Ionicons name="options-outline" size={22} color="#111827" />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <ScrollView
+          className="flex-1"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 40 }}
+          onScroll={(e) => setScrollY(e.nativeEvent.contentOffset.y)}
+          scrollEventThrottle={16}
+        >
+          {/* Banner Slider */}
         <ScrollView
           ref={bannerRef}
           horizontal
@@ -92,9 +228,11 @@ export default function Home() {
           {BANNERS.map((banner: any) => {
             const handleBannerPress = () => {
               const queryParams: any = {};
-              if (banner.category) queryParams.category = banner.category;
-              if (banner.sortBy) queryParams.sortBy = banner.sortBy;
-              if (banner.isBogo) queryParams.isBogo = banner.isBogo;
+              if (banner.id === 1) {
+                queryParams.isBogo = "true";
+              } else if (banner.id === 2 || banner.id === 3) {
+                queryParams.sortBy = "popular";
+              }
 
               router.push({
                 pathname: "/shop",
@@ -109,78 +247,100 @@ export default function Home() {
                 onPress={handleBannerPress}
                 style={{
                   width: width - 32,
-                  height: 200,
-                  borderRadius: 16,
-                  overflow: "hidden",
+                  height: 180,
                   marginRight: 12,
+                  marginTop: 25,
+                  position: "relative",
+                  justifyContent: "flex-end",
                 }}
               >
-                {/* Banner Image */}
-                <Image
-                  source={{ uri: banner.image }}
-                  style={{
-                    width: "100%",
-                    height: "100%",
+                <LinearGradient
+                  colors={["#FDF2F8", "#FBCFE8"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={{ 
+                    position: "absolute",
+                    bottom: 0, left: 0, right: 0,
+                    height: 160,
+                    borderRadius: 16,
                   }}
-                  resizeMode="cover"
                 />
+                
+                <View style={{ flex: 1, flexDirection: "row", height: "100%" }}>
+                  {/* Banner Image (Left Side) */}
+                  <View style={{ width: "45%", height: "100%", position: "relative" }}>
+                  <Image
+                    source={typeof banner.image === 'string' ? { uri: banner.image } : banner.image}
+                    style={{
+                      width: "140%",
+                      height: "112%",
+                      position: "absolute",
+                      bottom: 0,
+                      left: -10,
+                    }}
+                    resizeMode="contain"
+                  />
+                </View>
 
-                {/* Dark Overlay */}
+                {/* Banner Content (Right Side) */}
                 <View
                   style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    backgroundColor: "rgba(0,0,0,0.35)",
+                    width: "55%",
+                    padding: 16,
                     justifyContent: "center",
-                    paddingHorizontal: 20,
                   }}
                 >
                   <Text
                     style={{
-                      color: "#fff",
-                      fontSize: 30,
-                      fontWeight: "700",
+                      color: "#1F2937",
+                      fontSize: 18,
+                      fontWeight: "800",
+                      marginBottom: 4,
+                      fontFamily: "Outfit_800",
                     }}
+                    numberOfLines={2}
                   >
                     {banner.title}
                   </Text>
 
                   <Text
                     style={{
-                      color: "#fff",
-                      fontSize: 16,
-                      marginTop: 8,
-                      opacity: 0.95,
+                      color: "#4B5563",
+                      fontSize: 12,
+                      marginBottom: 16,
+                      lineHeight: 16,
+                      fontFamily: "Outfit",
                     }}
+                    numberOfLines={2}
                   >
                     {banner.subtitle}
                   </Text>
 
-                  <TouchableOpacity
-                    onPress={handleBannerPress}
+                  <View
                     style={{
-                      marginTop: 20,
-                      backgroundColor: COLORS.accent,
-                      paddingVertical: 12,
-                      paddingHorizontal: 24,
-                      borderRadius: 10,
+                      backgroundColor: COLORS.primary || "#4F8D88",
+                      paddingVertical: 8,
+                      paddingHorizontal: 16,
+                      borderRadius: 20,
                       alignSelf: "flex-start",
+                      flexDirection: "row",
+                      alignItems: "center"
                     }}
-                    activeOpacity={0.8}
                   >
                     <Text
                       style={{
                         color: "#fff",
-                        fontSize: 15,
+                        fontSize: 12,
                         fontWeight: "700",
+                        marginRight: 4,
+                        fontFamily: "Outfit_700",
                       }}
                     >
-                      {banner.btnText || "Get Now"}
+                      {banner.btnText || "Shop Now"}
                     </Text>
-                  </TouchableOpacity>
+                    <Ionicons name="arrow-forward" size={14} color="#FFFFFF" />
+                  </View>
+                </View>
                 </View>
               </TouchableOpacity>
             );
@@ -288,50 +448,36 @@ export default function Home() {
         }}
       >
         <View style={{ flexDirection: "row", alignItems: "center" }}>
-          <View
-            style={{
-              backgroundColor: "#ECFDF5",
-              paddingHorizontal: 10,
-              paddingVertical: 6,
-              borderRadius: 12,
-              flexDirection: "row",
-              alignItems: "center",
-              marginRight: 8,
-              borderWidth: 1,
-              borderColor: "#A7F3D0",
-            }}
-          >
-            <Text style={{ fontSize: 16 }}>🎁</Text>
-          </View>
           <View>
-            <Text style={{ fontSize: 20, fontWeight: "800", color: "#111827" }}>
+            <Text style={{ fontSize: 22, fontWeight: "800", color: "#111827", fontFamily: "Outfit_800", letterSpacing: -0.5 }}>
               Buy 1 Get 1 Free
             </Text>
-            <Text style={{ fontSize: 12, color: "#059669", fontWeight: "700" }}>
-              Exclusive Offer & Sales Products
+            <Text style={{ fontSize: 13, color: "#4B5563", fontWeight: "600", fontFamily: "Outfit_600", marginTop: 2 }}>
+              Exclusive Offers & Sales
             </Text>
           </View>
         </View>
 
-        <TouchableOpacity onPress={() => router.push("/shop")}>
-          <Text style={{ fontSize: 14, fontWeight: "700", color: "#059669" }}>
-            See All
-          </Text>
+        <TouchableOpacity onPress={() => router.push({ pathname: "/shop", params: { isBogo: "true" } })}>
+          <Ionicons name="arrow-forward" size={24} color="#111827" />
         </TouchableOpacity>
       </View>
 
-      {/* Horizontal Scroll List for Offer Products */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingRight: 16 }}
+      {/* Grid List for Offer Products */}
+      <View
+        style={{
+          flexDirection: "row",
+          flexWrap: "wrap",
+          justifyContent: "space-between",
+          minHeight: 480,
+        }}
       >
-        {offerProducts.map((product) => (
-          <View key={product._id} style={{ width: 175, marginRight: 14 }}>
-            <ProductCard product={product} />
+        {scrollY > 100 ? offerProducts.slice(0, 4).map((product, index) => (
+          <View key={product._id} style={{ marginTop: index % 2 !== 0 ? 24 : 0 }}>
+            <ProductCard product={product} index={index} />
           </View>
-        ))}
-      </ScrollView>
+        )) : null}
+      </View>
     </View>
   );
 })()}
@@ -359,19 +505,19 @@ export default function Home() {
         flexDirection: "row",
         flexWrap: "wrap",
         justifyContent: "space-between",
+        minHeight: 960,
       }}
     >
-      {products.slice(0, 8).map((product: any) => (
+      {scrollY > 600 ? products.slice(0, 8).map((product: any, index: number) => (
         <View
           key={product._id}
           style={{
-            width: "48%",
-            marginBottom: 16,
+            marginTop: index % 2 !== 0 ? 24 : 0,
           }}
         >
-          <ProductCard product={product} />
+          <ProductCard product={product} index={index} />
         </View>
-      ))}
+      )) : null}
     </View>
   )}
 </View>
@@ -433,7 +579,8 @@ export default function Home() {
 </View>
 
 
-      </ScrollView>
-    </SafeAreaView>
+        </ScrollView>
+      </View>
+    </View>
   );
 }

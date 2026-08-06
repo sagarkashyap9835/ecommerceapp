@@ -14,40 +14,28 @@ export default function CategoryItem({
       onPress={onPress}
       activeOpacity={0.75}
       style={{
+        flexDirection: "row",
         alignItems: "center",
-        marginRight: 16,
+        marginRight: 10,
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        borderRadius: 24,
+        backgroundColor: isSelected ? (COLORS.primary || "#111827") : "#FFFFFF",
+        borderWidth: 1,
+        borderColor: isSelected ? (COLORS.primary || "#111827") : "#E5E7EB",
       }}
     >
-      <View
-        style={{
-          width: 52,
-          height: 52,
-          borderRadius: 26,
-          justifyContent: "center",
-          alignItems: "center",
-          backgroundColor: isSelected ? (COLORS.primary || "#111827") : "#F3F4F6",
-          borderWidth: 1,
-          borderColor: isSelected ? (COLORS.primary || "#111827") : "#E5E7EB",
-          elevation: isSelected ? 3 : 0,
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: isSelected ? 0.12 : 0,
-          shadowRadius: 4,
-        }}
-      >
-        <Ionicons
-          name={item.icon as any}
-          size={20}
-          color={isSelected ? "#FFFFFF" : "#374151"}
-        />
-      </View>
-
+      <Ionicons
+        name={item.icon as any}
+        size={18}
+        color={isSelected ? "#FFFFFF" : (COLORS.primary || "#111827")}
+      />
       <Text
         style={{
-          marginTop: 6,
-          fontSize: 12,
+          marginLeft: 8,
+          fontSize: 14,
           fontWeight: isSelected ? "700" : "600",
-          color: isSelected ? (COLORS.primary || "#111827") : "#4B5563",
+          color: isSelected ? "#FFFFFF" : "#4B5563",
         }}
       >
         {item.name}
