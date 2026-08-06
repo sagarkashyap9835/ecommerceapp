@@ -74,16 +74,19 @@ export default function Page() {
             />
             
             <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
+                <TouchableOpacity 
+                    style={[styles.backButton, { position: 'absolute', top: 40, left: 24, zIndex: 10 }]} 
+                    onPress={() => router.back()}
+                >
+                    <View style={styles.backButtonInner}>
+                        <Ionicons name="chevron-back" size={24} color="#FFFFFF" style={{ marginLeft: -2 }} />
+                    </View>
+                </TouchableOpacity>
                 <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{flex: 1}}>
                     <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                         
                         {/* Header */}
                     <View style={styles.headerContainer}>
-                        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-                            <View style={styles.backButtonInner}>
-                                <Ionicons name="chevron-back" size={24} color="#FFFFFF" style={{ marginLeft: -2 }} />
-                            </View>
-                        </TouchableOpacity>
                         <Text style={styles.title}>Please Sign In</Text>
                         <Text style={styles.subtitle}>Enter your account details for a personalised experience.</Text>
                     </View>
