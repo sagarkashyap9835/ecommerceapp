@@ -1,8 +1,9 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Image, Platform } from "react-native";
+import { View, Text, StyleSheet, Image, Platform } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { COLORS } from "@/assets/constants";
+import AnimatedButton from "../../../components/AnimatedButton";
 
 export default function OnboardingScreen() {
   const router = useRouter();
@@ -22,27 +23,29 @@ export default function OnboardingScreen() {
 
       {/* Bottom Card Section */}
       <View style={styles.cardContainer}>
-        <View style={styles.indicator} />
-        
-        <Text style={styles.title}>Welcome to GRAMO KART</Text>
-        <Text style={styles.description}>
-          Get exclusive limited apparel that only you have! Made by famous brands in the world.
-        </Text>
+        <View style={styles.contentWrapper}>
+          <View style={styles.indicator} />
+          
+          <Text style={styles.title}>Welcome to GRAMO KART</Text>
+          <Text style={styles.description}>
+            Get exclusive limited apparel that only you have! Made by famous brands in the world.
+          </Text>
+        </View>
 
         <View style={styles.buttonContainer}>
-          <TouchableOpacity
+          <AnimatedButton
             style={styles.signInButton}
             onPress={() => router.push("/(auth)/sign-in")}
           >
             <Text style={styles.signInText}>Sign In</Text>
-          </TouchableOpacity>
+          </AnimatedButton>
 
-          <TouchableOpacity
+          <AnimatedButton
             style={styles.getStartedButton}
             onPress={() => router.push("/(auth)/sign-up")}
           >
             <Text style={styles.getStartedText}>Get Started</Text>
-          </TouchableOpacity>
+          </AnimatedButton>
         </View>
       </View>
     </SafeAreaView>
@@ -65,20 +68,23 @@ const styles = StyleSheet.create({
     opacity: 0.5, // Lower opacity to make it darker
   },
   cardContainer: {
-    flex: 1,
     backgroundColor: "#FFFFFF",
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
     paddingHorizontal: 24,
-    paddingTop: 16,
+    paddingTop: 24,
     paddingBottom: Platform.OS === "ios" ? 34 : 24,
-    alignItems: "flex-start", // Changed to flex-start for left alignment
+    alignItems: "flex-start",
     marginTop: -30, 
     elevation: 10,
     shadowColor: "#000",
     shadowOpacity: 0.1,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: -5 },
+  },
+  contentWrapper: {
+    width: "100%",
+    alignItems: "flex-start",
   },
   indicator: {
     width: 40,
@@ -111,6 +117,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     width: "100%",
     gap: 16,
+    marginTop: 24,
   },
   signInButton: {
     flex: 1,

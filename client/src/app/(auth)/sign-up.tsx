@@ -1,9 +1,10 @@
-import { useState } from "react";
-import { Text, TextInput, TouchableOpacity, View, ActivityIndicator, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
+import { useState, useEffect } from "react";
+import { Text, TextInput, TouchableOpacity, View, ActivityIndicator, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Image, ImageBackground } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Toast from 'react-native-toast-message';
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, Link } from "expo-router";
+import AnimatedButton from "../../../components/AnimatedButton";
 import { useAuth } from "@/context/AuthContext";
 import { COLORS } from "@/assets/constants";
 import { auth } from "@/config/firebase";
@@ -20,9 +21,11 @@ export default function SignUpScreen() {
     const [showPassword, setShowPassword] = useState(false);
 
     // If already signed in, go home
-    if (isSignedIn) {
-        router.replace("/(tabs)");
-    }
+    useEffect(() => {
+        if (isSignedIn) {
+            router.replace("/(tabs)");
+        }
+    }, [isSignedIn]);
 
     const onSignUpPress = async () => {
         if (!isLoaded) return;
@@ -61,7 +64,11 @@ export default function SignUpScreen() {
                 text1: 'Account Created',
                 text2: 'Welcome to GRAMO KART!'
             });
-            router.replace("/(tabs)");
+            
+            // Add a small delay to avoid Firebase "token not yet valid" clock skew issue on backend
+            setTimeout(() => {
+                router.replace("/(tabs)");
+            }, 1000);
         } catch (err: any) {
             console.log("Sign up error:", err.message);
             Toast.show({
@@ -79,15 +86,22 @@ export default function SignUpScreen() {
     }
 
     return (
-        <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-            <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{flex: 1}}>
-                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-                    
-                    {/* Header */}
+        <View style={styles.container}>
+            <Image 
+                source={require('../../../assets/images/auth_bg.png')} 
+                style={{ width: '200%', height: '100%', position: 'absolute', right: 0, opacity: 0.25 }} 
+                resizeMode="cover"
+            />
+            
+            <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
+                <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{flex: 1}}>
+                    <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                        
+                        {/* Header */}
                     <View style={styles.headerContainer}>
                         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
                             <View style={styles.backButtonInner}>
-                                <Ionicons name="chevron-back" size={24} color="#111827" style={{ marginLeft: -2 }} />
+                                <Ionicons name="chevron-back" size={24} color="#FFFFFF" style={{ marginLeft: -2 }} />
                             </View>
                         </TouchableOpacity>
                         <Text style={styles.title}>Let's Get Started</Text>
@@ -140,13 +154,13 @@ export default function SignUpScreen() {
                         </View>
 
                         {/* Submit Button */}
-                        <TouchableOpacity 
+                        <AnimatedButton 
                             style={[styles.submitButton, loading && styles.submitButtonDisabled]} 
                             onPress={onSignUpPress} 
                             disabled={loading}
                         >
                             {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitButtonText}>Continue</Text>}
-                        </TouchableOpacity>
+                        </AnimatedButton>
 
                         {/* Divider */}
                         <View style={styles.dividerContainer}>
@@ -156,10 +170,10 @@ export default function SignUpScreen() {
                         </View>
 
                         {/* Social Buttons */}
-                        <TouchableOpacity style={styles.socialButton} onPress={handleSocialAuth}>
+                        <AnimatedButton style={styles.socialButton} onPress={handleSocialAuth}>
                             <Ionicons name="logo-google" size={20} color="#DB4437" style={styles.socialIcon} />
                             <Text style={styles.socialButtonText}>Continue with Google</Text>
-                        </TouchableOpacity>
+                        </AnimatedButton>
 
                     </View>
 
@@ -172,23 +186,23 @@ export default function SignUpScreen() {
                             </TouchableOpacity>
                         </Link>
                     </View>
-
-                </ScrollView>
-            </KeyboardAvoidingView>
-        </SafeAreaView>
+                    </ScrollView>
+                </KeyboardAvoidingView>
+            </SafeAreaView>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "#F7F5F0",
+        backgroundColor: "#000",
     },
     scrollContent: {
         flexGrow: 1,
+        paddingTop: 180,
         paddingHorizontal: 24,
-        paddingTop: 10,
-        paddingBottom: 10,
+        paddingBottom: 40,
     },
     headerContainer: {
         marginBottom: 20,
@@ -200,46 +214,47 @@ const styles = StyleSheet.create({
         width: 40,
         height: 40,
         borderRadius: 20,
-        backgroundColor: "#FFFFFF",
+        backgroundColor: "rgba(255,255,255,0.2)",
         justifyContent: "center",
         alignItems: "center",
         borderWidth: 1,
-        borderColor: "#E5E7EB",
+        borderColor: "rgba(255,255,255,0.3)",
     },
     title: {
-        fontSize: 22,
+        fontSize: 28,
         fontWeight: "800",
-        color: "#111827",
+        color: "#FFFFFF",
         marginBottom: 6,
         fontFamily: "Outfit_800",
     },
     subtitle: {
-        fontSize: 12,
-        color: "#6B7280",
-        lineHeight: 18,
+        fontSize: 14,
+        color: "#E5E7EB",
+        lineHeight: 20,
         fontFamily: "Outfit",
     },
     formContainer: {
         flex: 1,
+        marginTop: 10,
     },
     inputWrapper: {
         flexDirection: "row",
         alignItems: "center",
         borderWidth: 1,
-        borderColor: "#E5E7EB",
+        borderColor: "rgba(255,255,255,0.3)",
         borderRadius: 12,
-        backgroundColor: "#FFFFFF",
+        backgroundColor: "rgba(255,255,255,0.15)",
         paddingHorizontal: 16,
-        height: 44,
-        marginBottom: 10,
+        height: 48,
+        marginBottom: 20,
     },
     inputIcon: {
         marginRight: 10,
     },
     input: {
         flex: 1,
-        fontSize: 13,
-        color: "#111827",
+        fontSize: 14,
+        color: "#FFFFFF",
     },
     rightIcon: {
         marginLeft: 10,
@@ -250,8 +265,8 @@ const styles = StyleSheet.create({
         borderRadius: 23,
         justifyContent: "center",
         alignItems: "center",
-        marginBottom: 16,
-        marginTop: 4,
+        marginBottom: 24,
+        marginTop: 10,
     },
     submitButtonDisabled: {
         opacity: 0.7,
@@ -270,11 +285,11 @@ const styles = StyleSheet.create({
     dividerLine: {
         flex: 1,
         height: 1,
-        backgroundColor: "#E5E7EB",
+        backgroundColor: "rgba(255,255,255,0.2)",
     },
     dividerText: {
         marginHorizontal: 16,
-        color: "#9CA3AF",
+        color: "#D1D5DB",
         fontSize: 13,
         fontFamily: "Outfit",
     },
@@ -285,8 +300,8 @@ const styles = StyleSheet.create({
         height: 46,
         borderRadius: 23,
         borderWidth: 1,
-        borderColor: "#E5E7EB",
-        backgroundColor: "#FFFFFF",
+        borderColor: "rgba(255,255,255,0.3)",
+        backgroundColor: "rgba(255,255,255,0.15)",
         marginBottom: 10,
     },
     socialIcon: {
@@ -295,7 +310,7 @@ const styles = StyleSheet.create({
     socialButtonText: {
         fontSize: 14,
         fontWeight: "600",
-        color: "#111827",
+        color: "#FFFFFF",
         fontFamily: "Outfit_600",
     },
     footer: {
@@ -306,7 +321,7 @@ const styles = StyleSheet.create({
         paddingTop: 10,
     },
     footerText: {
-        color: "#6B7280",
+        color: "#E5E7EB",
         fontSize: 13,
         fontFamily: "Outfit",
     },

@@ -1,6 +1,6 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
+import { getAnalytics, isSupported } from "firebase/analytics";
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -30,11 +30,12 @@ const auth = initializeAuth(app, {
 });
 
 // Analytics (only supported in web/some platforms, may throw on React Native without specific native modules)
-let analytics;
-try {
-  analytics = getAnalytics(app);
-} catch (e) {
-  // Analytics not supported in this environment
-}
+
+let analytics: any = null;
+isSupported().then((supported) => {
+  if (supported) {
+    analytics = getAnalytics(app);
+  }
+}).catch(() => {});
 
 export { app, auth, analytics };

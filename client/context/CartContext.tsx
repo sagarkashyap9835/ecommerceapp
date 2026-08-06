@@ -89,8 +89,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
       if (data.success && data.data?.items) {
         setCartItems(mapServerCart(data.data.items));
       }
-    } catch (error) {
-      console.error("Error fetching user cart:", error);
+    } catch (error: any) {
+      console.error("Error fetching user cart:", error.response?.data || error.message);
     } finally {
       setIsLoading(false);
     }

@@ -63,7 +63,7 @@ export default function Profile() {
             {/* प्रोफ़ाइल इमेज और नाम */}
             <View style={styles.avatarSection}>
               <Image 
-                source={{ uri: user.imageUrl }} 
+                source={{ uri: user.imageUrl || `https://ui-avatars.com/api/?name=${user.fullName || user.username || 'User'}&background=random` }} 
                 style={styles.avatar}
               />
               <Text style={styles.userName}>{user.fullName || user.username || 'User'}</Text>

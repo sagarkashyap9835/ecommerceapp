@@ -29,8 +29,8 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
             if (data.success && data.data?.products) {
                 setWishlist(data.data.products);
             }
-        } catch (error) {
-            console.error("Failed to fetch wishlist:", error);
+        } catch (error: any) {
+            console.error("Failed to fetch wishlist:", error.response?.data || error.message);
         } finally {
             setLoading(false);
         }

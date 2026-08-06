@@ -4,6 +4,14 @@ const connectDB = async () => {
   try {
     await mongoose.connect(process.env.MONGODB_URI as string);
 
+    // Clean up old obsolete indexes from Clerk integration if they exist
+    try {
+      await mongoose.connection.collection('users').dropIndex('clerkId_1');
+      console.log("🧹 Dropped obsolete clerkId_1 index from users collection");
+    } catch (e) {
+      // Ignore if index doesn't exist
+    }
+
     console.log("✅ MongoDB Connected");
   } catch (error) {
     console.error("❌ MongoDB Connection Error:", error);
