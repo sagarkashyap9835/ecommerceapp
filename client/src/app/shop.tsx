@@ -18,6 +18,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { COLORS, CATEGORIES } from "@/assets/constants";
 import api from "../../constants/api";
 import ProductCard from "../../components/ProductCard";
+import InfinityLoader from "../../components/InfinityLoader";
 import { useLocalSearchParams } from "expo-router";
 
 const SORT_OPTIONS = [
@@ -600,8 +601,13 @@ export default function Shop() {
       )}
 
       {/* Product Grid */}
+      {loading && page === 1 ? (
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", marginTop: 150 }}>
+          <InfinityLoader />
+        </View>
+      ) : (
       <FlatList
-        data={loading && page === 1 ? skeletonProducts : liveFilteredProducts}
+        data={liveFilteredProducts}
         keyExtractor={(item, index) => item._id || index.toString()}
         numColumns={2}
         columnWrapperStyle={styles.row}
@@ -636,6 +642,7 @@ export default function Shop() {
           ) : null
         }
       />
+      )}
 
       {/* FILTER & SORT MODAL */}
       <Modal visible={filterModalVisible} animationType="slide" transparent>

@@ -20,6 +20,7 @@ import CategoryItem from "../../../components/CategoryItem";
 import { router } from "expo-router";
 import { Product } from "@/assets/constants/types";
 import ProductCard from "../../../components/ProductCard";
+import InfinityLoader from "../../../components/InfinityLoader";
 import api from "../../../constants/api";
 const { width } = Dimensions.get("window");
 const bannerCardWidth = width - 32;
@@ -33,6 +34,8 @@ export default function Home() {
   const [activeBanner, setActiveBanner] = useState(0);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [bogoSectionLoading, setBogoSectionLoading] = useState(true);
+  const [popularSectionLoading, setPopularSectionLoading] = useState(true);
   const [categories, setCategories] = useState<any[]>([{ id: 'all', name: 'All', icon: 'grid' }, ...CATEGORIES]);
 
   const fetchData = async () => {
@@ -64,6 +67,20 @@ export default function Home() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  useEffect(() => {
+    if (scrollY > 100 && bogoSectionLoading) {
+      const timer = setTimeout(() => setBogoSectionLoading(false), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [scrollY, bogoSectionLoading]);
+
+  useEffect(() => {
+    if (scrollY > 500 && popularSectionLoading) {
+      const timer = setTimeout(() => setPopularSectionLoading(false), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [scrollY, popularSectionLoading]);
 
   // Auto-scroll logic for banners
   useEffect(() => {
@@ -433,6 +450,8 @@ export default function Home() {
 
 {/* Special Offers & Sales (Buy 1 Get 1 Free Section) */}
 {(() => {
+  if (loading) return <InfinityLoader />;
+  
   const offerProducts = products.filter((p) => p.isBogo);
   if (offerProducts.length === 0) return null;
 
@@ -472,11 +491,19 @@ export default function Home() {
           minHeight: 480,
         }}
       >
-        {scrollY > 100 ? offerProducts.slice(0, 4).map((product, index) => (
-          <View key={product._id} style={{ marginTop: index % 2 !== 0 ? 24 : 0 }}>
-            <ProductCard product={product} index={index} />
-          </View>
-        )) : null}
+        {scrollY > 100 ? (
+          bogoSectionLoading ? (
+            <View style={{ width: '100%', height: 480, justifyContent: 'center', alignItems: 'center' }}>
+              <InfinityLoader />
+            </View>
+          ) : (
+            offerProducts.slice(0, 4).map((product, index) => (
+              <View key={product._id} style={{ marginTop: index % 2 !== 0 ? 24 : 0 }}>
+                <ProductCard product={product} index={index} />
+              </View>
+            ))
+          )
+        ) : null}
       </View>
     </View>
   );
@@ -490,68 +517,84 @@ export default function Home() {
     </Text>
 
     <TouchableOpacity onPress={() => router.push("/shop")}>
-      <Text className="text-red-500 text-base font-semibold">
-        See All
-      </Text>
+      <Ionicons name="arrow-forward" size={24} color="#111827" />
     </TouchableOpacity>
   </View>
 
   {/* Products */}
   {loading ? (
-    <ActivityIndicator size="large" color={COLORS.accent} />
+    <InfinityLoader />
   ) : (
     <View
       style={{
         flexDirection: "row",
         flexWrap: "wrap",
         justifyContent: "space-between",
-        minHeight: 960,
+        minHeight: 480,
       }}
     >
-      {scrollY > 600 ? products.slice(0, 8).map((product: any, index: number) => (
-        <View
-          key={product._id}
-          style={{
-            marginTop: index % 2 !== 0 ? 24 : 0,
-          }}
-        >
-          <ProductCard product={product} index={index} />
-        </View>
-      )) : null}
+      {scrollY > 500 ? (
+        popularSectionLoading ? (
+          <View style={{ width: '100%', height: 480, justifyContent: 'center', alignItems: 'center' }}>
+            <InfinityLoader />
+          </View>
+        ) : (
+          products.slice(0, 4).map((product: any, index: number) => (
+            <View
+              key={product._id}
+              style={{
+                marginTop: index % 2 !== 0 ? 24 : 0,
+              }}
+            >
+              <ProductCard product={product} index={index} />
+            </View>
+          ))
+        )
+      ) : null}
     </View>
   )}
 </View>
-<View
+<LinearGradient
+  colors={["#0284C7", "#0369A1"]} // GramoKart Blue gradient
+  start={{ x: 0, y: 0 }}
+  end={{ x: 1, y: 1 }}
   style={{
-    backgroundColor: "#111827",
     borderRadius: 24,
-    padding: 24,
+    padding: 28,
     marginVertical: 20,
     alignItems: "center",
+    shadowColor: "#0284C7",
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 8,
   }}
 >
   <Text
     style={{
-      color: "#fff",
-      fontSize: 28,
-      fontWeight: "700",
+      color: "#ffffff",
+      fontSize: 26,
+      fontWeight: "800",
       textAlign: "center",
+      fontFamily: "Outfit_800",
+      letterSpacing: -0.5,
     }}
   >
-    Join the Revolution
+    Join the GramoKart Family
   </Text>
 
   <Text
     style={{
-      color: "#D1D5DB",
-      fontSize: 16,
+      color: "#E0F2FE", // Soft light blue
+      fontSize: 15,
       textAlign: "center",
-      marginTop: 12,
-      lineHeight: 24,
+      marginTop: 10,
+      lineHeight: 22,
+      fontFamily: "Outfit_500",
     }}
   >
     Subscribe to our newsletter and get{" "}
-    <Text style={{ color: "#FF4C3B", fontWeight: "700" }}>
+    <Text style={{ color: "#FDE047", fontWeight: "800", fontFamily: "Outfit_800" }}>
       10% OFF
     </Text>{" "}
     on your first purchase.
@@ -559,24 +602,29 @@ export default function Home() {
 
   <TouchableOpacity
     style={{
-      marginTop: 20,
-      backgroundColor: "#FF4C3B",
-      paddingHorizontal: 30,
+      marginTop: 22,
+      backgroundColor: "#ffffff",
+      paddingHorizontal: 32,
       paddingVertical: 14,
       borderRadius: 999,
+      shadowColor: "#000",
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 2,
     }}
   >
     <Text
       style={{
-        color: "#fff",
-        fontWeight: "700",
+        color: "#0284C7",
+        fontWeight: "800",
         fontSize: 16,
+        fontFamily: "Outfit_800",
       }}
     >
       Subscribe Now
     </Text>
   </TouchableOpacity>
-</View>
+</LinearGradient>
 
 
         </ScrollView>
