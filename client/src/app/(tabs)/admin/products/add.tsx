@@ -41,6 +41,7 @@ export default function AddProduct() {
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
   const [stock, setStock] = useState("");
+  const [colorsInput, setColorsInput] = useState("");
 
   // Dependent Taxonomy State
   const [selectedCategoryObj, setSelectedCategoryObj] = useState<Category | null>(null);
@@ -125,6 +126,11 @@ export default function AddProduct() {
     const token = await getToken();
     const formData = new FormData();
 
+    const parsedColors = colorsInput
+      .split(',')
+      .map(c => c.trim())
+      .filter(c => c.length > 0);
+
     const fields = {
       name: name.trim(),
       description,
@@ -135,6 +141,7 @@ export default function AddProduct() {
       isFeatured: String(isFeatured),
       isBogo: String(isBogo),
       sizes: JSON.stringify(selectedSizes),
+      colors: JSON.stringify(parsedColors),
     };
 
     Object.entries(fields).forEach(([key, value]) => {
@@ -191,7 +198,7 @@ export default function AddProduct() {
   if (loadingCategories) {
     return (
       <View style={styles.loaderContainer}>
-        <ActivityIndicator size="large" color={COLORS.primary || "#000"} />
+        <ActivityIndicator size="large" color="#FF3399" />
       </View>
     );
   }
@@ -200,14 +207,14 @@ export default function AddProduct() {
   const availableSizes = selectedCategoryObj?.sizes || [];
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
       <View style={styles.card}>
         {/* PRODUCT NAME */}
         <Text style={styles.inputLabel}>Product Name *</Text>
         <TextInput
           style={styles.input}
           placeholder="e.g. Slim Fit Denim Shirt"
-          placeholderTextColor="#9ca3af"
+          placeholderTextColor="#94A3B8"
           value={name}
           onChangeText={setName}
         />
@@ -217,7 +224,7 @@ export default function AddProduct() {
         <TextInput
           style={styles.input}
           placeholder="0.00"
-          placeholderTextColor="#9ca3af"
+          placeholderTextColor="#94A3B8"
           keyboardType="decimal-pad"
           value={price}
           onChangeText={setPrice}
@@ -231,7 +238,7 @@ export default function AddProduct() {
           style={styles.dropdownButton}
         >
           <Text style={styles.dropdownText}>{category || "Select Category"}</Text>
-          <Ionicons name="chevron-down" size={20} color={COLORS.secondary || "#6b7280"} />
+          <Ionicons name="chevron-down" size={20} color="#64748B" />
         </TouchableOpacity>
 
         {/* CATEGORY SELECT MODAL */}
@@ -255,8 +262,8 @@ export default function AddProduct() {
                           <Ionicons
                             name={(item.icon as any) || "grid-outline"}
                             size={18}
-                            color="#374151"
-                            style={{ marginRight: 8 }}
+                            color={isSelected ? "#FF3399" : "#475569"}
+                            style={{ marginRight: 12 }}
                           />
                           <Text
                             style={[
@@ -269,9 +276,9 @@ export default function AddProduct() {
                         </View>
                         {isSelected && (
                           <Ionicons
-                            name="checkmark"
-                            size={20}
-                            color={COLORS.primary || "#000"}
+                            name="checkmark-circle"
+                            size={22}
+                            color="#FF3399"
                           />
                         )}
                       </View>
@@ -293,7 +300,7 @@ export default function AddProduct() {
           <Text style={styles.dropdownText}>
             {subcategory || "Select Subcategory"}
           </Text>
-          <Ionicons name="chevron-down" size={20} color={COLORS.secondary || "#6b7280"} />
+          <Ionicons name="chevron-down" size={20} color="#64748B" />
         </TouchableOpacity>
 
         {/* SUBCATEGORY SELECT MODAL */}
@@ -326,9 +333,9 @@ export default function AddProduct() {
                         </Text>
                         {isSelected && (
                           <Ionicons
-                            name="checkmark"
-                            size={20}
-                            color={COLORS.primary || "#000"}
+                            name="checkmark-circle"
+                            size={22}
+                            color="#FF3399"
                           />
                         )}
                       </View>
@@ -356,9 +363,6 @@ export default function AddProduct() {
                   <Text style={[styles.sizeChipText, isSelected && styles.sizeChipTextSelected]}>
                     {szOption}
                   </Text>
-                  {isSelected && (
-                    <Ionicons name="checkmark-circle" size={14} color="#ffffff" style={{ marginLeft: 4 }} />
-                  )}
                 </TouchableOpacity>
               );
             })
@@ -372,10 +376,20 @@ export default function AddProduct() {
         <TextInput
           style={styles.input}
           placeholder="0"
-          placeholderTextColor="#9ca3af"
+          placeholderTextColor="#94A3B8"
           keyboardType="number-pad"
           value={stock}
           onChangeText={setStock}
+        />
+
+        {/* STEP 4: COLORS */}
+        <Text style={[styles.inputLabel, { marginTop: 14 }]}>Step 4: Colors (Comma Separated)</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="e.g. #FF0000, #00FF00, Blue"
+          placeholderTextColor="#94A3B8"
+          value={colorsInput}
+          onChangeText={setColorsInput}
         />
 
         {/* IMAGE PICKER */}
@@ -391,8 +405,8 @@ export default function AddProduct() {
             <View style={styles.uploadPlaceholder}>
               <Ionicons
                 name="cloud-upload-outline"
-                size={32}
-                color={COLORS.secondary || "#6b7280"}
+                size={36}
+                color="#94A3B8"
               />
               <Text style={styles.uploadPlaceholderText}>Tap to upload images</Text>
             </View>
@@ -404,7 +418,7 @@ export default function AddProduct() {
         <TextInput
           style={[styles.input, styles.multilineInput]}
           placeholder="Enter product details..."
-          placeholderTextColor="#9ca3af"
+          placeholderTextColor="#94A3B8"
           multiline
           value={description}
           onChangeText={setDescription}
@@ -416,7 +430,8 @@ export default function AddProduct() {
           <Switch
             value={isFeatured}
             onValueChange={setIsFeatured}
-            trackColor={{ false: "#eee", true: COLORS.primary || "#000" }}
+            trackColor={{ false: "#E2E8F0", true: "#FF3399" }}
+            thumbColor="#ffffff"
           />
         </View>
 
@@ -425,7 +440,8 @@ export default function AddProduct() {
           <Switch
             value={isBogo}
             onValueChange={setIsBogo}
-            trackColor={{ false: "#eee", true: "#059669" }}
+            trackColor={{ false: "#E2E8F0", true: "#FF3399" }}
+            thumbColor="#ffffff"
           />
         </View>
 
@@ -450,174 +466,198 @@ export default function AddProduct() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f9fafb",
+    backgroundColor: "#FFFFFF",
   },
   loaderContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#f9fafb",
+    backgroundColor: "#FFFFFF",
   },
   scrollContent: {
-    padding: 16,
+    padding: 20,
+    paddingBottom: 40,
   },
   card: {
     backgroundColor: "#ffffff",
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 80,
+    padding: 24,
+    borderRadius: 24,
+    marginBottom: 40,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 2,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.05,
+    shadowRadius: 15,
+    elevation: 3,
     borderWidth: 1,
-    borderColor: "#f3f4f6",
+    borderColor: "#F1F5F9",
   },
   inputLabel: {
-    color: "#6b7280",
+    color: "#64748B",
     fontSize: 12,
     fontWeight: "700",
-    marginBottom: 6,
+    marginBottom: 8,
+    fontFamily: 'Outfit_700',
     textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
   input: {
-    backgroundColor: "#f3f4f6",
-    padding: 14,
-    borderRadius: 8,
-    color: "#111827",
+    backgroundColor: "#F8FAFC",
+    padding: 16,
+    borderRadius: 12,
+    color: "#0F172A",
     fontSize: 15,
-    marginBottom: 16,
+    fontFamily: 'Outfit_500',
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
   },
   multilineInput: {
-    height: 96,
+    height: 120,
     textAlignVertical: "top",
-    marginBottom: 24,
+    marginBottom: 28,
   },
   dropdownButton: {
-    backgroundColor: "#f3f4f6",
-    padding: 14,
-    borderRadius: 8,
-    marginBottom: 16,
+    backgroundColor: "#F8FAFC",
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 20,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
   },
   dropdownText: {
-    color: "#111827",
+    color: "#0F172A",
     fontSize: 15,
-    fontWeight: "500",
+    fontFamily: 'Outfit_500',
   },
   sizesChipContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 8,
-    marginBottom: 16,
+    gap: 10,
+    marginBottom: 20,
   },
   sizeChip: {
-    flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 8,
+    justifyContent: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#d1d5db",
-    backgroundColor: "#f9fafb",
+    borderColor: "#E2E8F0",
+    backgroundColor: "#FFFFFF",
   },
   sizeChipSelected: {
-    backgroundColor: "#111827",
-    borderColor: "#111827",
+    backgroundColor: "#FF3399",
+    borderColor: "#FF3399",
   },
   sizeChipText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#374151",
+    fontSize: 14,
+    color: "#475569",
+    fontFamily: 'Outfit_600',
   },
   sizeChipTextSelected: {
     color: "#ffffff",
   },
   emptySizesText: {
     fontSize: 13,
-    color: "#9ca3af",
+    color: "#94A3B8",
+    fontFamily: 'Outfit_400',
     fontStyle: "italic",
   },
   imagePickerContainer: {
-    marginBottom: 16,
+    marginBottom: 20,
     width: "100%",
   },
   uploadPlaceholder: {
     width: "100%",
-    height: 110,
-    borderRadius: 8,
-    backgroundColor: "#f3f4f6",
+    height: 120,
+    borderRadius: 16,
+    backgroundColor: "#F8FAFC",
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
     borderStyle: "dashed",
-    borderColor: "#d1d5db",
+    borderColor: "#CBD5E1",
   },
   uploadPlaceholderText: {
-    color: "#6b7280",
-    fontSize: 12,
-    marginTop: 6,
+    color: "#64748B",
+    fontSize: 13,
+    marginTop: 8,
+    fontFamily: 'Outfit_500',
   },
   pickedImage: {
-    width: 110,
-    height: 110,
-    borderRadius: 8,
-    marginRight: 8,
+    width: 120,
+    height: 120,
+    borderRadius: 12,
+    marginRight: 12,
   },
   switchRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 24,
+    marginBottom: 28,
   },
   switchLabel: {
-    color: "#111827",
-    fontWeight: "700",
-    fontSize: 15,
+    color: "#0F172A",
+    fontSize: 16,
+    fontFamily: 'Outfit_700',
   },
   submitButton: {
-    backgroundColor: "#000000",
-    paddingVertical: 16,
-    borderRadius: 12,
+    backgroundColor: "#FF3399",
+    paddingVertical: 18,
+    borderRadius: 16,
     alignItems: "center",
+    shadowColor: "#FF3399",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 5,
+    marginTop: 10,
   },
   submitButtonDisabled: {
     opacity: 0.7,
   },
   submitButtonText: {
     color: "#ffffff",
-    fontWeight: "700",
-    fontSize: 17,
+    fontSize: 16,
+    fontFamily: 'Outfit_700',
   },
   modalOverlay: {
     flex: 1,
     justifyContent: "flex-end",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
   },
   modalContent: {
     backgroundColor: "#ffffff",
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    padding: 16,
-    maxHeight: "50%",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    maxHeight: "60%",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 10,
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: "700",
+    fontSize: 20,
     textAlign: "center",
-    marginBottom: 16,
-    color: "#111827",
+    marginBottom: 20,
+    color: "#0F172A",
+    fontFamily: 'Outfit_800',
   },
   modalItem: {
-    padding: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#f3f4f6",
+    borderBottomColor: "#F1F5F9",
+    borderRadius: 12,
   },
   modalItemActive: {
-    backgroundColor: "rgba(0, 0, 0, 0.03)",
+    backgroundColor: "#FDF2F8",
+    borderBottomColor: "transparent",
   },
   modalItemRow: {
     flexDirection: "row",
@@ -625,11 +665,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   modalItemText: {
-    fontSize: 15,
-    color: "#111827",
+    fontSize: 16,
+    color: "#475569",
+    fontFamily: 'Outfit_500',
   },
   modalItemTextActive: {
-    fontWeight: "700",
-    color: "#000000",
+    color: "#FF3399",
+    fontFamily: 'Outfit_700',
   },
 });

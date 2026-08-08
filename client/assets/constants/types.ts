@@ -45,6 +45,7 @@ export interface Product {
     comparePrice?: number;
     images: string[];
     sizes?: string[];
+    colors?: string[];
     category:
         | {
               _id: string;
@@ -72,10 +73,11 @@ export interface CartItem {
     product: Product;
     quantity: number;
     size: string;
+    color?: string;
 }
 
 export type CartItemProps = {
-    item: { id: string; product: { name: string; price: number; images: string[] }; quantity: number; size: string };
+    item: { id: string; product: { name: string; price: number; images: string[] }; quantity: number; size: string; color?: string };
     onRemove?: () => void;
     onUpdateQuantity?: (newQty: number) => void;
 };
@@ -119,6 +121,7 @@ export interface OrderItem {
     price: number;
     image?: string;
     size?: string;
+    color?: string;
 }
 
 export interface Order {

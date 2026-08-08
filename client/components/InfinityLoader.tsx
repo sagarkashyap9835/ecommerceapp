@@ -43,7 +43,7 @@ export default function InfinityLoader() {
     <View style={{ padding: 40, justifyContent: 'center', alignItems: 'center' }}>
       <Animated.Text
         style={[
-          { fontSize: 72, color: '#9CA3AF', fontWeight: '300' },
+          { fontSize: 72, color: '#9CA3AF', fontWeight: '100', fontFamily: 'Roboto' },
           animatedStyle,
         ]}
       >

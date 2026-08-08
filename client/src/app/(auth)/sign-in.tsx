@@ -68,7 +68,7 @@ export default function Page() {
     return (
         <View style={styles.container}>
             <Image 
-                source={require('../../../assets/images/auth_bg.png')} 
+                source={require('../../../assets/images/auth_bg.jpg')} 
                 style={{ width: '200%', height: '100%', position: 'absolute', left: 0, opacity: 0.25 }} 
                 resizeMode="cover"
             />

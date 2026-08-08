@@ -55,6 +55,7 @@ export interface Product {
 export type ProductCardProps = {
     product: Product;
     index?: number;
+    disableAnimation?: boolean;
 };
 
 export interface CartItem {

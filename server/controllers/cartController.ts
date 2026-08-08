@@ -44,7 +44,7 @@ export const addToCart = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { productId, quantity = 1, size = "" } = req.body;
+    const { productId, quantity = 1, size = "", color = "" } = req.body;
 
     // Validate Product
     const product = await Product.findById(productId);
@@ -81,7 +81,8 @@ export const addToCart = async (
     const item = cart.items.find(
       (i: any) =>
         i.product.toString() === productId &&
-        (i.size || "") === (size || "")
+        (i.size || "") === (size || "") &&
+        (i.color || "") === (color || "")
     );
 
     if (item) {
@@ -102,6 +103,7 @@ export const addToCart = async (
         quantity,
         price: product.price,
         size,
+        color,
       });
     }
 
@@ -140,7 +142,7 @@ export const updateCartItem = async (
 ): Promise<void> => {
   try {
     const { productId } = req.params;
-    const { quantity, size = "" } = req.body;
+    const { quantity, size = "", color = "" } = req.body;
 
     if (!quantity || quantity < 1) {
       res.status(400).json({
@@ -181,7 +183,8 @@ export const updateCartItem = async (
     const item = cart.items.find(
       (i: any) =>
         i.product.toString() === productId &&
-        (i.size || "") === (size || "")
+        (i.size || "") === (size || "") &&
+        (i.color || "") === (color || "")
     );
 
     if (!item) {
@@ -226,7 +229,7 @@ export const removeCartItem = async (
 ): Promise<void> => {
   try {
     const { productId } = req.params;
-    const { size = "" } = req.body;
+    const { size = "", color = "" } = req.body;
 
     const cart = await Cart.findOne({ user: req.user._id });
 
@@ -242,7 +245,8 @@ export const removeCartItem = async (
     const itemIndex = cart.items.findIndex(
       (item: any) =>
         item.product.toString() === productId &&
-        (item.size || "") === (size || "")
+        (item.size || "") === (size || "") &&
+        (item.color || "") === (color || "")
     );
 
     if (itemIndex === -1) {

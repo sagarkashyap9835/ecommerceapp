@@ -2,6 +2,7 @@ import React from 'react'
 import { View, Text, TouchableOpacity, Image } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { COLORS } from '../constants'
+import { getColorName } from '../utils/colors'
 
 // 1. इंटरफ़ेस को अपडेट किया ताकि context की सही 'id' और 'size' मैच हो सके
 interface CartItemComponentProps {
@@ -17,9 +18,10 @@ interface CartItemComponentProps {
     };
     quantity: number;
     size: string; // size को string रखा ताकि context में सही से पास हो
+    color?: string;
   };
   onRemove: (id: string) => void;
-  onUpdateQuantity: (id: string, quantity: number, size: string) => void; // यहाँ तीसरा पैरामीटर (size) जोड़ा
+  onUpdateQuantity: (id: string, quantity: number, size: string, color?: string) => void;
 }
 
 export default function CartItem({ item, onRemove, onUpdateQuantity }: CartItemComponentProps) {
@@ -50,6 +52,9 @@ export default function CartItem({ item, onRemove, onUpdateQuantity }: CartItemC
               {item?.size ? (
                 <Text className="text-xs text-gray-400">Size: {item.size}</Text>
               ) : null}
+              {item?.color ? (
+                <Text className="text-xs text-gray-400">Color: {getColorName(item.color)}</Text>
+              ) : null}
               {availableStock !== undefined && (
                 <Text className={`text-xs ${availableStock <= 5 ? "text-amber-600 font-semibold" : "text-gray-400"}`}>
                   {item?.size ? "• " : ""}{availableStock <= 5 ? `Only ${availableStock} left!` : `Stock: ${availableStock}`}
@@ -79,7 +84,7 @@ export default function CartItem({ item, onRemove, onUpdateQuantity }: CartItemC
             
             {/* घटाने का बटन (-) */}
             <TouchableOpacity 
-              onPress={() => item.quantity > 1 && onUpdateQuantity(item.id, item.quantity - 1, item.size)}
+              onPress={() => item.quantity > 1 && onUpdateQuantity(item.id, item.quantity - 1, item.size, item.color)}
               disabled={item.quantity <= 1}
               className="p-1"
             >
@@ -95,7 +100,7 @@ export default function CartItem({ item, onRemove, onUpdateQuantity }: CartItemC
 
             {/* बढ़ाने का बटन (+): Available Stock limit check */}
             <TouchableOpacity 
-              onPress={() => onUpdateQuantity(item.id, item.quantity + 1, item.size)}
+              onPress={() => onUpdateQuantity(item.id, item.quantity + 1, item.size, item.color)}
               disabled={availableStock !== undefined && item.quantity >= availableStock}
               className="p-1"
             >

@@ -5,6 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 // import { dummyOrders, dummyUser } from "@/assets/assets";
 import { useAuth } from "@/context/AuthContext";
 import api from "../../../../constants/api";
+import { getColorName } from "../../../../utils/colors";
 export default function AdminOrders() {
     const {getToken}=useAuth()
     const [loading, setLoading] = useState(true);
@@ -78,7 +79,7 @@ try {
     if (loading && !refreshing) {
         return (
             <View style={styles.centerComponent}>
-                <ActivityIndicator size="large" color={COLORS.primary || '#000'} />
+                <ActivityIndicator size="large" color="#FF3399" />
             </View>
         );
     }
@@ -140,7 +141,12 @@ try {
                                                 {item.quantity}x {item.product?.name || item.name}
                                                 {item.size && (
                                                     <Text style={styles.itemSizeText}>
-                                                        {" "}({item.size})
+                                                        {" "}(Size: {item.size})
+                                                    </Text>
+                                                )}
+                                                {item.color && (
+                                                    <Text style={styles.itemSizeText}>
+                                                        {" "}(Color: {getColorName(item.color)})
                                                     </Text>
                                                 )}
                                             </Text>
@@ -182,7 +188,7 @@ try {
 
                         {updating ? (
                             <View style={styles.modalLoadingBox}>
-                                <ActivityIndicator size="large" color={COLORS.primary || '#000'} />
+                                <ActivityIndicator size="large" color="#FF3399" />
                                 <Text style={styles.modalLoadingText}>Updating status...</Text>
                             </View>
                         ) : (
@@ -207,7 +213,7 @@ try {
                                                 {item}
                                             </Text>
                                             {isSelected && (
-                                                <Ionicons name="checkmark-circle" size={20} color={COLORS.primary || '#000'} />
+                                                <Ionicons name="checkmark-circle" size={24} color="#FF3399" />
                                             )}
                                         </TouchableOpacity>
                                     );
@@ -224,19 +230,20 @@ try {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f9fafb', // surface backround
+        backgroundColor: '#FFFFFF', 
     },
     scrollView: {
         flex: 1,
     },
     scrollContent: {
-        padding: 16,
+        padding: 20,
+        paddingBottom: 40,
     },
     centerComponent: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#f9fafb',
+        backgroundColor: '#FFFFFF',
     },
     emptyComponent: {
         flex: 1,
@@ -245,177 +252,207 @@ const styles = StyleSheet.create({
         marginTop: 80,
     },
     secondaryText: {
-        color: '#6b7280',
+        color: '#94A3B8',
         fontSize: 15,
+        fontFamily: 'Outfit_500',
     },
     orderCard: {
         backgroundColor: '#ffffff',
-        padding: 16,
-        borderRadius: 12,
-        marginBottom: 16,
+        padding: 20,
+        borderRadius: 20,
+        marginBottom: 20,
         borderWidth: 1,
-        borderColor: '#f3f4f6',
+        borderColor: '#F1F5F9',
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.03,
-        shadowRadius: 2,
-        elevation: 2,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.05,
+        shadowRadius: 10,
+        elevation: 3,
     },
     orderHeaderRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginBottom: 8,
+        alignItems: 'center',
+        marginBottom: 12,
     },
     orderIdText: {
-        fontWeight: '500',
+        fontWeight: '700',
         fontSize: 14,
-        color: '#9ca3af', // gray-400
+        color: '#64748B', 
+        fontFamily: 'Outfit_700',
     },
     secondaryTextSmall: {
-        color: '#6b7280',
+        color: '#94A3B8',
         fontSize: 12,
+        fontFamily: 'Outfit_500',
     },
     infoBox: {
-        marginBottom: 12,
-        backgroundColor: '#f9fafb', // gray-50
-        padding: 12,
-        borderRadius: 8,
+        marginBottom: 16,
+        backgroundColor: '#F8FAFC', 
+        padding: 16,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#F1F5F9',
     },
     infoBoxLabel: {
-        fontSize: 12,
-        color: '#6b7280',
-        fontWeight: '700',
-        marginBottom: 4,
+        fontSize: 11,
+        color: '#64748B',
+        fontWeight: '800',
+        marginBottom: 6,
+        fontFamily: 'Outfit_800',
+        letterSpacing: 0.5,
     },
     infoBoxLabelVariant: {
-        fontSize: 12,
-        color: '#6b7280',
-        fontWeight: '700',
-        marginBottom: 8,
+        fontSize: 11,
+        color: '#64748B',
+        fontWeight: '800',
+        marginBottom: 10,
+        fontFamily: 'Outfit_800',
+        letterSpacing: 0.5,
     },
     primaryTextMedium: {
-        color: '#111827',
-        fontWeight: '500',
-        fontSize: 14,
+        color: '#0F172A',
+        fontWeight: '700',
+        fontSize: 15,
+        fontFamily: 'Outfit_700',
+        marginBottom: 2,
     },
     primaryTextSmall: {
-        color: '#111827',
-        fontSize: 12,
-        lineHeight: 16,
+        color: '#475569',
+        fontSize: 13,
+        lineHeight: 18,
+        fontFamily: 'Outfit_500',
     },
     itemsSection: {
-        marginBottom: 12,
+        marginBottom: 16,
+        paddingHorizontal: 4,
     },
     itemRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginBottom: 4,
+        marginBottom: 8,
     },
     itemInfoText: {
-        color: '#6b7280',
-        fontSize: 12,
+        color: '#475569',
+        fontSize: 13,
         flex: 1,
-        marginRight: 8,
+        marginRight: 12,
+        fontFamily: 'Outfit_500',
     },
     itemSizeText: {
-        color: '#9ca3af',
+        color: '#94A3B8',
     },
     itemPriceText: {
-        color: '#6b7280',
-        fontSize: 12,
-        fontWeight: '700',
+        color: '#0F172A',
+        fontSize: 13,
+        fontWeight: '800',
+        fontFamily: 'Outfit_800',
     },
     orderFooterRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
         marginTop: 8,
-        paddingTop: 12,
+        paddingTop: 16,
         borderTopWidth: 1,
-        borderTopColor: '#f3f4f6',
+        borderTopColor: '#F1F5F9',
     },
     totalAmountText: {
-        color: '#111827',
-        fontWeight: '700',
-        fontSize: 18,
+        color: '#0F172A',
+        fontWeight: '800',
+        fontSize: 20,
+        fontFamily: 'Outfit_800',
     },
     statusBadgeButton: {
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: 16,
-        paddingVertical: 8,
+        paddingVertical: 10,
         borderRadius: 9999,
     },
     statusBadgeText: {
         fontSize: 12,
-        fontWeight: '700',
+        fontWeight: '800',
         textTransform: 'uppercase',
         letterSpacing: 0.5,
         marginRight: 8,
+        fontFamily: 'Outfit_800',
     },
     pencilIcon: {
-        opacity: 0.6,
+        opacity: 0.8,
     },
     // Modal Styles
     modalOverlay: {
         flex: 1,
         justifyContent: 'flex-end',
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        backgroundColor: 'rgba(0, 0, 0, 0.4)',
     },
     modalContent: {
         backgroundColor: '#ffffff',
-        borderTopLeftRadius: 16,
-        borderTopRightRadius: 16,
-        padding: 16,
-        maxHeight: '60%',
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        padding: 24,
+        maxHeight: '65%',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 20,
+        elevation: 10,
     },
     modalHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
         marginBottom: 16,
-        paddingBottom: 16,
+        paddingBottom: 20,
         borderBottomWidth: 1,
-        borderBottomColor: '#f3f4f6',
+        borderBottomColor: '#F1F5F9',
     },
     modalTitle: {
-        fontSize: 18,
-        fontWeight: '700',
-        color: '#111827',
+        fontSize: 20,
+        fontWeight: '800',
+        color: '#0F172A',
+        fontFamily: 'Outfit_800',
     },
     modalLoadingBox: {
-        paddingVertical: 32,
+        paddingVertical: 40,
         alignItems: 'center',
     },
     modalLoadingText: {
         textAlign: 'center',
-        color: '#6b7280',
-        marginTop: 8,
+        color: '#64748B',
+        marginTop: 12,
+        fontFamily: 'Outfit_500',
     },
     modalStatusItem: {
         padding: 16,
-        borderRadius: 12,
-        marginBottom: 8,
+        paddingHorizontal: 20,
+        borderRadius: 16,
+        marginBottom: 12,
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
     },
     modalStatusItemActive: {
-        backgroundColor: 'rgba(0, 0, 0, 0.05)', // bg-primary/10 (मानते हुए ब्लैक थीम है)
+        backgroundColor: '#FDF2F8', 
     },
     modalStatusItemInactive: {
-        backgroundColor: '#f9fafb',
+        backgroundColor: '#F8FAFC',
+        borderWidth: 1,
+        borderColor: '#F1F5F9',
     },
     modalStatusText: {
-        fontSize: 14,
+        fontSize: 15,
         textTransform: 'capitalize',
+        fontFamily: 'Outfit_600',
     },
     modalStatusTextActive: {
-        color: '#000000',
-        fontWeight: '700',
+        color: '#FF3399',
+        fontWeight: '800',
+        fontFamily: 'Outfit_800',
     },
     modalStatusTextInactive: {
-        color: '#6b7280',
+        color: '#64748B',
         fontWeight: '500',
     },
 });

@@ -13,16 +13,18 @@ import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "../constants";
 import { ProductCardProps } from "../constants/types";
 import { useWishlist } from "../context/WishlistContext";
+import AnimatedButton from "./AnimatedButton";
+import Toast from "react-native-toast-message";
 
 const { width } = Dimensions.get("window");
 
-export default function ProductCard({ product, index = 0 }: ProductCardProps) {
+export default function ProductCard({ product, index = 0, disableAnimation = false }: ProductCardProps) {
   const { toggleWishlist, isInWishlist } = useWishlist();
   const isLiked = isInWishlist(product._id);
 
   return (
     <Animated.View
-      entering={FadeInDown.delay(index * 100).springify()}
+      entering={disableAnimation ? undefined : FadeInDown.delay(index * 100).springify()}
       style={{
         width: (width - 44) / 2, // Adjusted for 2 columns
         marginBottom: 20,
@@ -73,7 +75,7 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
             )}
 
             {/* Favourite (Wishlist) Button */}
-            <TouchableOpacity
+            <AnimatedButton
               style={{
                 position: "absolute",
                 top: 10,
@@ -85,17 +87,25 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
                 alignItems: "center",
                 justifyContent: "center",
               }}
-              onPress={(e) => {
+              onPress={(e: any) => {
                 e.stopPropagation();
                 toggleWishlist(product);
+                Toast.show({
+                  type: 'success',
+                  text1: isLiked ? 'Removed from Wishlist' : 'Added to Wishlist',
+                  text2: product.name,
+                  position: 'bottom',
+                  visibilityTime: 2000,
+                  bottomOffset: 80,
+                });
               }}
             >
               <Ionicons
                 name={isLiked ? "heart" : "heart-outline"}
                 size={18}
-                color={isLiked ? COLORS.accent : "#475569"}
+                color={isLiked ? "#FF3399" : "#475569"}
               />
-            </TouchableOpacity>
+            </AnimatedButton>
 
             {/* BUY 1 GET 1 / BOGO BADGE (Optional) */}
             {product.isBogo ? (

@@ -10,6 +10,7 @@ import { useAuth } from "@/context/AuthContext";
 import api from "../../../constants/api";
 import { getDeliveryDateForOrder } from "../../../utils/delivery";
 import Toast from "react-native-toast-message";
+import { getColorName } from "../../../utils/colors";
 
 export default function OrderDetails() {
   const { getToken } = useAuth();
@@ -253,14 +254,16 @@ export default function OrderDetails() {
                     <View 
                       style={[
                         styles.stepDot, 
-                        { backgroundColor: step.completed ? COLORS.primary : '#D1D5DB' }
+                        { backgroundColor: step.completed ? COLORS.primary : '#FCE7F3' }
                       ]} 
-                    />
+                    >
+                      {step.completed && <Ionicons name="checkmark" size={12} color="#FFFFFF" />}
+                    </View>
                     {index !== ORDER_STEPS.length - 1 && (
                       <View 
                         style={[
                           styles.stepLine, 
-                          { backgroundColor: step.completed ? COLORS.primary : '#D1D5DB' }
+                          { backgroundColor: step.completed ? COLORS.primary : '#FCE7F3' }
                         ]} 
                       />
                     )}
@@ -269,7 +272,7 @@ export default function OrderDetails() {
                     <Text 
                       style={[
                         styles.stepTitle, 
-                        { color: step.completed ? COLORS.primary : '#9CA3AF' }
+                        { color: step.completed ? COLORS.primary : '#94A3B8' }
                       ]}
                     >
                       {step.title}
@@ -309,7 +312,8 @@ export default function OrderDetails() {
                   <Text style={styles.productName} numberOfLines={1}>
                     {item.name}
                   </Text>
-                  <Text style={styles.productMeta}>Size: {item.size}</Text>
+                  {item.size ? <Text style={styles.productMeta}>Size: {item.size}</Text> : null}
+                  {item.color ? <Text style={styles.productMeta}>Color: {getColorName(item.color)}</Text> : null}
                   <View style={styles.productPriceRow}>
                     <Text style={styles.productPrice}>₹{item.price}</Text>
                     <Text style={styles.productMeta}>Qty: {item.quantity}</Text>
@@ -522,7 +526,7 @@ export default function OrderDetails() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#FFFFFF',
   },
   centered: {
     justifyContent: 'center',
@@ -535,31 +539,40 @@ const styles = StyleSheet.create({
     paddingTop: 16,
   },
   card: {
-    backgroundColor: '#FFFFFF',
-    padding: 16,
-    borderRadius: 12,
+    backgroundColor: '#FFF5F8',
+    padding: 20,
+    borderRadius: 24,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
+    borderColor: '#FBCFE8',
+    shadowColor: '#FF3399',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.08,
+    shadowRadius: 20,
+    elevation: 4,
   },
   lastCard: {
     marginBottom: 32,
   },
   cardTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: COLORS.primary,
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#0F172A',
     marginBottom: 16,
+    fontFamily: 'Outfit_800',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   cardTitleSmall: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: COLORS.primary,
-    marginBottom: 8,
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginBottom: 12,
+    fontFamily: 'Outfit_800',
   },
   stepRow: {
     flexDirection: 'row',
-    marginBottom: 16,
+    marginBottom: 20,
   },
   noMarginBottom: {
     marginBottom: 0,
@@ -569,53 +582,71 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   stepDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 2,
   },
   stepLine: {
     width: 2,
-    height: '100%',
+    height: '150%',
     position: 'absolute',
-    top: 12,
+    top: 20,
+    zIndex: 1,
   },
   stepTextContainer: {
+    flex: 1,
+    justifyContent: 'center',
     paddingBottom: 16,
   },
   stepTitle: {
+    fontSize: 15,
     fontWeight: '700',
+    fontFamily: 'Outfit_700',
+    marginBottom: 2,
   },
   stepDate: {
-    color: COLORS.secondary,
+    color: '#64748B',
     fontSize: 12,
+    fontFamily: 'Outfit_500',
+    fontWeight: '500',
   },
   productRow: {
     flexDirection: 'row',
   },
   productRowBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: '#FBCFE8',
     paddingBottom: 16,
     marginBottom: 16,
   },
   productImage: {
-    width: 64,
-    height: 64,
-    borderRadius: 8,
-    backgroundColor: '#F3F4F6',
+    width: 72,
+    height: 72,
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#FBCFE8',
   },
   productDetails: {
     flex: 1,
-    marginLeft: 12,
+    marginLeft: 16,
     justifyContent: 'center',
   },
   productName: {
-    color: COLORS.primary,
-    fontWeight: '500',
+    color: '#0F172A',
+    fontWeight: '700',
+    fontSize: 15,
+    fontFamily: 'Outfit_700',
+    marginBottom: 4,
   },
   productMeta: {
-    color: COLORS.secondary,
+    color: '#64748B',
     fontSize: 12,
+    fontFamily: 'Outfit_500',
+    fontWeight: '500',
   },
   productPriceRow: {
     flexDirection: 'row',
@@ -624,56 +655,77 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   productPrice: {
-    color: COLORS.primary,
-    fontWeight: '700',
+    color: '#FF3399',
+    fontWeight: '800',
+    fontSize: 16,
+    fontFamily: 'Outfit_800',
   },
   shippingRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 8,
+    backgroundColor: '#FDF2F8',
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#FBCFE8',
   },
   shippingText: {
-    color: COLORS.secondary,
-    marginLeft: 8,
+    color: '#334155',
+    marginLeft: 12,
     flex: 1,
+    fontSize: 13,
+    fontFamily: 'Outfit_500',
+    lineHeight: 20,
   },
   summaryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    marginBottom: 12,
+    alignItems: 'center',
   },
   summaryLabel: {
-    color: COLORS.secondary,
+    color: '#64748B',
+    fontSize: 13,
+    fontFamily: 'Outfit_500',
+    fontWeight: '500',
   },
   summaryValue: {
-    color: COLORS.primary,
-    fontWeight: '500',
+    color: '#0F172A',
+    fontWeight: '700',
+    fontSize: 14,
+    fontFamily: 'Outfit_700',
   },
   summaryValueCapitalized: {
-    color: COLORS.primary,
-    fontWeight: '500',
+    color: '#0F172A',
+    fontWeight: '700',
+    fontSize: 14,
     textTransform: 'capitalize',
+    fontFamily: 'Outfit_700',
   },
   divider: {
     height: 1,
-    backgroundColor: '#F3F4F6',
-    marginVertical: 8,
+    backgroundColor: '#FBCFE8',
+    marginVertical: 12,
   },
   totalLabel: {
-    color: COLORS.primary,
-    fontWeight: '700',
-    fontSize: 18,
+    color: '#0F172A',
+    fontWeight: '800',
+    fontSize: 16,
+    fontFamily: 'Outfit_800',
+    textTransform: 'uppercase',
   },
   totalValue: {
-    color: COLORS.primary,
-    fontWeight: '700',
-    fontSize: 18,
+    color: '#FF3399',
+    fontWeight: '800',
+    fontSize: 22,
+    fontFamily: 'Outfit_800',
   },
   refundBannerCard: {
     backgroundColor: "#ECFDF5",
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 14,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1,
@@ -681,9 +733,9 @@ const styles = StyleSheet.create({
   },
   replacementStatusCard: {
     backgroundColor: "#F0F9FF",
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 14,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1,
@@ -694,68 +746,73 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 14,
-    borderRadius: 12,
+    paddingVertical: 16,
+    borderRadius: 16,
     shadowColor: "#EF4444",
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 4,
   },
   cancelBtnText: {
     color: "#FFFFFF",
     fontSize: 15,
     fontWeight: "700",
+    fontFamily: 'Outfit_700',
   },
   replacementBtn: {
     backgroundColor: "#0284C7",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 14,
-    borderRadius: 12,
+    paddingVertical: 16,
+    borderRadius: 16,
     shadowColor: "#0284C7",
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 4,
   },
   replacementBtnText: {
     color: "#FFFFFF",
     fontSize: 15,
     fontWeight: "700",
+    fontFamily: 'Outfit_700',
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundColor: "rgba(15, 23, 42, 0.6)",
     justifyContent: "flex-end",
   },
   modalContentCard: {
     backgroundColor: "#FFFFFF",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
-    maxHeight: "80%",
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    padding: 24,
+    maxHeight: "85%",
   },
   modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 12,
+    marginBottom: 16,
   },
   modalTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: "800",
-    color: "#111827",
+    color: "#0F172A",
+    fontFamily: 'Outfit_800',
   },
   reasonOption: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderRadius: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
-    marginBottom: 8,
-    backgroundColor: "#F9FAFB",
+    borderColor: "#E2E8F0",
+    marginBottom: 10,
+    backgroundColor: "#F8FAFC",
   },
   selectedReasonOption: {
     borderColor: "#EF4444",
@@ -763,16 +820,24 @@ const styles = StyleSheet.create({
   },
   confirmCancelBtn: {
     backgroundColor: "#EF4444",
-    paddingVertical: 14,
-    borderRadius: 12,
+    paddingVertical: 16,
+    borderRadius: 16,
     alignItems: "center",
-    marginTop: 12,
+    marginTop: 16,
+    shadowColor: "#EF4444",
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
   },
   confirmReplacementBtn: {
     backgroundColor: "#0284C7",
-    paddingVertical: 14,
-    borderRadius: 12,
+    paddingVertical: 16,
+    borderRadius: 16,
     alignItems: "center",
-    marginTop: 12,
+    marginTop: 16,
+    shadowColor: "#0284C7",
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
   },
 });

@@ -93,7 +93,7 @@ export default function AdminProducts() {
     if (loading && !refreshing) {
         return (
             <View style={styles.centerComponent}>
-                <ActivityIndicator size="large" color={COLORS.primary || '#000'} />
+                <ActivityIndicator size="large" color="#FF3399" />
             </View>
         );
     }
@@ -134,9 +134,9 @@ export default function AdminProducts() {
 
                             <View style={styles.productDetails}>
                                 <Text style={styles.productName} numberOfLines={1}>{product.name}</Text>
-                                <Text style={styles.productMetaText} numberOfLines={1}>Category : {product.category || 'Others'}</Text>
-                                <Text style={styles.productMetaText} numberOfLines={1}>Stock : {product.stock}</Text>
-                                <Text style={styles.productMetaText} numberOfLines={1}>Sizes : {product.sizes?.join(", ") || 'N/A'}</Text>
+                                <Text style={styles.productMetaText} numberOfLines={1}>Category: {product.category || 'Others'}</Text>
+                                <Text style={styles.productMetaText} numberOfLines={1}>Stock: {product.stock}</Text>
+                                <Text style={styles.productMetaText} numberOfLines={1}>Sizes: {product.sizes?.join(", ") || 'N/A'}</Text>
                                 <Text style={styles.productPrice}>${product.price.toFixed(2)}</Text>
                             </View>
 
@@ -146,14 +146,14 @@ export default function AdminProducts() {
                                     onPress={() => router.push(`/admin/products/edit/${product._id}`)}
                                     style={styles.editButton}
                                 >
-                                    <Ionicons name="create-outline" size={18} color="#333333" />
+                                    <Ionicons name="create-outline" size={18} color="#FF3399" />
                                 </TouchableOpacity>
                                 <TouchableOpacity
                                     activeOpacity={0.7}
                                     onPress={() => confirmDeleteProduct(product._id, product.name)}
                                     style={styles.deleteButton}
                                 >
-                                    <Ionicons name="trash-outline" size={18} color="#ef4444" />
+                                    <Ionicons name="trash-outline" size={18} color="#EF4444" />
                                 </TouchableOpacity>
                             </View>
                         </View>
@@ -167,11 +167,11 @@ export default function AdminProducts() {
                     <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
                         <View style={styles.modalHeaderBox}>
                             <View style={styles.trashIconBg}>
-                                <Ionicons name="trash-outline" size={24} color="#ef4444" />
+                                <Ionicons name="trash-outline" size={24} color="#EF4444" />
                             </View>
                             <Text style={styles.modalTitle}>Delete Product</Text>
                             <Text style={styles.modalSubtitle}>
-                                Are you sure you want to delete <Text style={{ fontWeight: '700', color: '#111827' }}>"{productToDelete?.name}"</Text>? This action cannot be undone.
+                                Are you sure you want to delete <Text style={{ fontFamily: 'Outfit_700', color: '#0F172A' }}>"{productToDelete?.name}"</Text>? This action cannot be undone.
                             </Text>
                         </View>
                         <View style={styles.modalActions}>
@@ -204,47 +204,55 @@ export default function AdminProducts() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f9fafb',
+        backgroundColor: '#FFFFFF',
     },
     centerComponent: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#f9fafb',
+        backgroundColor: '#FFFFFF',
     },
     topBar: {
-        padding: 16,
-        backgroundColor: '#ffffff',
-        borderWidth: 1,
-        borderColor: '#f3f4f6',
+        paddingHorizontal: 20,
+        paddingTop: 16,
+        paddingBottom: 16,
+        backgroundColor: '#FFFFFF',
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
     },
     topBarTitle: {
-        fontSize: 18,
-        fontWeight: '600',
-        color: '#111827',
+        fontSize: 22,
+        fontWeight: '800',
+        color: '#000000',
+        fontFamily: 'Outfit_800',
     },
     addButton: {
-        backgroundColor: '#1f2937',
+        backgroundColor: '#FF3399',
         paddingHorizontal: 16,
-        paddingVertical: 8,
+        paddingVertical: 10,
         borderRadius: 9999,
         flexDirection: 'row',
         alignItems: 'center',
+        shadowColor: '#FF3399',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 6,
+        elevation: 4,
     },
     addButtonText: {
         color: '#ffffff',
-        fontWeight: '500',
+        fontWeight: '600',
         marginLeft: 4,
+        fontFamily: 'Outfit_600',
+        fontSize: 14,
     },
     scrollView: {
         flex: 1,
     },
     scrollContent: {
-        padding: 8,
-        paddingBottom: 32,
+        padding: 20,
+        paddingBottom: 40,
     },
     emptyComponent: {
         flex: 1,
@@ -253,109 +261,118 @@ const styles = StyleSheet.create({
         marginTop: 80,
     },
     secondaryText: {
-        color: '#6b7280',
+        color: '#94A3B8',
         fontSize: 15,
+        fontFamily: 'Outfit_500',
     },
     productCard: {
-        backgroundColor: '#ffffff',
-        padding: 12,
-        borderRadius: 8,
+        backgroundColor: '#FFFFFF',
+        padding: 16,
+        borderRadius: 20,
         borderWidth: 1,
-        borderColor: '#f3f4f6',
-        marginBottom: 12,
+        borderColor: '#F1F5F9',
+        marginBottom: 16,
         flexDirection: 'row',
         alignItems: 'center',
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.02,
-        shadowRadius: 2,
-        elevation: 1,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.04,
+        shadowRadius: 8,
+        elevation: 2,
     },
     productImage: {
-        width: 64,
-        height: 64,
-        borderRadius: 8,
-        backgroundColor: '#f3f4f6',
-        marginRight: 12,
+        width: 72,
+        height: 72,
+        borderRadius: 16,
+        backgroundColor: '#F8FAFC',
+        marginRight: 16,
+        borderWidth: 1,
+        borderColor: '#F1F5F9',
     },
     productDetails: {
         flex: 1,
     },
     productName: {
         fontWeight: '700',
-        color: '#111827',
+        color: '#0F172A',
         fontSize: 16,
+        fontFamily: 'Outfit_700',
+        marginBottom: 4,
     },
     productMetaText: {
-        color: '#6b7280',
+        color: '#64748B',
         fontSize: 12,
         marginBottom: 2,
+        fontFamily: 'Outfit_500',
     },
     productPrice: {
-        color: '#111827',
-        fontWeight: '700',
-        fontSize: 14,
-        marginTop: 2,
+        color: '#0F172A',
+        fontWeight: '800',
+        fontSize: 15,
+        marginTop: 6,
+        fontFamily: 'Outfit_800',
     },
     actionButtons: {
-        flexDirection: 'row',
+        flexDirection: 'column',
         alignItems: 'center',
+        gap: 10,
     },
     editButton: {
-        padding: 8,
-        backgroundColor: '#f1f5f9',
+        padding: 10,
+        backgroundColor: '#FDF2F8',
         borderRadius: 9999,
-        marginRight: 8,
     },
     deleteButton: {
-        padding: 8,
-        backgroundColor: '#fef2f2',
+        padding: 10,
+        backgroundColor: '#FEF2F2',
         borderRadius: 9999,
     },
     modalOverlay: {
         flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        backgroundColor: 'rgba(0, 0, 0, 0.4)',
         justifyContent: 'center',
         alignItems: 'center',
         padding: 20,
     },
     modalContent: {
         width: '100%',
-        maxWidth: 400,
+        maxWidth: 360,
         backgroundColor: '#ffffff',
-        borderRadius: 16,
-        padding: 24,
+        borderRadius: 24,
+        padding: 28,
         alignItems: 'center',
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
+        shadowOffset: { width: 0, height: 10 },
         shadowOpacity: 0.1,
-        shadowRadius: 10,
-        elevation: 5,
+        shadowRadius: 20,
+        elevation: 10,
     },
     modalHeaderBox: {
         alignItems: 'center',
-        marginBottom: 20,
+        marginBottom: 24,
     },
     trashIconBg: {
-        width: 48,
-        height: 48,
-        borderRadius: 24,
-        backgroundColor: '#fee2e2',
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        backgroundColor: '#FEF2F2',
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 12,
+        marginBottom: 16,
     },
     modalTitle: {
-        fontSize: 18,
-        fontWeight: '700',
-        color: '#111827',
-        marginBottom: 6,
+        fontSize: 20,
+        fontWeight: '800',
+        color: '#0F172A',
+        marginBottom: 8,
+        fontFamily: 'Outfit_800',
     },
     modalSubtitle: {
         fontSize: 14,
-        color: '#6b7280',
+        color: '#64748B',
         textAlign: 'center',
-        lineHeight: 20,
+        lineHeight: 22,
+        fontFamily: 'Outfit_500',
     },
     modalActions: {
         flexDirection: 'row',
@@ -364,27 +381,33 @@ const styles = StyleSheet.create({
     },
     cancelBtn: {
         flex: 1,
-        paddingVertical: 10,
-        borderRadius: 8,
-        borderWidth: 1,
-        borderColor: '#d1d5db',
+        paddingVertical: 12,
+        borderRadius: 12,
+        backgroundColor: '#F8FAFC',
         alignItems: 'center',
     },
     cancelBtnText: {
-        color: '#374151',
+        color: '#475569',
         fontWeight: '600',
         fontSize: 14,
+        fontFamily: 'Outfit_600',
     },
     deleteConfirmBtn: {
         flex: 1,
-        backgroundColor: '#ef4444',
-        paddingVertical: 10,
-        borderRadius: 8,
+        backgroundColor: '#EF4444',
+        paddingVertical: 12,
+        borderRadius: 12,
         alignItems: 'center',
+        shadowColor: '#EF4444',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 6,
+        elevation: 3,
     },
     deleteConfirmBtnText: {
         color: '#ffffff',
-        fontWeight: '600',
+        fontWeight: '700',
         fontSize: 14,
+        fontFamily: 'Outfit_700',
     },
 });

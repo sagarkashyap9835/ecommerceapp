@@ -68,6 +68,7 @@ export const createOrder = async (req: Request, res: Response) => {
                 quantity: item.quantity,
                 price: item.price,
                 size: item.size,
+                color: item.color,
             });
 
             product.stock -= item.quantity;

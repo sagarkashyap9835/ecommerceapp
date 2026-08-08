@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Image, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native'
+import { View, Text, ScrollView, Image, TouchableOpacity, StyleSheet, ActivityIndicator, Dimensions } from 'react-native'
 import React, { useState } from 'react'
 import { useRouter } from 'expo-router'
 import Header from '../../../components/Header'
@@ -6,10 +6,9 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useUser, useAuth } from "@/context/AuthContext";
 import Toast from 'react-native-toast-message'
-
-// constants फ़ोल्डर से PROFILE_MENU को इम्पोर्ट किया
-// नोट: पाथ को अपनी प्रोजेक्ट डायरेक्टरी के अनुसार कन्फर्म कर लें
 import { PROFILE_MENU } from '../../../constants' 
+
+const { width } = Dimensions.get('window');
 
 export default function Profile() {
   const router = useRouter()
@@ -45,7 +44,7 @@ export default function Profile() {
       <SafeAreaView style={styles.container} edges={['top']}>
         <Header title='Profile' />
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <ActivityIndicator size="large" color="#111111" />
+          <ActivityIndicator size="large" color="#FF3399" />
         </View>
       </SafeAreaView>
     )
@@ -57,75 +56,101 @@ export default function Profile() {
       
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {isSignedIn && user ? (
-          /* 1. असली प्रोफ़ाइल स्क्रीन (जब यूज़र लॉग-इन हो) */
-          <View style={styles.profileContainer}>
-            
-            {/* प्रोफ़ाइल इमेज और नाम */}
-            <View style={styles.avatarSection}>
+          <View style={styles.profileWrapper}>
+            {/* 1. Header Banner Image Section */}
+            <View style={styles.bannerSection}>
               <Image 
-                source={{ uri: user.imageUrl || `https://ui-avatars.com/api/?name=${user.fullName || user.username || 'User'}&background=random` }} 
-                style={styles.avatar}
+                source={{ uri: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=1000' }} 
+                style={styles.bannerImage}
               />
-              <Text style={styles.userName}>{user.fullName || user.username || 'User'}</Text>
-              <Text style={styles.userEmail}>{user.primaryEmailAddress?.emailAddress}</Text>
-              
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{(user.publicMetadata?.role as string || 'user').toUpperCase()}</Text>
+              <View style={[styles.bannerOverlay, { backgroundColor: 'rgba(0,0,0,0.55)' }]}>
+                <View style={styles.avatarWrapper}>
+                  {user.imageUrl ? (
+                    <Image source={{ uri: user.imageUrl }} style={styles.avatar} />
+                  ) : (
+                    <View style={[styles.avatar, { justifyContent: 'center', alignItems: 'center', backgroundColor: '#FDF2F8' }]}>
+                      <Ionicons name="person" size={44} color="#FF3399" />
+                    </View>
+                  )}
+                </View>
+                <Text style={styles.userName}>{user.fullName || user.username || 'User'}</Text>
+                <Text style={styles.userEmail}>{user.primaryEmailAddress?.emailAddress}</Text>
+                <Text style={styles.userQuote}>Manage your profile, orders, and preferences</Text>
               </View>
             </View>
 
-            {/* अकाउंट सेटिंग्स ऑप्शंस (डायनामिक लिस्ट) */}
-            <View style={styles.menuSection}>
+            {/* 2. Grouped Menu Cards (Overlapping the banner) */}
+            <View style={styles.menuContainer}>
               
-              {/* CONDITION: अगर यूजर admin है, तो लिस्ट में सबसे पहले Admin Panel दिखाओ */}
-              {user.publicMetadata?.role === 'admin' && (
-                <TouchableOpacity 
-                  style={styles.menuItem} 
-                  onPress={() => router.push('/admin')}
-                >
-                  <View style={styles.menuItemLeft}>
-                    <Ionicons name="shield-checkmark-outline" size={22} color="#4b5563" />
-                    <Text style={[styles.menuItemText, { fontWeight: '600' }]}>Admin Panel</Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={18} color="#9ca3af" />
-                </TouchableOpacity>
-              )}
+              {/* Group 1: Admin (if any) + Top Menu Items */}
+              <View style={[styles.cardGroup, styles.overlapCard]}>
+                {user.publicMetadata?.role === 'admin' && (
+                  <TouchableOpacity 
+                    style={styles.menuItem} 
+                    onPress={() => router.push('/admin')}
+                  >
+                    <View style={styles.menuItemLeft}>
+                      <Ionicons name="shield-checkmark" size={20} color="#94A3B8" />
+                      <Text style={[styles.menuItemText, { fontWeight: '700', color: '#0F172A' }]}>Admin Panel</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={16} color="#CBD5E1" />
+                  </TouchableOpacity>
+                )}
 
-              {/* PROFILE_MENU का लूप चलाकर बाकी ऑप्शंस दिखाए */}
-              {PROFILE_MENU.map((menu) => (
-                <TouchableOpacity 
-                  key={menu.id} 
-                  style={styles.menuItem} 
-                  onPress={() => menu.route !== '/' && router.push(menu.route as any)}
-                >
-                  <View style={styles.menuItemLeft}>
-                    {/* यहाँ @expo/vector-icons से डायनामिक आइकॉन नेम रेंडर हो रहे हैं */}
-                    <Ionicons name={menu.icon as any} size={22} color="#4b5563" />
-                    <Text style={styles.menuItemText}>{menu.title}</Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={18} color="#9ca3af" />
-                </TouchableOpacity>
-              ))}
+                {PROFILE_MENU.slice(0, 3).map((menu, index) => {
+                  const isLast = index === 2 && user.publicMetadata?.role !== 'admin';
+                  return (
+                    <TouchableOpacity 
+                      key={menu.id} 
+                      style={[styles.menuItem, isLast && styles.noBorder]} 
+                      onPress={() => menu.route !== '/' && router.push(menu.route as any)}
+                    >
+                      <View style={styles.menuItemLeft}>
+                        <Ionicons name={menu.icon as any} size={20} color="#94A3B8" />
+                        <Text style={styles.menuItemText}>{menu.title}</Text>
+                      </View>
+                      <Ionicons name="chevron-forward" size={16} color="#CBD5E1" />
+                    </TouchableOpacity>
+                  )
+                })}
+              </View>
 
-              {/* लॉगआउट बटन (हमेशा लिस्ट के आखिर में रहेगा) */}
-              <TouchableOpacity style={[styles.menuItem, styles.logoutItem]} onPress={handleLogout}>
-                <View style={styles.menuItemLeft}>
-                  <Ionicons name="log-out-outline" size={22} color="#ef4444" />
-                  <Text style={[styles.menuItemText, { color: '#ef4444', fontWeight: '500' }]}>Log Out</Text>
-                </View>
-              </TouchableOpacity>
+              {/* Group 2: Bottom Menu Items + Logout */}
+              <View style={styles.cardGroup}>
+                {PROFILE_MENU.slice(3).map((menu) => (
+                  <TouchableOpacity 
+                    key={menu.id} 
+                    style={styles.menuItem} 
+                    onPress={() => menu.route !== '/' && router.push(menu.route as any)}
+                  >
+                    <View style={styles.menuItemLeft}>
+                      <Ionicons name={menu.icon as any} size={20} color="#94A3B8" />
+                      <Text style={styles.menuItemText}>{menu.title}</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={16} color="#CBD5E1" />
+                  </TouchableOpacity>
+                ))}
+
+                <TouchableOpacity style={[styles.menuItem, styles.noBorder]} onPress={handleLogout}>
+                  <View style={styles.menuItemLeft}>
+                    <Ionicons name="log-out" size={20} color="#EF4444" />
+                    <Text style={[styles.menuItemText, { color: '#EF4444', fontWeight: '600' }]}>Log Out</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={16} color="#CBD5E1" />
+                </TouchableOpacity>
+              </View>
+
             </View>
           </View>
         ) : (
-          /* 2. Guest User स्क्रीन (जब यूज़र लॉग-इन न हो) */
+          /* Guest User Screen */
           <View style={styles.guestContainer}>
             <View style={styles.iconCircle}>
-              <Ionicons name="person-circle-outline" size={80} color="#9ca3af" />
+              <Ionicons name="person" size={64} color="#FF3399" />
             </View>
             <Text style={styles.guestTitle}>Welcome, Guest</Text>
             <Text style={styles.guestSubtitle}>Please sign in to manage your profile, track orders, and view your wishlist.</Text>
             
-            {/* Sign In Button */}
             <TouchableOpacity 
               activeOpacity={0.8}
               style={styles.signInButton} 
@@ -134,7 +159,6 @@ export default function Profile() {
               <Text style={styles.signInButtonText}>Sign In</Text>
             </TouchableOpacity>
 
-            {/* Sign Up Button */}
             <TouchableOpacity 
               activeOpacity={0.8}
               style={styles.signUpButton} 
@@ -152,91 +176,113 @@ export default function Profile() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9fafb',
+    backgroundColor: '#F3F4F6', // Light gray background matches the image
   },
   scrollContent: {
     flexGrow: 1,
     paddingBottom: 30,
   },
   /* Profile Styles */
-  profileContainer: {
+  profileWrapper: {
     flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 20,
   },
-  avatarSection: {
+  bannerSection: {
+    width: '100%',
+    height: 320,
+    position: 'relative',
+  },
+  bannerImage: {
+    width: '100%',
+    height: '100%',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+  },
+  bannerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)', // Dark overlay so text is readable
+    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 28,
-    backgroundColor: '#ffffff',
-    padding: 24,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    elevation: 2,
+    paddingHorizontal: 20,
+    paddingTop: 10,
+  },
+  avatarWrapper: {
+    marginBottom: 16,
+    borderRadius: 60,
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
     shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 5,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 8,
   },
   avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#e5e7eb',
-    marginBottom: 12,
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: '#E5E7EB',
   },
   userName: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#111827',
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    fontFamily: 'Outfit_800',
+    marginBottom: 4,
   },
   userEmail: {
     fontSize: 14,
-    color: '#6b7280',
-    marginTop: 4,
+    color: '#E2E8F0',
+    fontFamily: 'Outfit_500',
+    marginBottom: 12,
   },
-  badge: {
-    backgroundColor: '#f3f4f6',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 20,
-    marginTop: 10,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
+  userQuote: {
+    fontSize: 13,
+    color: '#CBD5E1',
+    fontFamily: 'Outfit',
+    textAlign: 'center',
+    maxWidth: '80%',
+    lineHeight: 20,
   },
-  badgeText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#374151',
+  menuContainer: {
+    paddingHorizontal: 20,
   },
-  menuSection: {
-    backgroundColor: '#ffffff',
-    borderRadius: 20,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
+  overlapCard: {
+    marginTop: -40, // Pulls the first card up over the banner
+  },
+  cardGroup: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    marginBottom: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 15,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 6,
   },
   menuItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
+    paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
+    borderBottomColor: '#F1F5F9',
+  },
+  noBorder: {
+    borderBottomWidth: 0,
   },
   menuItemLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 16,
   },
   menuItemText: {
     fontSize: 15,
-    fontWeight: '500',
-    color: '#374151',
-  },
-  logoutItem: {
-    borderBottomWidth: 0,
+    fontWeight: '600',
+    color: '#334155',
+    fontFamily: 'Outfit_600',
   },
   /* Guest Styles */
   guestContainer: {
@@ -244,60 +290,64 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 32,
-    paddingTop: 60,
+    paddingTop: 80,
   },
   iconCircle: {
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: '#FDF2F8',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 24,
   },
   guestTitle: {
     fontSize: 24,
-    fontWeight: '700',
-    color: '#111827',
-    marginBottom: 8,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginBottom: 12,
+    fontFamily: 'Outfit_800',
   },
   guestSubtitle: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: 15,
+    color: '#64748B',
     textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: 36,
+    lineHeight: 22,
+    marginBottom: 40,
+    fontFamily: 'Outfit_500',
   },
   signInButton: {
-    backgroundColor: '#000000',
+    backgroundColor: '#FF3399',
     width: '100%',
-    paddingVertical: 14,
-    borderRadius: 12,
+    paddingVertical: 16,
+    borderRadius: 16,
     alignItems: 'center',
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    marginBottom: 16,
+    shadowColor: '#FF3399',
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 5,
   },
   signInButtonText: {
-    color: '#ffffff',
+    color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
+    fontFamily: 'Outfit_700',
   },
   signUpButton: {
-    backgroundColor: 'transparent',
+    backgroundColor: '#FFFFFF',
     width: '100%',
-    paddingVertical: 14,
-    borderRadius: 12,
+    paddingVertical: 16,
+    borderRadius: 16,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: '#E2E8F0',
   },
   signUpButtonText: {
-    color: '#374151',
+    color: '#0F172A',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
+    fontFamily: 'Outfit_700',
   },
-})
+});

@@ -17,17 +17,19 @@ export type CartItem = {
   product: Product;
   quantity: number;
   size: string;
+  color?: string;
   price: number;
 };
 
 type CartContextType = {
   cartItems: CartItem[];
-  addToCart: (product: Product, size: string) => Promise<void>;
+  addToCart: (product: Product, size: string, color?: string) => Promise<void>;
   removeFromCart: (itemId: string) => Promise<void>;
   updateQuantity: (
     itemId: string,
     quantity: number,
-    size: string
+    size: string,
+    color?: string
   ) => Promise<void>;
   clearCart: () => Promise<void>;
   cartTotal: number;
@@ -50,8 +52,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const prodObj = typeof item.product === "object" ? item.product : {};
       const prodId = prodObj._id || item.product;
       const sizeVal = item.size || "";
+      const colorVal = item.color || "";
       return {
-        id: `${prodId}-${sizeVal}`,
+        id: `${prodId}-${sizeVal}-${colorVal}`,
         productId: prodId,
         product: {
           _id: prodId,
@@ -68,6 +71,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         },
         quantity: item.quantity,
         size: sizeVal,
+        color: colorVal,
         price: item.price || prodObj.price || 0,
       };
     });
@@ -96,7 +100,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const addToCart = async (product: Product, size: string) => {
+  const addToCart = async (product: Product, size: string, color: string = "") => {
     if (!isSignedIn) {
       Toast.show({
         type: "info",
@@ -128,7 +132,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
     // Check if total quantity in cart would exceed stock
     const existingCartItem = cartItems.find(
-      (i) => i.productId === product._id && (i.size || "") === (size || "")
+      (i) => i.productId === product._id && (i.size || "") === (size || "") && (i.color || "") === (color || "")
     );
     const currentQtyInCart = existingCartItem ? existingCartItem.quantity : 0;
     if (product.stock !== undefined && currentQtyInCart + 1 > product.stock) {
@@ -151,6 +155,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           productId: product._id,
           quantity: 1,
           size: size || "",
+          color: color || "",
         },
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -189,7 +194,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const token = await getToken();
       const { data } = await api.delete(`/cart/item/${targetItem.productId}`, {
         headers: { Authorization: `Bearer ${token}` },
-        data: { size: targetItem.size || "" },
+        data: { size: targetItem.size || "", color: targetItem.color || "" },
       });
 
       if (data.success && data.data?.items) {
@@ -208,7 +213,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const updateQuantity = async (
     itemId: string,
     quantity: number,
-    size: string
+    size: string,
+    color: string = ""
   ) => {
     if (!isSignedIn) return;
 
@@ -240,6 +246,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         {
           quantity,
           size: size || targetItem.size || "",
+          color: color || targetItem.color || "",
         },
         {
           headers: { Authorization: `Bearer ${token}` },

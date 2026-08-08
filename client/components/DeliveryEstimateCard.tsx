@@ -3,6 +3,7 @@ import {
   View,
   Text,
   StyleSheet,
+  Animated,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { getEstimatedDelivery } from "../utils/delivery";
@@ -17,69 +18,95 @@ export default function DeliveryEstimateCard({
   const estimate = getEstimatedDelivery(3, 3);
   const isFreeDelivery = true;
 
+  const slideAnim = React.useRef(new Animated.Value(-20)).current;
+  const fadeAnim = React.useRef(new Animated.Value(0)).current;
+
+  React.useEffect(() => {
+    Animated.parallel([
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      })
+    ]).start();
+  }, []);
+
   return (
     <View style={styles.container}>
       {/* Header Title */}
       <View style={styles.headerRow}>
         <View style={styles.iconCircle}>
-          <Ionicons name="bus-outline" size={20} color="#111827" />
+          <Ionicons name="car-outline" size={20} color="#DB2777" />
         </View>
-        <View style={{ flex: 1, marginLeft: 10 }}>
-          <Text style={styles.title}>Guaranteed 3-Day Delivery 🚀</Text>
+        <View style={{ flex: 1, marginLeft: 12 }}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+            <Text style={styles.title}>Guaranteed 3-Day Delivery</Text>
+            <Animated.View style={[styles.trustedBadge, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+              <Ionicons name="shield-checkmark" size={12} color="#FFFFFF" />
+              <Text style={styles.trustedText}>Trusted</Text>
+            </Animated.View>
+          </View>
           <Text style={styles.subtitle}>Direct 3-day delivery to your village doorstep</Text>
         </View>
       </View>
 
       {/* Guaranteed 3-Day Delivery Banner */}
-      <View style={styles.resultCard}>
-        <View style={styles.dateBanner}>
-          <Ionicons name="time-outline" size={22} color="#059669" />
-          <View style={{ marginLeft: 10, flex: 1 }}>
-            <Text style={styles.dateLabel}>EXPECTED DELIVERY DAY</Text>
-            <Text style={styles.dateHighlight}>{estimate.formattedStartDate}</Text>
-          </View>
-          <View style={styles.speedBadge}>
-            <Text style={styles.speedBadgeText}>⚡ 3 Days</Text>
-          </View>
+      <View style={styles.dateBanner}>
+        <Ionicons name="calendar-outline" size={24} color="#6B7280" />
+        <View style={{ marginLeft: 12, flex: 1 }}>
+          <Text style={styles.dateLabel}>EXPECTED DELIVERY DAY</Text>
+          <Text style={styles.dateHighlight}>{estimate.formattedStartDate}</Text>
         </View>
+        <View style={styles.speedBadge}>
+          <Text style={styles.speedBadgeText}>⚡ 3 Days</Text>
+        </View>
+      </View>
 
-        {/* Delivery Guarantee Subtext */}
-        <View style={styles.rangeRow}>
-          <Text style={styles.rangeText}>
-            ✓ Guaranteed delivery within <Text style={styles.rangeBold}>3 Days</Text> from order date
+      {/* Checklist Items */}
+      <View style={styles.checklistContainer}>
+        {/* Item 1 */}
+        <View style={styles.checklistItem}>
+          <View style={[styles.checkIconCircle, { backgroundColor: "#DB2777" }]}>
+            <Ionicons name="checkmark" size={14} color="#FFF" />
+          </View>
+          <Text style={styles.checklistText}>
+            Guaranteed delivery within <Text style={{ fontWeight: "600" }}>3 Days</Text> from order date
           </Text>
         </View>
 
-        {/* Free Shipping Badge */}
-        <View style={styles.shippingNoticeRow}>
-          <Ionicons
-            name={isFreeDelivery ? "checkmark-circle" : "information-circle-outline"}
-            size={16}
-            color={isFreeDelivery ? "#059669" : "#D97706"}
-          />
-          <Text style={[styles.shippingNoticeText, { color: isFreeDelivery ? "#065F46" : "#B45309" }]}>
-            {isFreeDelivery
-              ? "FREE Shipping applied on this order 🎉"
-              : `Add ₹${(499 - price).toFixed(0)} more for FREE Delivery`}
+        {/* Item 2 */}
+        <View style={styles.checklistItem}>
+          <View style={[styles.checkIconCircle, { backgroundColor: "#F43F5E" }]}>
+            <Ionicons name="bus-outline" size={12} color="#FFF" />
+          </View>
+          <Text style={styles.checklistText}>
+            <Text style={{ fontWeight: "600" }}>Free Shipping</Text> applied on this order 🎉
           </Text>
         </View>
       </View>
 
-      {/* Trust & Guarantee Highlights */}
+      {/* Bottom Guarantee Row */}
       <View style={styles.guaranteeRow}>
         <View style={styles.guaranteeItem}>
-          <Ionicons name="cash-outline" size={16} color="#4B5563" />
+          <View style={[styles.smallIconCircle, { backgroundColor: "#FCE7F3" }]}>
+            <Ionicons name="gift-outline" size={14} color="#DB2777" />
+          </View>
           <Text style={styles.guaranteeText}>Cash on Delivery</Text>
         </View>
 
         <View style={styles.guaranteeItem}>
-          <Ionicons name="sync-outline" size={16} color="#0284C7" />
-          <Text style={[styles.guaranteeText, { color: "#0284C7", fontWeight: "700" }]}>2-Day Easy Replacement</Text>
+          <Ionicons name="sync-outline" size={16} color="#DB2777" />
+          <Text style={[styles.guaranteeText, { color: "#DB2777", fontWeight: "600" }]}>2-Day Easy Replacement</Text>
         </View>
 
         <View style={styles.guaranteeItem}>
-          <Ionicons name="shield-checkmark-outline" size={16} color="#4B5563" />
-          <Text style={styles.guaranteeText}>100% Original</Text>
+          <Ionicons name="shield-checkmark-outline" size={16} color="#DB2777" />
+          <Text style={[styles.guaranteeText, { color: "#DB2777" }]}>100% Original</Text>
         </View>
       </View>
     </View>
@@ -88,118 +115,139 @@ export default function DeliveryEstimateCard({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "#F9FAFB",
+    backgroundColor: "#F0F9FF",
     borderRadius: 16,
     padding: 16,
     marginVertical: 16,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: "#BAE6FD",
   },
   headerRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 14,
+    marginBottom: 16,
   },
   iconCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "#E0E7FF",
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#FCE7F3",
     justifyContent: "center",
     alignItems: "center",
   },
   title: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#111827",
+    fontFamily: "Roboto",
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#0F172A",
+  },
+  trustedBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#DB2777",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  trustedText: {
+    fontFamily: "Roboto",
+    color: "#FFFFFF",
+    fontSize: 10,
+    fontWeight: "500",
+    marginLeft: 4,
   },
   subtitle: {
+    fontFamily: "Roboto",
     fontSize: 12,
-    color: "#6B7280",
-    marginTop: 1,
-  },
-  resultCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: "#F3F4F6",
+    color: "#64748B",
+    marginTop: 2,
   },
   dateBanner: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#ECFDF5",
-    borderRadius: 10,
-    padding: 12,
+    backgroundColor: "#F3F4F6",
+    borderRadius: 12,
+    padding: 14,
     borderWidth: 1,
-    borderColor: "#A7F3D0",
+    borderColor: "#E5E7EB",
   },
   dateLabel: {
+    fontFamily: "Roboto",
     fontSize: 10,
-    fontWeight: "800",
-    color: "#047857",
+    fontWeight: "600",
+    color: "#6B7280",
     letterSpacing: 0.5,
   },
   dateHighlight: {
-    fontSize: 15,
-    fontWeight: "800",
-    color: "#065F46",
+    fontFamily: "Roboto",
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#374151",
     marginTop: 2,
   },
   speedBadge: {
-    backgroundColor: "#10B981",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
+    backgroundColor: "#E0F2FE",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
   },
   speedBadgeText: {
-    color: "#FFFFFF",
+    fontFamily: "Roboto",
+    color: "#0284C7",
     fontSize: 12,
-    fontWeight: "800",
+    fontWeight: "600",
   },
-  rangeRow: {
-    marginTop: 10,
+  checklistContainer: {
+    marginTop: 16,
     paddingHorizontal: 4,
   },
-  rangeText: {
-    fontSize: 12,
-    color: "#059669",
-    fontWeight: "600",
-  },
-  rangeBold: {
-    fontWeight: "800",
-    color: "#065F46",
-  },
-  shippingNoticeRow: {
+  checklistItem: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 10,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: "#F3F4F6",
+    marginBottom: 12,
   },
-  shippingNoticeText: {
-    fontSize: 12,
-    fontWeight: "600",
-    marginLeft: 6,
+  checkIconCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  checklistText: {
+    fontFamily: "Roboto",
+    fontSize: 13,
+    color: "#0F172A",
+    fontWeight: "500",
   },
   guaranteeRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginTop: 14,
-    paddingTop: 12,
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 8,
+    paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: "#E5E7EB",
+    borderTopColor: "#E2E8F0",
   },
   guaranteeItem: {
     flexDirection: "row",
     alignItems: "center",
   },
+  smallIconCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 6,
+  },
   guaranteeText: {
+    fontFamily: "Roboto",
     fontSize: 11,
-    color: "#4B5563",
-    fontWeight: "600",
+    color: "#0F172A",
+    fontWeight: "500",
     marginLeft: 4,
   },
 });

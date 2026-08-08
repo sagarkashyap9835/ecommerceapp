@@ -102,6 +102,7 @@ export const getSingleProduct = async (
 ): Promise<void> => {
   try {
     const { id } = req.params;
+    console.log('getSingleProduct called with id:', id);
 
     const product = await Product.findOne({
       _id: id,
@@ -191,6 +192,7 @@ export const createProduct = async (req: Request, res: Response): Promise<void> 
             isFeatured: req.body.isFeatured === "true" || req.body.isFeatured === true,
             isBogo: req.body.isBogo === "true" || req.body.isBogo === true,
             sizes: sizes,
+            colors: req.body.colors ? JSON.parse(req.body.colors) : [],
             images: imageUrls
         };
 
@@ -216,6 +218,7 @@ export const createProduct = async (req: Request, res: Response): Promise<void> 
 export const updateProduct = async (req: Request, res: Response): Promise<void> => {
     try {
         const { id } = req.params;
+    console.log('getSingleProduct called with id:', id);
 
         const existingProduct = await Product.findById(id);
         if (!existingProduct) {
@@ -347,6 +350,7 @@ export const deleteProduct = async (req: Request, res: Response) => {
 export const createProductReview = async (req: Request, res: Response): Promise<void> => {
     try {
         const { id } = req.params;
+    console.log('getSingleProduct called with id:', id);
         const { rating, comment, image } = req.body;
         const user = (req as any).user;
 
@@ -444,6 +448,7 @@ export const createProductReview = async (req: Request, res: Response): Promise<
 export const checkUserCanReview = async (req: Request, res: Response): Promise<void> => {
     try {
         const { id } = req.params;
+    console.log('getSingleProduct called with id:', id);
         const user = (req as any).user;
 
         if (!user) {

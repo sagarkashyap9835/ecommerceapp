@@ -26,6 +26,8 @@ export const addAddress = async (req: Request, res: Response) => {
     }
 }
 
+
+
 export const updateAddress = async (req: Request, res: Response) => {
     try {
         const { type, villageHouseCode, street, city, state, zipCode, country, isDefault } = req.body;

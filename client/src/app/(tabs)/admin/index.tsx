@@ -1,16 +1,30 @@
 import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
-import { ScrollView, Text, View, ActivityIndicator, RefreshControl, StyleSheet } from "react-native";
-import { COLORS, getStatusColor } from "@/assets/constants";
-// import { dummyAdminStats } from "@/assets/assets";
+import React, { useEffect, useState, useRef } from "react";
+import { ScrollView, Text, View, ActivityIndicator, RefreshControl, StyleSheet, TouchableOpacity, Animated } from "react-native";
+import { COLORS } from "@/assets/constants";
 import { useAuth } from "@/context/AuthContext";
 import api from "../../../../constants/api";
+import { Ionicons } from "@expo/vector-icons";
+
+// Helper for status colors
+const getLocalStatusColor = (status: string) => {
+    if (!status) return { bgColor: '#F1F5F9', textColor: '#475569' };
+    switch (status.toLowerCase()) {
+        case 'placed': return { bgColor: '#FEF3C7', textColor: '#92400E' };
+        case 'processing': return { bgColor: '#E0E7FF', textColor: '#3730A3' };
+        case 'shipped': return { bgColor: '#F3E8FF', textColor: '#6B21A8' };
+        case 'delivered': return { bgColor: '#D1FAE5', textColor: '#065F46' };
+        case 'cancelled': return { bgColor: '#FEE2E2', textColor: '#991B1B' };
+        default: return { bgColor: '#F1F5F9', textColor: '#475569' };
+    }
+};
 
 export default function AdminDashboard() {
-    const {getToken}=useAuth()
+    const { getToken } = useAuth();
     const router = useRouter();
     const [loading, setLoading] = useState(true);   
     const [refreshing, setRefreshing] = useState(false);
+    const [timeFilter, setTimeFilter] = useState<'monthly' | 'weekly' | 'today'>('monthly');
     const [stats, setStats] = useState({
         totalUsers: 0,
         totalProducts: 0,
@@ -20,24 +34,19 @@ export default function AdminDashboard() {
     });
 
     const fetchStats = async () => {
-        // setStats(dummyAdminStats as any);
-        // setLoading(false);
-        // setRefreshing(false);
-
         try {
-            const token=await getToken()
-            const { data }=await api.get('/admin/dashboard', {headers:{
-                Authorization:`Bearer ${token}`
-            }})
-            if(data.success){
-                setStats(data.data)
+            const token = await getToken();
+            const { data } = await api.get('/admin/dashboard', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if(data.success) {
+                setStats(data.data);
             }
         } catch (error) {
           console.error("failed to fetch admin stats", error);
-        }
-        finally{
-        setLoading(false);
-        setRefreshing(false)
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
         }
     };
 
@@ -53,253 +62,357 @@ export default function AdminDashboard() {
     if (loading && !refreshing) {
         return (
             <View style={styles.centerComponent}>
-                <ActivityIndicator size="large" color={COLORS.primary || '#000'} />
+                <ActivityIndicator size="large" color="#FF3399" />
             </View>
         );
     }
 
+    const filteredOrders = stats.recentOrders.filter((order: any) => {
+        if (timeFilter === 'monthly') return true; 
+        const orderDate = new Date(order.createdAt).getTime();
+        const now = new Date().getTime();
+        const diffDays = (now - orderDate) / (1000 * 3600 * 24);
+        if (timeFilter === 'today') return diffDays <= 1;
+        if (timeFilter === 'weekly') return diffDays <= 7;
+        return true;
+    });
+
     return (
-        <ScrollView
-            style={styles.container}
-            contentContainerStyle={styles.scrollContent}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        >
-            {/* Overview Section */}
-            <View style={styles.sectionContainer}>
-                <Text style={styles.sectionTitle}>Overview</Text>
+        <View style={styles.mainContainer}>
+            <ScrollView
+                style={styles.container}
+                contentContainerStyle={styles.scrollContent}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+                showsVerticalScrollIndicator={false}
+            >
+                {/* Stats Grid */}
                 <View style={styles.statsGrid}>
-                    <StatCard label="Total Revenue" value={`$${stats.totalRevenue.toFixed(2)}`} />
-                    <StatCard label="Total Orders" value={stats.totalOrders.toString()} />
-                    <StatCard label="Products" value={stats.totalProducts.toString()} />
-                    <StatCard label="Users" value={stats.totalUsers.toString()} />
+                    <StatCard label="Revenue" value={`$${stats.totalRevenue.toFixed(2)}`} isDark={true} progress={85} />
+                    <StatCard label="Total Orders" value={stats.totalOrders.toString()} progress={62} color="#818CF8" />
+                    <StatCard label="Total Users" value={stats.totalUsers.toString()} progress={80} color="#34D399" />
+                    <StatCard label="Total Products" value={stats.totalProducts.toString()} progress={45} color="#FF3399" />
                 </View>
-            </View>
 
-            {/* Recent Orders Section */}
-            <View style={styles.sectionContainer}>
-                <Text style={styles.sectionTitle}>Recent Orders</Text>
-                {stats.recentOrders.length === 0 ? (
-                    <View style={styles.emptyCard}>
-                        <Text style={styles.secondaryText}>No recent orders</Text>
+                {/* Order List Section Header */}
+                <View style={styles.sectionHeaderRow}>
+                    <Text style={styles.sectionTitle}>Order List</Text>
+                    <View style={styles.timeToggle}>
+                        <TouchableOpacity onPress={() => setTimeFilter('monthly')} style={timeFilter === 'monthly' ? styles.timeToggleActive : null}>
+                            <Text style={timeFilter === 'monthly' ? styles.timeToggleTextActive : styles.timeToggleText}>Monthly</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => setTimeFilter('weekly')} style={timeFilter === 'weekly' ? styles.timeToggleActive : null}>
+                            <Text style={timeFilter === 'weekly' ? styles.timeToggleTextActive : styles.timeToggleText}>Weekly</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => setTimeFilter('today')} style={timeFilter === 'today' ? styles.timeToggleActive : null}>
+                            <Text style={timeFilter === 'today' ? styles.timeToggleTextActive : styles.timeToggleText}>Today</Text>
+                        </TouchableOpacity>
                     </View>
-                ) : (
-                    stats.recentOrders.map((order: any) => {
-                        // getStatusColor से ऑब्जेक्ट निकालें और सेफ रखें
-                        const statusStyles = (getStatusColor(order.orderStatus) as any) || {};
-                        const bgColor = statusStyles.backgroundColor || '#f3f4f6';
-                        const textColor = statusStyles.color || '#111827';
+                </View>
 
-                        return (
-                            <View key={order._id} style={styles.orderCard}>
-                                <View style={styles.orderHeader}>
-                                    <View>
-                                        <Text style={styles.orderProductsCount}>
-                                            Total Products : {order.items.reduce((acc: number, item: any) => acc + item.quantity, 0)}
-                                        </Text>
-                                        <Text style={styles.orderDate}>
-                                            {new Date(order.createdAt).toLocaleDateString()}
-                                        </Text>
-                                    </View>
-                                    
-                                    {/* सुरक्षित तरीके से बैकग्राउंड कलर दिया */}
-                                    <View style={[styles.statusBadge, { backgroundColor: bgColor }]}>
-                                        {/* सुरक्षित तरीके से टेक्स्ट कलर दिया */}
-                                        <Text style={[styles.statusText, { color: textColor }]}>
-                                            {order.orderStatus}
-                                        </Text>
-                                    </View>
-                                </View>
+                {/* Orders List */}
+                <View style={styles.orderListContainer}>
+                    {filteredOrders.length === 0 ? (
+                        <View style={styles.emptyCard}>
+                            <Text style={styles.secondaryText}>No recent orders</Text>
+                        </View>
+                    ) : (
+                        filteredOrders.map((order: any) => {
+                            const { bgColor, textColor } = getLocalStatusColor(order.orderStatus);
 
-                                <View style={styles.productsList}>
-                                    {order.items.map((item: any) => (
-                                        <Text key={item._id} style={styles.productItemText}>
-                                            {item.name} x {item.quantity}
-                                        </Text>
-                                    ))}
-                                </View>
-
-                                <View style={styles.divider} />
-
-                                <View style={styles.orderFooter}>
-                                    <View style={styles.userInfoRow}>
-                                        <View style={styles.avatarCircle}>
-                                            <Text style={styles.avatarText}>
+                            return (
+                                <View key={order._id} style={styles.orderListItem}>
+                                    <View style={styles.orderListLeft}>
+                                        <View style={styles.orderAvatar}>
+                                            <Text style={styles.orderAvatarText}>
                                                 {(order.user?.name || '?').charAt(0).toUpperCase()}
                                             </Text>
                                         </View>
-                                        <Text style={styles.userName}>{order.user?.name || 'Unknown User'}</Text>
+                                        <View>
+                                            <Text style={styles.orderUserName}>{order.user?.name || 'Unknown User'}</Text>
+                                            <Text style={styles.orderDate}>
+                                                {new Date(order.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                            </Text>
+                                        </View>
                                     </View>
-                                    <Text style={styles.totalAmount}>${order.totalAmount.toFixed(2)}</Text>
+                                    
+                                    <View style={styles.orderListRight}>
+                                        <Text style={styles.orderPrice}>+ ${order.totalAmount.toFixed(2)}</Text>
+                                        <View style={[styles.statusBadge, { backgroundColor: bgColor }]}>
+                                            <Text style={[styles.statusText, { color: textColor }]}>
+                                                {order.orderStatus}
+                                            </Text>
+                                        </View>
+                                    </View>
                                 </View>
-                            </View>
-                        );
-                    })
-                )}
-            </View>
-        </ScrollView>
+                            );
+                        })
+                    )}
+                </View>
+            </ScrollView>
+        </View>
     );
 }
 
-const StatCard = ({ label, value }: { label: string, value: string }) => (
-    <View style={styles.statCard}>
-        <Text style={styles.statValue}>{value}</Text>
-        <Text style={styles.statLabel}>{label}</Text>
-    </View>
-);
+const StatCard = ({ label, value, isDark, progress, color }: { label: string, value: string, isDark?: boolean, progress: number, color?: string }) => {
+    const progressAnim = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        Animated.timing(progressAnim, {
+            toValue: progress,
+            duration: 1200,
+            useNativeDriver: false,
+        }).start();
+    }, [progress]);
+
+    const widthInterpolation = progressAnim.interpolate({
+        inputRange: [0, 100],
+        outputRange: ['0%', '100%']
+    });
+
+    return (
+        <View style={[styles.statCard, isDark && styles.statCardDark]}>
+            <Text style={[styles.statValue, isDark && styles.statValueDark]}>{value}</Text>
+            <Text style={[styles.statLabel, isDark && styles.statLabelDark]}>{label}</Text>
+            
+            <View style={styles.progressRow}>
+                <Text style={[styles.progressText, isDark && styles.progressTextDark]}>0%</Text>
+                <Text style={[styles.progressText, isDark && styles.progressTextDark]}>{progress}%</Text>
+            </View>
+            <View style={[styles.progressBarBg, isDark && styles.progressBarBgDark]}>
+                <Animated.View style={[styles.progressBarFill, { width: widthInterpolation, backgroundColor: isDark ? '#FFFFFF' : (color || '#FF3399') }]} />
+            </View>
+        </View>
+    );
+};
 
 const styles = StyleSheet.create({
+    mainContainer: {
+        flex: 1,
+        backgroundColor: '#FFFFFF',
+    },
+    headerRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        paddingTop: 60, 
+        paddingBottom: 20,
+        backgroundColor: '#FFFFFF',
+    },
+    headerTitle: {
+        fontSize: 26,
+        fontWeight: '800',
+        color: '#000000',
+        fontFamily: 'Outfit_800',
+    },
+    headerIcons: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    darkIconCircle: {
+        backgroundColor: '#000',
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
     container: {
         flex: 1,
-        backgroundColor: '#f9fafb',
+        backgroundColor: '#FFFFFF',
     },
     scrollContent: {
-        padding: 16,
+        paddingHorizontal: 20,
+        paddingBottom: 40,
     },
     centerComponent: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#f9fafb',
-    },
-    sectionContainer: {
-        marginBottom: 24,
-    },
-    sectionTitle: {
-        fontSize: 24,
-        fontWeight: '700',
-        color: '#111827',
-        marginBottom: 16,
-        letterSpacing: -0.5,
+        backgroundColor: '#FFFFFF',
     },
     statsGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
         justifyContent: 'space-between',
+        marginBottom: 10,
     },
     statCard: {
-        backgroundColor: '#ffffff',
-        padding: 20,
-        borderRadius: 16,
-        borderWidth: 1,
-        borderColor: '#f3f4f6',
+        backgroundColor: '#FFFFFF',
         width: '48%',
+        padding: 16,
+        borderRadius: 16,
         marginBottom: 16,
-        justifyContent: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.04,
-        shadowRadius: 3,
-        elevation: 1,
-    },
-    statValue: {
-        fontSize: 20,
-        fontWeight: '700',
-        color: '#111827',
-        marginBottom: 4,
-    },
-    statLabel: {
-        fontSize: 12,
-        fontWeight: '500',
-        color: '#6b7280',
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
-    },
-    emptyCard: {
-        backgroundColor: '#ffffff',
-        padding: 24,
-        borderRadius: 16,
         borderWidth: 1,
-        borderColor: '#f3f4f6',
-        alignItems: 'center',
-    },
-    secondaryText: {
-        color: '#6b7280',
-        fontSize: 14,
-    },
-    orderCard: {
-        backgroundColor: '#ffffff',
-        padding: 20,
-        borderRadius: 16,
-        borderWidth: 1,
-        borderColor: '#f3f4f6',
-        marginBottom: 12,
+        borderColor: '#F1F5F9',
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.03,
+        shadowOpacity: 0.02,
         shadowRadius: 4,
-        elevation: 2,
+        elevation: 1,
     },
-    orderHeader: {
+    statCardDark: {
+        backgroundColor: '#FF3399',
+        borderColor: '#FF3399',
+        shadowColor: '#FF3399',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.25,
+        shadowRadius: 10,
+        elevation: 5,
+    },
+    statValue: {
+        fontSize: 22,
+        fontWeight: '800',
+        color: '#0F172A',
+        fontFamily: 'Outfit_800',
+        marginBottom: 4,
+    },
+    statValueDark: {
+        color: '#FFFFFF',
+    },
+    statLabel: {
+        fontSize: 13,
+        color: '#64748B',
+        fontFamily: 'Outfit_500',
+        marginBottom: 20,
+    },
+    statLabelDark: {
+        color: '#FDF2F8',
+    },
+    progressRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 6,
+    },
+    progressText: {
+        fontSize: 10,
+        color: '#94A3B8',
+        fontFamily: 'Outfit_500',
+    },
+    progressTextDark: {
+        color: '#FDF2F8',
+    },
+    progressBarBg: {
+        height: 6,
+        backgroundColor: '#F1F5F9',
+        borderRadius: 3,
+        overflow: 'hidden',
+    },
+    progressBarBgDark: {
+        backgroundColor: '#E72A84',
+    },
+    progressBarFill: {
+        height: '100%',
+        borderRadius: 3,
+    },
+    sectionHeaderRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 12,
+        marginBottom: 16,
+        marginTop: 10,
     },
-    orderProductsCount: {
-        fontWeight: '700',
-        color: '#111827',
+    sectionTitle: {
+        fontSize: 18,
+        fontWeight: '800',
+        color: '#0F172A',
+        fontFamily: 'Outfit_800',
+    },
+    timeToggle: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    timeToggleText: {
+        fontSize: 12,
+        color: '#94A3B8',
+        fontFamily: 'Outfit_500',
+    },
+    timeToggleActive: {
+        backgroundColor: '#FF3399',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 12,
+    },
+    timeToggleTextActive: {
+        fontSize: 12,
+        color: '#FFFFFF',
+        fontFamily: 'Outfit_600',
+    },
+    orderListContainer: {
+        marginTop: 8,
+    },
+    orderListItem: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingVertical: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: '#F1F5F9',
+    },
+    orderListLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    orderAvatar: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        backgroundColor: '#F8FAFC',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+    },
+    orderAvatarText: {
         fontSize: 16,
+        fontWeight: '700',
+        color: '#475569',
+        fontFamily: 'Outfit_700',
+    },
+    orderUserName: {
+        fontSize: 15,
+        fontWeight: '700',
+        color: '#0F172A',
+        fontFamily: 'Outfit_700',
     },
     orderDate: {
-        color: '#6b7280',
         fontSize: 12,
+        color: '#94A3B8',
         marginTop: 4,
+        fontFamily: 'Outfit_500',
+    },
+    orderListRight: {
+        alignItems: 'flex-end',
+        gap: 8,
+    },
+    orderPrice: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: '#0F172A',
+        fontFamily: 'Outfit_700',
     },
     statusBadge: {
         paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 9999,
-        justifyContent: 'center',
-        alignItems: 'center',
+        paddingVertical: 4,
+        borderRadius: 8,
     },
     statusText: {
-        fontSize: 10,
+        fontSize: 11,
         fontWeight: '700',
-        textTransform: 'uppercase',
+        fontFamily: 'Outfit_700',
+        textTransform: 'capitalize',
     },
-    productsList: {
-        paddingBottom: 8,
-    },
-    productItemText: {
-        color: '#6b7280',
-        fontSize: 12,
-        marginTop: 4,
-    },
-    divider: {
-        height: 1,
-        backgroundColor: '#f3f4f6',
-        marginVertical: 12,
-    },
-    orderFooter: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
-    userInfoRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    avatarCircle: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        backgroundColor: '#f3f4f6',
+    emptyCard: {
+        padding: 40,
         alignItems: 'center',
         justifyContent: 'center',
-        marginRight: 8,
     },
-    avatarText: {
-        color: '#111827',
-        fontWeight: '700',
-        fontSize: 12,
-    },
-    userName: {
-        color: '#6b7280',
-        fontSize: 14,
-    },
-    totalAmount: {
-        fontSize: 18,
-        fontWeight: '700',
-        color: '#111827',
-    },
+    secondaryText: {
+        color: '#94A3B8',
+        fontSize: 15,
+        fontFamily: 'Outfit_500',
+    }
 });

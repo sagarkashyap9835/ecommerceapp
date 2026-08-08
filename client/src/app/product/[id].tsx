@@ -40,6 +40,7 @@ export default function ProductDetails() {
   const { toggleWishlist, isInWishlist } = useWishlist();
 
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
+  const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
 
   // Review System States
@@ -179,7 +180,7 @@ export default function ProductDetails() {
   if (!product) {
     return (
       <SafeAreaView className="flex-1 justify-center items-center">
-        <Text>Product not found</Text>
+        <Text style={{ fontFamily: 'Outfit' }}>Product not found</Text>
       </SafeAreaView>
     );
   }
@@ -195,267 +196,246 @@ export default function ProductDetails() {
 
   return (
     <SafeAreaView className="flex-1 bg-white">
-      <ScrollView contentContainerStyle={{ paddingBottom: 140 }} showsVerticalScrollIndicator={false}>
-        {/* Image Carousel */}
-        <View className="relative">
+      {/* TOP BAR */}
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 10, paddingBottom: 15 }}>
+        <TouchableOpacity
+          onPress={() => router.canGoBack() ? router.back() : router.replace("/")}
+          style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: '#F3F4F6', justifyContent: 'center', alignItems: 'center' }}
+        >
+          <Ionicons name="arrow-back" size={20} color="#9CA3AF" />
+        </TouchableOpacity>
+        <Text style={{ fontFamily: 'Outfit',  fontSize: 16, fontWeight: '700', color: '#111827' }}>Product Details</Text>
+        <TouchableOpacity
+          onPress={() => toggleWishlist(product)}
+          style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: '#F3F4F6', justifyContent: 'center', alignItems: 'center' }}
+        >
+          <Ionicons name={isLiked ? "heart" : "heart-outline"} size={20} color={isLiked ? "#4A8B81" : "#9CA3AF"} />
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView contentContainerStyle={{ paddingBottom: 60 }} showsVerticalScrollIndicator={false}>
+        {/* IMAGE CAROUSEL (Card style) */}
+        <View style={{ marginTop: 10, paddingLeft: 20 }}>
           <ScrollView
             horizontal
-            pagingEnabled
             showsHorizontalScrollIndicator={false}
-            scrollEventThrottle={16}
-            onMomentumScrollEnd={(event) => {
-              const index = Math.round(
-                event.nativeEvent.contentOffset.x / width
-              );
-              setActiveImageIndex(index);
-            }}
+            contentContainerStyle={{ paddingRight: 20 }}
           >
             {product.images?.map((img, index) => (
               <Image
                 key={index}
                 source={{ uri: img }}
                 style={{
-                  width,
-                  height: 420,
+                  width: width * 0.75,
+                  height: 380,
+                  borderRadius: 16,
+                  marginRight: 16,
                 }}
                 resizeMode="cover"
               />
             ))}
           </ScrollView>
-
-          {/* Header Actions */}
-          <View
-            style={{
-              position: "absolute",
-              top: 20,
-              left: 20,
-              right: 20,
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <TouchableOpacity
-              onPress={() => {
-                if (router.canGoBack()) {
-                  router.back();
-                } else {
-                  router.replace("/");
-                }
-              }}
-              style={{
-                width: 38,
-                height: 38,
-                borderRadius: 19,
-                backgroundColor: "#FFFFFF",
-                justifyContent: "center",
-                alignItems: "center",
-                elevation: 2,
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 1 },
-                shadowOpacity: 0.1,
-                shadowRadius: 2,
-              }}
-            >
-              <Ionicons name="arrow-back" size={22} color="#111827" />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => toggleWishlist(product)}
-              style={{
-                width: 38,
-                height: 38,
-                borderRadius: 19,
-                backgroundColor: "#FFFFFF",
-                justifyContent: "center",
-                alignItems: "center",
-                elevation: 2,
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 1 },
-                shadowOpacity: 0.1,
-                shadowRadius: 2,
-              }}
-            >
-              <Ionicons
-                name={isLiked ? "heart" : "heart-outline"}
-                size={22}
-                color={isLiked ? "#EF4444" : "#111827"}
-              />
-            </TouchableOpacity>
-          </View>
-
-          {/* Pagination Dots */}
-          <View
-            style={{
-              position: "absolute",
-              bottom: 15,
-              width: "100%",
-              flexDirection: "row",
-              justifyContent: "center",
-            }}
-          >
-            {product.images?.map((_, index) => (
-              <View
-                key={index}
-                style={{
-                  width: activeImageIndex === index ? 14 : 7,
-                  height: 7,
-                  borderRadius: 4,
-                  marginHorizontal: 3,
-                  backgroundColor:
-                    activeImageIndex === index
-                      ? "#111827"
-                      : "rgba(17,24,39,0.2)",
-                }}
-              />
-            ))}
-          </View>
         </View>
 
-        {/* Product Info */}
-        <View style={{ backgroundColor: "#fff", paddingHorizontal: 20, paddingVertical: 24 }}>
-          {/* Header Row: Title & Rating */}
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
-            <Text style={{ fontSize: 22, fontWeight: "700", color: "#111827", flex: 1, marginRight: 16 }}>
+        <View style={{ paddingHorizontal: 20, marginTop: 24 }}>
+          {/* TITLE AND QUANTITY */}
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Text style={{ fontFamily: 'Outfit',  fontSize: 20, fontWeight: '700', color: COLORS.primary, flex: 1, paddingRight: 10 }}>
               {product.name}
             </Text>
             
-            {/* Rating side-by-side with count */}
-            <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4, backgroundColor: "#FDF8F6", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 }}>
-              <Ionicons name="star" size={16} color="#FBBF24" />
-              <Text style={{ marginLeft: 4, fontSize: 14, fontWeight: "700", color: "#111827" }}>
-                {averageRatingStr}
+            {/* Quantity Selector */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F9FAFB', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderColor: '#F3F4F6' }}>
+              <TouchableOpacity onPress={() => currentCartItem && updateQuantity(currentCartItem.id, Math.max(1, currentCartItem.quantity - 1), currentCartItem.size)}>
+                <Ionicons name="remove" size={14} color="#6B7280" />
+              </TouchableOpacity>
+              <Text style={{ fontFamily: 'Outfit',  fontSize: 14, fontWeight: '600', marginHorizontal: 10, color: '#111827' }}>
+                {currentCartItem ? currentCartItem.quantity : 1}
               </Text>
-              <Text style={{ fontSize: 13, color: "#6B7280", marginLeft: 3 }}>
-                ({reviewCount})
-              </Text>
+              <TouchableOpacity onPress={() => {
+                if (currentCartItem) {
+                  updateQuantity(currentCartItem.id, currentCartItem.quantity + 1, currentCartItem.size);
+                }
+              }}>
+                <Ionicons name="add" size={14} color="#6B7280" />
+              </TouchableOpacity>
             </View>
           </View>
 
-          {/* Price & Stock Badge Row */}
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 8 }}>
-            <Text style={{ fontSize: 22, fontWeight: "700", color: "#111827" }}>
-              ₹{product.price.toFixed(2)}
-            </Text>
-            
-            {/* Stock Availability Badge */}
-            <View style={{
-              flexDirection: "row",
-              alignItems: "center",
-              backgroundColor: product.stock > 0 ? (product.stock <= 5 ? "#FEF3C7" : "#ECFDF5") : "#FEF2F2",
-              paddingHorizontal: 10,
-              paddingVertical: 4,
-              borderRadius: 12,
-              borderWidth: 1,
-              borderColor: product.stock > 0 ? (product.stock <= 5 ? "#FDE68A" : "#A7F3D0") : "#FCA5A5",
-            }}>
-              <Ionicons
-                name={product.stock > 0 ? "cube-outline" : "close-circle-outline"}
-                size={14}
-                color={product.stock > 0 ? (product.stock <= 5 ? "#D97706" : "#059669") : "#DC2626"}
-              />
-              <Text style={{
-                marginLeft: 4,
-                fontSize: 12,
-                fontWeight: "700",
-                color: product.stock > 0 ? (product.stock <= 5 ? "#B45309" : "#047857") : "#B91C1C",
-              }}>
-                {product.stock > 0 ? (product.stock <= 5 ? `Only ${product.stock} left in stock!` : `In Stock: ${product.stock}`) : "Out of Stock"}
-              </Text>
+          {/* PRICE */}
+          <Text style={{ fontFamily: 'Outfit',  fontSize: 24, fontWeight: '700', color: '#111827', marginTop: 12 }}>
+            Rs {product.price.toFixed(2)}
+          </Text>
+
+          {/* CHOOSE SIZE */}
+          <View style={{ marginTop: 24 }}>
+            <Text style={{ fontFamily: 'Outfit',  fontSize: 14, fontWeight: '700', color: '#111827', marginBottom: 12 }}>Choose Size</Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+              {product.sizes && product.sizes.length > 0 ? product.sizes.map((size) => {
+                const isSelected = selectedSize === size;
+                return (
+                  <TouchableOpacity
+                    key={size}
+                    onPress={() => setSelectedSize(size)}
+                    style={{
+                      width: 44, height: 44, borderRadius: 22,
+                      backgroundColor: isSelected ? COLORS.primary : '#F3F4F6',
+                      justifyContent: 'center', alignItems: 'center', marginRight: 12, marginBottom: 10
+                    }}
+                  >
+                    <Text style={{ fontFamily: 'Outfit',  fontSize: 13, fontWeight: '600', color: isSelected ? '#FFFFFF' : '#4B5563' }}>
+                      {size}
+                    </Text>
+                  </TouchableOpacity>
+                )
+              }) : (
+                ['S', 'M', 'L', 'XL', 'XXL'].map((size) => (
+                  <TouchableOpacity
+                    key={size}
+                    onPress={() => setSelectedSize(size)}
+                    style={{
+                      width: 44, height: 44, borderRadius: 22,
+                      backgroundColor: selectedSize === size ? COLORS.primary : '#F3F4F6',
+                      justifyContent: 'center', alignItems: 'center', marginRight: 12, marginBottom: 10
+                    }}
+                  >
+                    <Text style={{ fontFamily: 'Outfit',  fontSize: 13, fontWeight: '600', color: selectedSize === size ? '#FFFFFF' : '#4B5563' }}>
+                      {size}
+                    </Text>
+                  </TouchableOpacity>
+                ))
+              )}
             </View>
+          </View>
+          {/* CHOOSE COLOR */}
+          {product.colors && product.colors.length > 0 ? (
+            <View style={{ marginTop: 16 }}>
+              <Text style={{ fontFamily: 'Outfit',  fontSize: 14, fontWeight: '700', color: '#111827', marginBottom: 12 }}>Choose Color</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+                {product.colors.map((colorOption, idx) => {
+                  const isSelected = selectedColor === colorOption;
+                  return (
+                    <TouchableOpacity
+                      key={idx}
+                      onPress={() => setSelectedColor(colorOption)}
+                      style={{
+                        width: 30,
+                        height: 30,
+                        borderRadius: 15,
+                        backgroundColor: colorOption,
+                        marginRight: 12,
+                        marginBottom: 10,
+                        borderWidth: isSelected ? 3 : 1,
+                        borderColor: isSelected ? COLORS.primary : '#D1D5DB'
+                      }}
+                    />
+                  )
+                })}
+              </View>
+            </View>
+          ) : null}
+
+
+
+          {/* ACTION BUTTONS */}
+          <View style={{ flexDirection: 'row', marginTop: 30, gap: 12 }}>
+            <TouchableOpacity 
+              onPress={async () => {
+                 if (product.stock <= 0) {
+                   Toast.show({ type: "error", text1: "Out of Stock ⚠️", text2: "This product is currently out of stock." });
+                   return;
+                 }
+                 if (product.colors && product.colors.length > 0 && !selectedColor) {
+                   Toast.show({ type: "info", text1: "Select Color", text2: "Please select a color first." });
+                   return;
+                 }
+                 if (product.sizes && product.sizes.length > 0 && !selectedSize) {
+                   Toast.show({ type: "info", text1: "Select Size", text2: "Please select a size first before adding to cart." });
+                   return;
+                 }
+                 await addToCart(product, selectedSize || "", selectedColor || "");
+                 router.push('/checkout');
+              }}
+              style={{ flex: 1, backgroundColor: COLORS.primary, borderRadius: 24, paddingVertical: 16, justifyContent: 'center', alignItems: 'center', flexDirection: 'row' }}
+            >
+              <Text style={{ fontFamily: 'Outfit',  color: '#fff', fontSize: 14, fontWeight: '600' }}>Buy Now →</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              onPress={async () => {
+                 if (product.stock <= 0) {
+                   Toast.show({ type: "error", text1: "Out of Stock ⚠️", text2: "This product is currently out of stock." });
+                   return;
+                 }
+                 if (product.colors && product.colors.length > 0 && !selectedColor) {
+                   Toast.show({ type: "info", text1: "Select Color", text2: "Please select a color first." });
+                   return;
+                 }
+                 if (product.sizes && product.sizes.length > 0 && !selectedSize) {
+                   Toast.show({ type: "info", text1: "Select Size", text2: "Please select a size first before adding to cart." });
+                   return;
+                 }
+                 await addToCart(product, selectedSize || "", selectedColor || "");
+              }}
+              style={{ flex: 1, backgroundColor: '#fff', borderRadius: 24, paddingVertical: 16, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: COLORS.primary, flexDirection: 'row' }}
+            >
+              <Text style={{ fontFamily: 'Outfit',  color: COLORS.primary, fontSize: 14, fontWeight: '600', marginRight: 6 }}>Add to Bag</Text>
+              <Ionicons name="bag-outline" size={16} color={COLORS.primary} />
+            </TouchableOpacity>
+          </View>
+
+          {/* DESCRIPTION */}
+          <View style={{ marginTop: 30, marginBottom: 20 }}>
+            <Text style={{ fontFamily: 'Outfit',  fontSize: 14, fontWeight: '700', color: '#111827', marginBottom: 8 }}>Description</Text>
+            <Text style={{ fontFamily: 'Outfit',  fontSize: 13, color: '#6B7280', lineHeight: 20 }}>
+              {product.description}
+            </Text>
           </View>
 
           {/* BUY 1 GET 1 OFFER BANNER */}
           {product.isBogo && (
             <View style={{
-              marginTop: 14,
-              backgroundColor: "#ECFDF5",
+              marginTop: 10,
+              backgroundColor: "#FFFBEB",
               borderRadius: 12,
-              paddingHorizontal: 14,
-              paddingVertical: 10,
+              paddingHorizontal: 16,
+              paddingVertical: 14,
               flexDirection: "row",
               alignItems: "center",
               borderWidth: 1,
-              borderColor: "#A7F3D0",
+              borderColor: "#FEF3C7",
+              marginBottom: 10,
             }}>
-              <Text style={{ fontSize: 18, marginRight: 10 }}>🎁</Text>
+              <Text style={{ fontFamily: 'Roboto', fontSize: 24, marginRight: 12 }}>🎁</Text>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 13, fontWeight: "800", color: "#065F46" }}>
+                <Text style={{ fontFamily: 'Roboto', fontSize: 14, fontWeight: "600", color: "#111827" }}>
                   BUY 1 GET 1 FREE OFFER
                 </Text>
-                <Text style={{ fontSize: 11, color: "#047857", marginTop: 1 }}>
+                <Text style={{ fontFamily: 'Roboto', fontSize: 11, color: "#4B5563", marginTop: 2 }}>
                   Special Offer: Purchase 1 unit & get 1 free with your order!
                 </Text>
               </View>
+              <Ionicons name="chevron-forward" size={20} color="#F59E0B" />
             </View>
           )}
-
-          {/* Sizes Section */}
-          {product.sizes && product.sizes.length > 0 && (
-            <View style={{ marginTop: 24 }}>
-              <Text style={{ fontSize: 15, fontWeight: "700", color: "#111827", marginBottom: 14 }}>
-                Size
-              </Text>
-              <View style={{ flexDirection: "row", alignItems: "center" }}>
-                {product.sizes.map((size) => {
-                  const isSelected = selectedSize === size;
-                  return (
-                    <TouchableOpacity
-                      key={size}
-                      onPress={() => setSelectedSize(size)}
-                      style={{
-                        width: 42,
-                        height: 42,
-                        borderRadius: 21,
-                        backgroundColor: isSelected ? "#111827" : "transparent",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        marginRight: 14,
-                        borderWidth: isSelected ? 0 : 1,
-                        borderColor: "#E5E7EB",
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontSize: 14,
-                          fontWeight: isSelected ? "700" : "500",
-                          color: isSelected ? "#FFFFFF" : "#4B5563",
-                        }}
-                      >
-                        {size}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </View>
-          )}
-
-          {/* Description */}
-          <View style={{ marginTop: 24 }}>
-            <Text style={{ fontSize: 15, fontWeight: "700", color: "#111827", marginBottom: 8 }}>
-              Description
-            </Text>
-            <Text style={{ fontSize: 14, color: "#4B5563", lineHeight: 22 }}>
-              {product.description}
-            </Text>
-          </View>
 
           {/* Delivery Options & Estimates Card */}
           <DeliveryEstimateCard price={product.price} />
-
           {/* CUSTOMER REVIEWS & RATINGS SECTION */}
           <View style={{ marginTop: 32, paddingTop: 24, borderTopWidth: 1, borderTopColor: "#F3F4F6" }}>
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              <Text style={{ fontSize: 18, fontWeight: "700", color: "#111827" }}>
-                Customer Reviews
-              </Text>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <Ionicons name="star" size={20} color="#FBBF24" />
+                <Text style={{ fontFamily: 'Roboto', fontSize: 18, fontWeight: "600", color: "#111827", marginLeft: 8 }}>
+                  Customer Reviews
+                </Text>
+              </View>
               <View style={{ flexDirection: "row", alignItems: "center" }}>
                 <Ionicons name="star" size={16} color="#FBBF24" />
-                <Text style={{ fontSize: 15, fontWeight: "700", color: "#111827", marginLeft: 4 }}>
+                <Text style={{ fontFamily: 'Roboto', fontSize: 15, fontWeight: "600", color: "#111827", marginLeft: 4 }}>
                   {averageRatingStr}
                 </Text>
-                <Text style={{ fontSize: 13, color: "#6B7280", marginLeft: 4 }}>
+                <Text style={{ fontFamily: 'Roboto', fontSize: 13, color: "#6B7280", marginLeft: 4 }}>
                   ({reviewCount} reviews)
                 </Text>
               </View>
@@ -464,8 +444,15 @@ export default function ProductDetails() {
             {/* WRITE A REVIEW FORM (ONLY FOR VERIFIED PURCHASERS) */}
             {canReview ? (
               <View style={styles.reviewFormCard}>
-                <Text style={styles.reviewFormTitle}>Write a Review</Text>
-                <Text style={styles.reviewFormSubtitle}>Share your real experience with this product</Text>
+                <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 6 }}>
+                  <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: "#DBEAFE", justifyContent: "center", alignItems: "center", marginRight: 10 }}>
+                    <Ionicons name="chatbubble-outline" size={20} color="#1E3A8A" />
+                  </View>
+                  <View>
+                    <Text style={styles.reviewFormTitle}>Write a Review</Text>
+                    <Text style={styles.reviewFormSubtitle}>Share your real experience with this product</Text>
+                  </View>
+                </View>
                 
                 {/* Interactive Star Rating Selector */}
                 <View style={styles.starSelectorRow}>
@@ -478,19 +465,24 @@ export default function ProductDetails() {
                       />
                     </TouchableOpacity>
                   ))}
-                  <Text style={styles.ratingTextLabel}>{rating} / 5 Stars</Text>
+                  <View style={{ backgroundColor: "#DBEAFE", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, marginLeft: 12 }}>
+                    <Text style={{ fontFamily: 'Roboto', fontSize: 12, fontWeight: '700', color: '#1E3A8A' }}>{rating} / 5 Stars</Text>
+                  </View>
                 </View>
 
                 {/* Review Message Input */}
-                <TextInput
-                  style={styles.reviewInput}
-                  placeholder="Write your review here (e.g. quality, fit, comfort)..."
-                  placeholderTextColor="#9CA3AF"
-                  multiline
-                  numberOfLines={3}
-                  value={reviewComment}
-                  onChangeText={setReviewComment}
-                />
+                <View style={styles.reviewInput}>
+                  <Ionicons name="pencil" size={16} color="#94A3B8" style={{ marginTop: 4, marginRight: 8 }} />
+                  <TextInput
+                    style={{ flex: 1, fontFamily: 'Roboto', fontSize: 13, color: '#111827', textAlignVertical: 'top' }}
+                    placeholder="Write your review here (e.g. quality, fit, comfort)..."
+                    placeholderTextColor="#9CA3AF"
+                    multiline
+                    numberOfLines={3}
+                    value={reviewComment}
+                    onChangeText={setReviewComment}
+                  />
+                </View>
 
                 {/* Photo Upload Section */}
                 <View style={{ marginBottom: 14 }}>
@@ -506,7 +498,7 @@ export default function ProductDetails() {
                           <Ionicons name="close" size={12} color="#FFFFFF" />
                         </TouchableOpacity>
                       </View>
-                      <Text style={{ fontSize: 12, color: "#059669", marginLeft: 10, fontWeight: "600" }}>
+                      <Text style={{ fontFamily: 'Roboto',  fontSize: 12, color: "#0284C7", marginLeft: 10, fontWeight: "600" }}>
                         Product Photo Attached ✓
                       </Text>
                     </View>
@@ -522,21 +514,20 @@ export default function ProductDetails() {
                   )}
                 </View>
 
-                <TouchableOpacity
-                  style={styles.submitReviewBtn}
-                  onPress={handleSubmitReview}
-                  disabled={submittingReview}
-                >
+                <TouchableOpacity style={styles.submitReviewBtn} onPress={handleSubmitReview} activeOpacity={0.8} disabled={submittingReview}>
                   {submittingReview ? (
                     <ActivityIndicator size="small" color="#FFFFFF" />
                   ) : (
-                    <Text style={styles.submitReviewBtnText}>Submit Verified Review</Text>
+                    <>
+                      <Ionicons name="paper-plane" size={16} color="#FFFFFF" style={{ marginRight: 8 }} />
+                      <Text style={styles.submitReviewBtnText}>Submit Review</Text>
+                    </>
                   )}
                 </TouchableOpacity>
               </View>
             ) : (
               <View style={styles.verifiedNoticeCard}>
-                <Ionicons name="shield-checkmark-outline" size={24} color="#059669" style={{ marginBottom: 6 }} />
+                <Ionicons name="shield-checkmark-outline" size={24} color="#0284C7" style={{ marginBottom: 6 }} />
                 <Text style={styles.verifiedNoticeTitle}>Verified Buyer Reviews Only</Text>
                 <Text style={styles.verifiedNoticeText}>
                   To ensure 100% authentic ratings and prevent fake reviews, only customers who have ordered this product can write a review.
@@ -565,7 +556,7 @@ export default function ProductDetails() {
                           <Text style={styles.reviewerName}>{rev.userName || "Verified Buyer"}</Text>
                           {rev.isVerifiedPurchase && (
                             <View style={styles.verifiedBadge}>
-                              <Ionicons name="checkmark-circle" size={12} color="#059669" />
+                              <Ionicons name="checkmark-circle" size={12} color="#0284C7" />
                               <Text style={styles.verifiedBadgeText}>Verified Purchase</Text>
                             </View>
                           )}
@@ -620,131 +611,6 @@ export default function ProductDetails() {
         </View>
       </ScrollView>
 
-      {/* Fixed Bottom Action Bar */}
-      <View
-        style={{
-          position: "absolute",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          backgroundColor: "#fff",
-          paddingHorizontal: 20,
-          paddingVertical: 14,
-          paddingBottom: 28,
-          flexDirection: "row",
-          alignItems: "center",
-          borderTopWidth: 1,
-          borderTopColor: "#F3F4F6",
-        }}
-      >
-        <View style={{ flex: 1, marginRight: 20 }}>
-          {currentCartItem ? (
-            <View
-              style={{
-                height: 52,
-                backgroundColor: "#111827",
-                borderRadius: 26,
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-                paddingHorizontal: 20,
-              }}
-            >
-              <TouchableOpacity
-                onPress={() => {
-                  updateQuantity(currentCartItem.id, currentCartItem.quantity - 1, currentCartItem.size);
-                }}
-                style={{ padding: 4 }}
-              >
-                <Ionicons name="remove" size={22} color="#fff" />
-              </TouchableOpacity>
-
-              <Text style={{ fontSize: 16, fontWeight: "700", color: "#fff" }}>
-                {currentCartItem.quantity}
-              </Text>
-
-              <TouchableOpacity
-                onPress={() => {
-                  updateQuantity(currentCartItem.id, currentCartItem.quantity + 1, currentCartItem.size);
-                }}
-                style={{ padding: 4 }}
-              >
-                <Ionicons name="add" size={22} color="#fff" />
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <TouchableOpacity
-              onPress={async () => {
-                if (product.stock <= 0) {
-                  Toast.show({
-                    type: "error",
-                    text1: "Out of Stock ⚠️",
-                    text2: "This product is currently out of stock.",
-                  });
-                  return;
-                }
-                if (product.sizes && product.sizes.length > 0 && !selectedSize) {
-                  Toast.show({
-                    type: "info",
-                    text1: "Select Size",
-                    text2: "Please select a size first before adding to cart.",
-                  });
-                  return;
-                }
-                await addToCart(product, selectedSize || "");
-              }}
-              style={{
-                height: 52,
-                backgroundColor: product.stock <= 0 ? "#9CA3AF" : "#111827",
-                borderRadius: 26,
-                justifyContent: "center",
-                alignItems: "center",
-                flexDirection: "row",
-              }}
-            >
-              <Ionicons name={product.stock <= 0 ? "close-circle-outline" : "bag-handle-outline"} size={18} color="#fff" />
-              <Text style={{ color: "#fff", fontSize: 15, fontWeight: "600", marginLeft: 8 }}>
-                {product.stock <= 0 ? "Out of Stock" : "Add to Cart"}
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View>
-
-        <TouchableOpacity
-          onPress={() => router.push("/cart")}
-          style={{
-            justifyContent: "center",
-            alignItems: "center",
-            position: "relative",
-            padding: 6,
-          }}
-        >
-          <Ionicons name="cart-outline" size={26} color="#111827" />
-          
-          {itemCount > 0 && (
-            <View
-              style={{
-                position: "absolute",
-                top: 0,
-                right: -2,
-                backgroundColor: "#111827",
-                borderRadius: 9,
-                width: 17,
-                height: 17,
-                justifyContent: "center",
-                alignItems: "center",
-                borderWidth: 1.5,
-                borderColor: "#FFFFFF"
-              }}
-            >
-              <Text style={{ color: "#fff", fontSize: 8, fontWeight: "700" }}>
-                {itemCount}
-              </Text>
-            </View>
-          )}
-        </TouchableOpacity>
-      </View>
-
       {/* Fullscreen Photo View Modal */}
       <Modal visible={!!previewModalImage} transparent animationType="fade">
         <Pressable style={styles.modalOverlay} onPress={() => setPreviewModalImage(null)}>
@@ -767,21 +633,23 @@ export default function ProductDetails() {
 
 const styles = StyleSheet.create({
   reviewFormCard: {
-    backgroundColor: "#F9FAFB",
+    backgroundColor: "#F4FAFF",
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: "#BDE0FE",
     marginBottom: 20,
   },
   reviewFormTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#111827",
+    color: "#000000",
+    fontFamily: "Roboto",
   },
   reviewFormSubtitle: {
     fontSize: 12,
-    color: "#6B7280",
+    color: "#475569",
+    fontFamily: "Roboto",
     marginTop: 2,
     marginBottom: 12,
   },
@@ -794,14 +662,17 @@ const styles = StyleSheet.create({
     marginLeft: 12,
     fontSize: 14,
     fontWeight: "700",
-    color: "#374151",
+    color: "#334155",
+    fontFamily: "Roboto",
   },
   reviewInput: {
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: "#D1D5DB",
+    borderColor: "#BDE0FE",
+    flexDirection: "row",
+    alignItems: "flex-start",
+    padding: 10,
     borderRadius: 10,
-    padding: 12,
     fontSize: 14,
     color: "#111827",
     textAlignVertical: "top",
@@ -814,7 +685,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
     borderStyle: "dashed",
-    borderColor: "#9CA3AF",
+    borderColor: "#7DD3FC",
     borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 12,
@@ -822,7 +693,7 @@ const styles = StyleSheet.create({
   uploadPhotoBtnText: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#374151",
+    color: "#334155", fontFamily: "Roboto",
   },
   imagePreviewWrapper: {
     flexDirection: "row",
@@ -847,34 +718,37 @@ const styles = StyleSheet.create({
     borderColor: "#FFFFFF",
   },
   submitReviewBtn: {
-    backgroundColor: "#111827",
+    backgroundColor: "#2563EB",
     borderRadius: 10,
     paddingVertical: 12,
+    flexDirection: "row",
+    justifyContent: "center",
     alignItems: "center",
   },
   submitReviewBtnText: {
     color: "#FFFFFF",
     fontWeight: "600",
     fontSize: 14,
+    fontFamily: "Roboto",
   },
   verifiedNoticeCard: {
-    backgroundColor: "#ECFDF5",
+    backgroundColor: "#F0F9FF",
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: "#A7F3D0",
+    borderColor: "#BAE6FD",
     marginBottom: 16,
     alignItems: "center",
   },
   verifiedNoticeTitle: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#065F46",
+    color: "#0369A1", fontFamily: "Roboto",
     marginBottom: 4,
   },
   verifiedNoticeText: {
     fontSize: 12,
-    color: "#047857",
+    color: "#0284C7", fontFamily: "Roboto",
     textAlign: "center",
     lineHeight: 18,
   },
@@ -885,7 +759,7 @@ const styles = StyleSheet.create({
   },
   emptyReviewsText: {
     fontSize: 14,
-    color: "#6B7280",
+    color: "#475569", fontFamily: "Roboto",
     marginTop: 8,
   },
   reviewItemCard: {
@@ -918,7 +792,7 @@ const styles = StyleSheet.create({
   reviewerName: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#111827",
+    color: "#0F172A", fontFamily: "Roboto",
   },
   verifiedBadge: {
     flexDirection: "row",
@@ -933,7 +807,7 @@ const styles = StyleSheet.create({
   },
   reviewCommentText: {
     fontSize: 14,
-    color: "#374151",
+    color: "#334155", fontFamily: "Roboto",
     lineHeight: 20,
     marginTop: 4,
   },
@@ -944,7 +818,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: "#BAE6FD",
   },
   reviewCustomerPhoto: {
     width: 130,
@@ -955,7 +829,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: 6,
     left: 6,
-    backgroundColor: "rgba(17, 24, 39, 0.75)",
+    backgroundColor: "rgba(2, 132, 199, 0.85)",
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,

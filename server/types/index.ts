@@ -18,6 +18,7 @@ export interface ICartItem {
     quantity: number;
     price: number;
     size?: string;
+    color?: string;
 }
 
 export interface ICart extends Document {
@@ -35,6 +36,7 @@ export interface IOrderItem {
     quantity: number;
     price: number;
     size?: string;
+    color?: string;
 }
 
 export interface IOrder extends Document {
@@ -104,6 +106,7 @@ export interface IProduct extends Document {
     comparePrice?: number;
     images: string[];
     sizes: string[];
+    colors?: string[];
     category: string;
     subcategory?: string;
     stock: number;

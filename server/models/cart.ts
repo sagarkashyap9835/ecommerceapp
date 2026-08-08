@@ -22,6 +22,10 @@ const cartItemSchema = new Schema<ICartItem>(
       type: String,
       default: "",
     },
+    color: {
+      type: String,
+      default: "",
+    },
   },
   {
     _id: false,
