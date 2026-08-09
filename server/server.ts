@@ -27,8 +27,8 @@ app.get('/', (req: Request, res: Response) => {
 });
 
 connectDB();
-await makeAdmin();
-await seedCategories();
+// await makeAdmin();
+// await seedCategories();
 // Seed dummy products if no products are present
 // await seedProducts(process.env.MONGODB_URI as string);
 
