@@ -37,13 +37,19 @@
 // export const adminAuth = getAuth(adminApp);
 
 
-
 import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 
 const projectId = process.env.FIREBASE_PROJECT_ID;
 const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
 const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n");
+
+console.log("Firebase env check:", {
+  projectId: !!projectId,
+  clientEmail: !!clientEmail,
+  privateKey: !!privateKey,
+  vercelEnv: process.env.VERCEL_ENV,
+});
 
 if (!projectId || !clientEmail || !privateKey) {
   throw new Error("Firebase Admin environment variables are missing");
