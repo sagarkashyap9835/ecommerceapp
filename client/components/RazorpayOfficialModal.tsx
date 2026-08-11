@@ -212,6 +212,23 @@ export const RazorpayOfficialModal: React.FC<RazorpayOfficialModalProps> = ({
     }, 600);
   };
 
+  const injectedJS = `
+    const originalSubmit = HTMLFormElement.prototype.submit;
+    HTMLFormElement.prototype.submit = function() {
+      if (this.action && this.action.indexOf('razorpay-callback.local') !== -1) {
+        var formData = new FormData(this);
+        var obj = { status: 'SUCCESS' };
+        formData.forEach(function(value, key){
+            obj[key] = value;
+        });
+        window.ReactNativeWebView.postMessage(JSON.stringify(obj));
+        return;
+      }
+      return originalSubmit.apply(this, arguments);
+    };
+    true;
+  `;
+
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={[styles.overlay, WebView && { padding: 0, backgroundColor: "transparent" }]}>
@@ -242,23 +259,7 @@ export const RazorpayOfficialModal: React.FC<RazorpayOfficialModalProps> = ({
               thirdPartyCookiesEnabled={true}
               sharedCookiesEnabled={true}
               userAgent="Mozilla/5.0 (Linux; Android 10; SM-G973F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Mobile Safari/537.36"
-              onNavigationStateChange={(navState: any) => {
-                if (navState.url.includes("razorpay-callback.local/status")) {
-                  if (navState.url.includes("error")) {
-                    onFailure({ code: "FAILED", description: "Payment failed at gateway" });
-                  } else {
-                    const getQuery = (url: string, name: string) => {
-                      const match = url.match(new RegExp('[?&]' + name + '=([^&]+)'));
-                      return match ? decodeURIComponent(match[1]) : '';
-                    };
-                    onSuccess({
-                      razorpay_order_id: getQuery(navState.url, "razorpay_order_id") || orderId,
-                      razorpay_payment_id: getQuery(navState.url, "razorpay_payment_id"),
-                      razorpay_signature: getQuery(navState.url, "razorpay_signature")
-                    });
-                  }
-                }
-              }}
+              injectedJavaScript={injectedJS}
               onMessage={(event: any) => {
                 try {
                   const data = JSON.parse(event.nativeEvent.data);
