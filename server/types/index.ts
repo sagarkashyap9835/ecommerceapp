@@ -117,6 +117,7 @@ export interface IProduct extends Document {
     reviews: IReview[];
     isFeatured: boolean;
     isBogo: boolean;
+    isLatest: boolean;
     isActive: boolean;
     createdAt: Date;
     updatedAt: Date;

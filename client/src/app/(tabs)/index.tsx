@@ -546,6 +546,40 @@ export default function Home() {
   </ScrollView>
 </View>
 
+{/* Latest Products Section */}
+{(() => {
+  if (loading) return null;
+  const latestProducts = products.filter((p) => p.isLatest);
+  if (latestProducts.length === 0) return null;
+
+  return (
+    <View style={{ marginBottom: 28 }}>
+      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+        <View>
+          <Text style={{ fontSize: 22, fontWeight: "800", color: "#111827", fontFamily: "Outfit_800", letterSpacing: -0.5 }}>
+            Latest Products
+          </Text>
+          <Text style={{ fontSize: 13, color: "#4B5563", fontWeight: "600", fontFamily: "Outfit_600", marginTop: 2 }}>
+            Newest Arrivals
+          </Text>
+        </View>
+        <TouchableOpacity onPress={() => router.push({ pathname: "/shop", params: { isLatest: "true" } })}>
+          <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#F3F4F6', justifyContent: 'center', alignItems: 'center' }}>
+            <Ionicons name="arrow-forward" size={20} color="#111827" />
+          </View>
+        </TouchableOpacity>
+      </View>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", minHeight: 480 }}>
+        {latestProducts.slice(0, 4).map((product, index) => (
+          <View key={product._id} style={{ marginTop: index % 2 !== 0 ? 24 : 0 }}>
+            <ProductCard product={product} index={index} disableAnimation={true} />
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+})()}
+
 {/* Special Offers & Sales (Buy 1 Get 1 Free Section) */}
 {(() => {
   if (loading) return <InfinityLoader />;
@@ -636,7 +670,7 @@ export default function Home() {
       }}
     >
       {scrollY > 500 ? (
-        products.slice(0, 4).map((product: any, index: number) => (
+        products.filter((p: any) => p.isFeatured).slice(0, 4).map((product: any, index: number) => (
           <View
             key={product._id}
             style={{

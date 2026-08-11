@@ -13,9 +13,15 @@ export const getProducts = async (req: Request, res: Response): Promise<void> =>
         // केवल वही प्रोडक्ट्स जो एक्टिव हैं
         const query: any = { isActive: true };
 
-        // 0. BOGO / Offer Filter
+        // 0. Flags Filters
         if (isBogo === "true" || String(isBogo) === "true") {
             query.isBogo = true;
+        }
+        if (req.query.isFeatured === "true" || String(req.query.isFeatured) === "true") {
+            query.isFeatured = true;
+        }
+        if (req.query.isLatest === "true" || String(req.query.isLatest) === "true") {
+            query.isLatest = true;
         }
 
         // 1. Category Filter
@@ -191,6 +197,7 @@ export const createProduct = async (req: Request, res: Response): Promise<void> 
             subcategory: req.body.subcategory || "",
             isFeatured: req.body.isFeatured === "true" || req.body.isFeatured === true,
             isBogo: req.body.isBogo === "true" || req.body.isBogo === true,
+            isLatest: req.body.isLatest === "true" || req.body.isLatest === true,
             sizes: sizes,
             colors: req.body.colors ? JSON.parse(req.body.colors) : [],
             images: imageUrls
@@ -294,6 +301,7 @@ export const updateProduct = async (req: Request, res: Response): Promise<void> 
         if (req.body.subcategory !== undefined) updatedData.subcategory = req.body.subcategory;
         if (req.body.isFeatured !== undefined) updatedData.isFeatured = req.body.isFeatured === "true" || req.body.isFeatured === true;
         if (req.body.isBogo !== undefined) updatedData.isBogo = req.body.isBogo === "true" || req.body.isBogo === true;
+        if (req.body.isLatest !== undefined) updatedData.isLatest = req.body.isLatest === "true" || req.body.isLatest === true;
         if (sizes !== undefined) updatedData.sizes = sizes;
         updatedData.images = updatedImages;
 

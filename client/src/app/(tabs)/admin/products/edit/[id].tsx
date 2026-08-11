@@ -52,6 +52,7 @@ export default function EditProduct() {
 
   const [isFeatured, setIsFeatured] = useState(false);
   const [isBogo, setIsBogo] = useState(false);
+  const [isLatest, setIsLatest] = useState(false);
 
   // Image State
   const [existingImages, setExistingImages] = useState<string[]>([]);
@@ -78,6 +79,7 @@ export default function EditProduct() {
           setStock(product.stock !== undefined ? product.stock.toString() : "0");
           setIsFeatured(!!product.isFeatured);
           setIsBogo(!!product.isBogo);
+          setIsLatest(!!product.isLatest);
 
           const catName = typeof product.category === "object" ? product.category.name : product.category;
           setCategory(catName || "");
@@ -185,6 +187,7 @@ export default function EditProduct() {
       formData.append("subcategory", subcategory);
       formData.append("isFeatured", String(isFeatured));
       formData.append("isBogo", String(isBogo));
+      formData.append("isLatest", String(isLatest));
       formData.append("sizes", JSON.stringify(selectedSizes));
 
       // Append existing images
@@ -476,11 +479,31 @@ export default function EditProduct() {
         </View>
 
         <View style={styles.switchRow}>
-          <Text style={styles.switchLabel}>🎁 Buy 1 Get 1 Free Offer</Text>
+          <View>
+            <Text style={styles.switchLabel}>Buy 1 Get 1 Offer</Text>
+            <Text style={styles.switchSubLabel}>Show in special BOGO section</Text>
+          </View>
           <Switch
+            trackColor={{ false: "#E5E7EB", true: "#34D399" }}
+            thumbColor={isBogo ? "#059669" : "#F9FAFB"}
+            ios_backgroundColor="#E5E7EB"
             value={isBogo}
             onValueChange={setIsBogo}
-            trackColor={{ false: "#eee", true: "#059669" }}
+          />
+        </View>
+
+        {/* isLatest Switch */}
+        <View style={styles.switchRow}>
+          <View>
+            <Text style={styles.switchLabel}>Latest Product</Text>
+            <Text style={styles.switchSubLabel}>Show in Latest Arrivals section</Text>
+          </View>
+          <Switch
+            trackColor={{ false: "#E5E7EB", true: "#818CF8" }}
+            thumbColor={isLatest ? "#4F46E5" : "#F9FAFB"}
+            ios_backgroundColor="#E5E7EB"
+            value={isLatest}
+            onValueChange={setIsLatest}
           />
         </View>
 

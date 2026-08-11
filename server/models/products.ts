@@ -35,6 +35,7 @@ const productSchema = new Schema<IProduct>({
     reviews: [reviewSchema],
     isFeatured: { type: Boolean, default: false },
     isBogo: { type: Boolean, default: false },
+    isLatest: { type: Boolean, default: false },
     isActive: { type: Boolean, default: true },
 }, { timestamps: true });
 

@@ -51,6 +51,7 @@ export default function AddProduct() {
   const [images, setImages] = useState<string[]>([]);
   const [isFeatured, setIsFeatured] = useState(false);
   const [isBogo, setIsBogo] = useState(false);
+  const [isLatest, setIsLatest] = useState(false);
 
   // Load Categories on mount
   useEffect(() => {
@@ -140,6 +141,7 @@ export default function AddProduct() {
       subcategory,
       isFeatured: String(isFeatured),
       isBogo: String(isBogo),
+      isLatest: String(isLatest),
       sizes: JSON.stringify(selectedSizes),
       colors: JSON.stringify(parsedColors),
     };
@@ -439,12 +441,31 @@ export default function AddProduct() {
         </View>
 
         <View style={styles.switchRow}>
-          <Text style={styles.switchLabel}>🎁 Buy 1 Get 1 Free Offer</Text>
+          <View>
+            <Text style={styles.switchLabel}>Buy 1 Get 1 Offer</Text>
+            <Text style={styles.switchSubLabel}>Show in special BOGO section</Text>
+          </View>
           <Switch
+            trackColor={{ false: "#E5E7EB", true: "#34D399" }}
+            thumbColor={isBogo ? "#059669" : "#F9FAFB"}
+            ios_backgroundColor="#E5E7EB"
             value={isBogo}
             onValueChange={setIsBogo}
-            trackColor={{ false: "#E2E8F0", true: "#FF3399" }}
-            thumbColor="#ffffff"
+          />
+        </View>
+
+        {/* isLatest Switch */}
+        <View style={styles.switchRow}>
+          <View>
+            <Text style={styles.switchLabel}>Latest Product</Text>
+            <Text style={styles.switchSubLabel}>Show in Latest Arrivals section</Text>
+          </View>
+          <Switch
+            trackColor={{ false: "#E5E7EB", true: "#818CF8" }}
+            thumbColor={isLatest ? "#4F46E5" : "#F9FAFB"}
+            ios_backgroundColor="#E5E7EB"
+            value={isLatest}
+            onValueChange={setIsLatest}
           />
         </View>
 
