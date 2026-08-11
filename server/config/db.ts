@@ -1,16 +1,37 @@
+// import mongoose from "mongoose";
+
+// const connectDB = async () => {
+//   try {
+//     await mongoose.connect(process.env.MONGODB_URI as string);
+
+//     // Clean up old obsolete indexes from Clerk integration if they exist
+//     try {
+//       await mongoose.connection.collection('users').dropIndex('clerkId_1');
+//       console.log("🧹 Dropped obsolete clerkId_1 index from users collection");
+//     } catch (e) {
+//       // Ignore if index doesn't exist
+//     }
+
+//     console.log("✅ MongoDB Connected");
+//   } catch (error) {
+//     console.error("❌ MongoDB Connection Error:", error);
+//     process.exit(1);
+//   }
+// };
+
+// export default connectDB;
+
 import mongoose from "mongoose";
 
 const connectDB = async () => {
   try {
-    await mongoose.connect(process.env.MONGODB_URI as string);
+    const mongoUri = process.env.MONGODB_URI;
 
-    // Clean up old obsolete indexes from Clerk integration if they exist
-    try {
-      await mongoose.connection.collection('users').dropIndex('clerkId_1');
-      console.log("🧹 Dropped obsolete clerkId_1 index from users collection");
-    } catch (e) {
-      // Ignore if index doesn't exist
+    if (!mongoUri) {
+      throw new Error("MONGODB_URI is not defined");
     }
+
+    await mongoose.connect(mongoUri);
 
     console.log("✅ MongoDB Connected");
   } catch (error) {
