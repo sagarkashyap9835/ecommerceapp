@@ -66,6 +66,7 @@ export const RazorpayOfficialModal: React.FC<RazorpayOfficialModalProps> = ({
   onFailure,
 }) => {
   const [loading, setLoading] = useState(false);
+  const [hideWebview, setHideWebview] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState<"card" | "upi" | "netbanking">("card");
 
   const amountInPaisa = Math.round(amount * 100);
@@ -258,17 +259,29 @@ export const RazorpayOfficialModal: React.FC<RazorpayOfficialModalProps> = ({
           )}
 
           {WebView ? (
-            <WebView
-              style={{ flex: 1, backgroundColor: "transparent" }}
-              originWhitelist={["*"]}
-              source={{ html: razorpayHtml, baseUrl: "https://localhost" }}
-              javaScriptEnabled={true}
-              domStorageEnabled={true}
-              mixedContentMode="always"
-              thirdPartyCookiesEnabled={true}
-              sharedCookiesEnabled={true}
-              userAgent="Mozilla/5.0 (Linux; Android 10; SM-G973F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Mobile Safari/537.36"
-              injectedJavaScript={injectedJS}
+            <View style={{ flex: 1, backgroundColor: "transparent" }}>
+              {hideWebview && (
+                <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, justifyContent: "center", alignItems: "center", backgroundColor: "#fff", zIndex: 10 }}>
+                  <ActivityIndicator size="large" color="#0284C7" />
+                  <Text style={{ marginTop: 10, color: "#64748b", fontWeight: "600" }}>Verifying Payment...</Text>
+                </View>
+              )}
+              <WebView
+                style={[{ flex: 1, backgroundColor: "transparent" }, hideWebview && { opacity: 0 }]}
+                originWhitelist={["*"]}
+                source={{ html: razorpayHtml, baseUrl: "https://localhost" }}
+                javaScriptEnabled={true}
+                domStorageEnabled={true}
+                mixedContentMode="always"
+                thirdPartyCookiesEnabled={true}
+                sharedCookiesEnabled={true}
+                userAgent="Mozilla/5.0 (Linux; Android 10; SM-G973F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Mobile Safari/537.36"
+                onNavigationStateChange={(navState: any) => {
+                  if (navState.url.includes("postman-echo.com")) {
+                    setHideWebview(true);
+                  }
+                }}
+                injectedJavaScript={injectedJS}
               onMessage={(event: any) => {
                 try {
                   const data = JSON.parse(event.nativeEvent.data);
@@ -285,6 +298,7 @@ export const RazorpayOfficialModal: React.FC<RazorpayOfficialModalProps> = ({
                 }
               }}
             />
+            </View>
           ) : (
             <ScrollView contentContainerStyle={styles.content}>
               {/* Order Info */}
