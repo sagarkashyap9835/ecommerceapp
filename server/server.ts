@@ -26,7 +26,7 @@ app.get('/', (req: Request, res: Response) => {
     res.send('Server is Live!');
 });
 
-connectDB();
+await connectDB();
 await makeAdmin();
 await seedCategories();
 // Seed dummy products if no products are present
