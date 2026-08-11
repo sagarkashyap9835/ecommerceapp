@@ -143,7 +143,7 @@ export const RazorpayOfficialModal: React.FC<RazorpayOfficialModalProps> = ({
       <script>
         var options = {
           key: "${keyId}",
-          amount: "${amountInPaisa}",
+          amount: ${amountInPaisa},
           currency: "${currency}",
           name: "Gramo Kart",
           description: "Order Payment",
@@ -242,9 +242,12 @@ export const RazorpayOfficialModal: React.FC<RazorpayOfficialModalProps> = ({
             <WebView
               style={{ flex: 1, backgroundColor: "transparent" }}
               originWhitelist={["*"]}
-              source={{ html: razorpayHtml, baseUrl: "https://checkout.razorpay.com" }}
+              source={{ html: razorpayHtml, baseUrl: "http://localhost" }}
               javaScriptEnabled={true}
               domStorageEnabled={true}
+              mixedContentMode="always"
+              thirdPartyCookiesEnabled={true}
+              sharedCookiesEnabled={true}
                 onMessage={(event: any) => {
                   try {
                     const data = JSON.parse(event.nativeEvent.data);
