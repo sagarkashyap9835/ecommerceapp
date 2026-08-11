@@ -194,6 +194,14 @@ export default function ProductDetails() {
   const averageRatingStr = product.ratings?.count ? product.ratings.average.toFixed(1) : "0.0";
   const reviewCount = product.ratings?.count ?? 0;
 
+  const ratingDistribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+  reviewsList.forEach((review: any) => {
+    if (review.rating && review.rating >= 1 && review.rating <= 5) {
+      ratingDistribution[review.rating as keyof typeof ratingDistribution]++;
+    }
+  });
+  const totalRatingsForDist = Math.max(reviewCount, 1);
+
   return (
     <SafeAreaView className="flex-1 bg-white">
       {/* TOP BAR */}
@@ -438,6 +446,46 @@ export default function ProductDetails() {
                 <Text style={{ fontFamily: 'Roboto', fontSize: 13, color: "#6B7280", marginLeft: 4 }}>
                   ({reviewCount} reviews)
                 </Text>
+              </View>
+            </View>
+
+            {/* RATING DISTRIBUTION OVERVIEW */}
+            <View style={{ flexDirection: "row", marginBottom: 28, marginTop: 8 }}>
+              {/* Left Side: Average */}
+              <View style={{ flex: 0.45, justifyContent: "center", alignItems: "center", borderRightWidth: 1, borderRightColor: "#E5E7EB", paddingRight: 10 }}>
+                <View style={{ flexDirection: "row", marginBottom: 12 }}>
+                  {[1, 2, 3, 4, 5].map((star) => {
+                    const ratingValue = parseFloat(averageRatingStr);
+                    let iconName: any = "star-outline";
+                    if (ratingValue >= star) iconName = "star";
+                    else if (ratingValue >= star - 0.5) iconName = "star-half";
+                    
+                    return (
+                      <Ionicons key={star} name={iconName} size={28} color="#388E3C" style={{ marginHorizontal: 1 }} />
+                    );
+                  })}
+                </View>
+                <Text style={{ fontFamily: 'Roboto', fontSize: 13, color: "#6B7280", textAlign: "center", paddingHorizontal: 4 }}>
+                  {reviewCount} ratings and {reviewsList.length} reviews
+                </Text>
+              </View>
+
+              {/* Right Side: Distribution Bars */}
+              <View style={{ flex: 0.55, paddingLeft: 16, justifyContent: "center" }}>
+                {[5, 4, 3, 2, 1].map((star) => {
+                  const count = ratingDistribution[star as keyof typeof ratingDistribution];
+                  const percentage = (count / totalRatingsForDist) * 100;
+                  return (
+                    <View key={star} style={{ flexDirection: "row", alignItems: "center", marginBottom: 8 }}>
+                      <Text style={{ fontFamily: 'Roboto', fontSize: 13, fontWeight: "600", color: "#111827", width: 12 }}>{star}</Text>
+                      <Ionicons name="star" size={12} color="#111827" style={{ marginRight: 8, marginLeft: 2 }} />
+                      <View style={{ flex: 1, height: 10, backgroundColor: "#E5E7EB", borderRadius: 5, overflow: "hidden", marginRight: 8 }}>
+                        <View style={{ width: `${percentage}%`, height: "100%", backgroundColor: "#388E3C", borderRadius: 5 }} />
+                      </View>
+                      <Text style={{ fontFamily: 'Roboto', fontSize: 12, color: "#6B7280", width: 35, textAlign: "right" }}>{count}</Text>
+                    </View>
+                  );
+                })}
               </View>
             </View>
 
