@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -9,6 +9,10 @@ import {
   Image,
   Alert,
   Platform,
+  Linking,
+  Modal,
+  TextInput,
+  ActivityIndicator
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Header from "../../components/Header";
@@ -16,6 +20,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useUser, useAuth } from "@/context/AuthContext";
 import { useRouter } from "expo-router";
 import Toast from "react-native-toast-message";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function Settings() {
   const router = useRouter();
@@ -26,7 +31,140 @@ export default function Settings() {
   const [orderNotifications, setOrderNotifications] = useState(true);
   const [promoNotifications, setPromoNotifications] = useState(false);
   const [emailUpdates, setEmailUpdates] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
+  
+  // App Preferences
+  const [currency, setCurrency] = useState("INR (₹)");
+  const [language, setLanguage] = useState("English");
+  
+  // Modals & Forms
+  const [editProfileVisible, setEditProfileVisible] = useState(false);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [updatingProfile, setUpdatingProfile] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
+
+  useEffect(() => {
+    loadSettings();
+    if (user) {
+      setFirstName(user.firstName || "");
+      setLastName(user.lastName || "");
+    }
+  }, [user]);
+
+  const loadSettings = async () => {
+    try {
+      const order = await AsyncStorage.getItem("orderNotifications");
+      const promo = await AsyncStorage.getItem("promoNotifications");
+      const email = await AsyncStorage.getItem("emailUpdates");
+      const curr = await AsyncStorage.getItem("appCurrency");
+      const lang = await AsyncStorage.getItem("appLanguage");
+
+      if (order !== null) setOrderNotifications(order === "true");
+      if (promo !== null) setPromoNotifications(promo === "true");
+      if (email !== null) setEmailUpdates(email === "true");
+      if (curr) setCurrency(curr);
+      if (lang) setLanguage(lang);
+    } catch (e) {
+      console.error("Failed to load settings", e);
+    }
+  };
+
+  const saveSetting = async (key: string, value: string) => {
+    try {
+      await AsyncStorage.setItem(key, value);
+    } catch (e) {
+      console.error("Failed to save setting", e);
+    }
+  };
+
+  const toggleOrderNotifs = (val: boolean) => {
+    setOrderNotifications(val);
+    saveSetting("orderNotifications", val.toString());
+  };
+
+  const togglePromoNotifs = (val: boolean) => {
+    setPromoNotifications(val);
+    saveSetting("promoNotifications", val.toString());
+  };
+
+  const toggleEmailNotifs = (val: boolean) => {
+    setEmailUpdates(val);
+    saveSetting("emailUpdates", val.toString());
+  };
+
+  const handleUpdateProfile = async () => {
+    if (!user) return;
+    setUpdatingProfile(true);
+    try {
+      await user.update({ firstName, lastName });
+      Toast.show({ type: "success", text1: "Profile Updated", text2: "Your name has been updated successfully." });
+      setEditProfileVisible(false);
+    } catch (err: any) {
+      Toast.show({ type: "error", text1: "Update Failed", text2: err.message || "Could not update profile." });
+    } finally {
+      setUpdatingProfile(false);
+    }
+  };
+
+  const handleDeleteAccount = () => {
+    if (!user) return;
+    const executeDelete = async () => {
+      setDeletingAccount(true);
+      try {
+        await user.delete();
+        Toast.show({ type: "success", text1: "Account Deleted", text2: "Your account has been permanently deleted." });
+        router.replace("/");
+      } catch (err: any) {
+        Toast.show({ type: "error", text1: "Error", text2: err.message || "Could not delete account." });
+      } finally {
+        setDeletingAccount(false);
+      }
+    };
+
+    if (Platform.OS === "web") {
+      if (window.confirm("WARNING: This will permanently delete your account and all associated data. Continue?")) {
+        executeDelete();
+      }
+    } else {
+      Alert.alert("Delete Account", "WARNING: This will permanently delete your account and all associated data. Are you sure?", [
+        { text: "Cancel", style: "cancel" },
+        { text: "Delete Permanently", style: "destructive", onPress: executeDelete },
+      ]);
+    }
+  };
+
+  const changeCurrency = () => {
+    if (Platform.OS === "web") {
+      const selected = window.prompt("Enter Currency (e.g., INR (₹), USD ($)):", currency);
+      if (selected) {
+        setCurrency(selected);
+        saveSetting("appCurrency", selected);
+      }
+    } else {
+      Alert.alert("Select Currency", "Choose your preferred currency", [
+        { text: "INR (₹)", onPress: () => { setCurrency("INR (₹)"); saveSetting("appCurrency", "INR (₹)"); } },
+        { text: "USD ($)", onPress: () => { setCurrency("USD ($)"); saveSetting("appCurrency", "USD ($)"); } },
+        { text: "EUR (€)", onPress: () => { setCurrency("EUR (€)"); saveSetting("appCurrency", "EUR (€)"); } },
+        { text: "Cancel", style: "cancel" }
+      ]);
+    }
+  };
+
+  const changeLanguage = () => {
+    if (Platform.OS === "web") {
+      const selected = window.prompt("Enter Language:", language);
+      if (selected) {
+        setLanguage(selected);
+        saveSetting("appLanguage", selected);
+      }
+    } else {
+      Alert.alert("Select Language", "Choose your preferred language", [
+        { text: "English", onPress: () => { setLanguage("English"); saveSetting("appLanguage", "English"); } },
+        { text: "Hindi", onPress: () => { setLanguage("Hindi"); saveSetting("appLanguage", "Hindi"); } },
+        { text: "Cancel", style: "cancel" }
+      ]);
+    }
+  };
 
   const handleLogout = async () => {
     const executeLogout = async () => {
@@ -70,11 +208,16 @@ export default function Settings() {
             <View style={styles.userInfo}>
               <Text style={styles.userName}>{user.fullName || user.username || "User"}</Text>
               <Text style={styles.userEmail}>{user.primaryEmailAddress?.emailAddress}</Text>
-              <View style={styles.roleBadge}>
-                <Ionicons name="shield-checkmark" size={12} color="#059669" />
-                <Text style={styles.roleText}>
-                  {((user.publicMetadata?.role as string) || "Customer").toUpperCase()}
-                </Text>
+              <View style={{ flexDirection: "row", alignItems: "center", marginTop: 6 }}>
+                <View style={[styles.roleBadge, { marginTop: 0 }]}>
+                  <Ionicons name="shield-checkmark" size={12} color="#059669" />
+                  <Text style={styles.roleText}>
+                    {((user.publicMetadata?.role as string) || "Customer").toUpperCase()}
+                  </Text>
+                </View>
+                <TouchableOpacity onPress={() => setEditProfileVisible(true)} style={{ marginLeft: 12, backgroundColor: "#F3F4F6", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 }}>
+                  <Text style={{ fontSize: 11, fontWeight: "600", color: "#4B5563" }}>Edit Profile</Text>
+                </TouchableOpacity>
               </View>
             </View>
           </View>
@@ -95,7 +238,7 @@ export default function Settings() {
             </View>
             <Switch
               value={orderNotifications}
-              onValueChange={setOrderNotifications}
+              onValueChange={toggleOrderNotifs}
               trackColor={{ false: "#D1D5DB", true: "#111827" }}
               thumbColor="#FFFFFF"
             />
@@ -115,7 +258,7 @@ export default function Settings() {
             </View>
             <Switch
               value={promoNotifications}
-              onValueChange={setPromoNotifications}
+              onValueChange={togglePromoNotifs}
               trackColor={{ false: "#D1D5DB", true: "#111827" }}
               thumbColor="#FFFFFF"
             />
@@ -135,7 +278,7 @@ export default function Settings() {
             </View>
             <Switch
               value={emailUpdates}
-              onValueChange={setEmailUpdates}
+              onValueChange={toggleEmailNotifs}
               trackColor={{ false: "#D1D5DB", true: "#111827" }}
               thumbColor="#FFFFFF"
             />
@@ -145,14 +288,14 @@ export default function Settings() {
         {/* APP PREFERENCES */}
         <Text style={styles.sectionHeader}>App Preferences</Text>
         <View style={styles.cardGroup}>
-          <TouchableOpacity style={styles.settingRow} activeOpacity={0.7}>
+          <TouchableOpacity style={styles.settingRow} activeOpacity={0.7} onPress={changeCurrency}>
             <View style={styles.settingLeft}>
               <View style={[styles.iconBg, { backgroundColor: "#F3F4F6" }]}>
                 <Ionicons name="cash-outline" size={20} color="#374151" />
               </View>
               <View>
                 <Text style={styles.settingTitle}>Currency</Text>
-                <Text style={styles.settingSubtitle}>INR (₹)</Text>
+                <Text style={styles.settingSubtitle}>{currency}</Text>
               </View>
             </View>
             <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
@@ -160,14 +303,14 @@ export default function Settings() {
 
           <View style={styles.divider} />
 
-          <TouchableOpacity style={styles.settingRow} activeOpacity={0.7}>
+          <TouchableOpacity style={styles.settingRow} activeOpacity={0.7} onPress={changeLanguage}>
             <View style={styles.settingLeft}>
               <View style={[styles.iconBg, { backgroundColor: "#F3F4F6" }]}>
                 <Ionicons name="language-outline" size={20} color="#374151" />
               </View>
               <View>
                 <Text style={styles.settingTitle}>Language</Text>
-                <Text style={styles.settingSubtitle}>English</Text>
+                <Text style={styles.settingSubtitle}>{language}</Text>
               </View>
             </View>
             <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
@@ -180,7 +323,7 @@ export default function Settings() {
           <TouchableOpacity
             style={styles.settingRow}
             activeOpacity={0.7}
-            onPress={() => Toast.show({ type: "info", text1: "Privacy Policy", text2: "Your data is encrypted and secure." })}
+            onPress={() => Linking.openURL("https://gramokart.com/privacy")}
           >
             <View style={styles.settingLeft}>
               <View style={[styles.iconBg, { backgroundColor: "#F3F4F6" }]}>
@@ -188,7 +331,7 @@ export default function Settings() {
               </View>
               <Text style={styles.settingTitle}>Privacy Policy</Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+            <Ionicons name="open-outline" size={16} color="#9CA3AF" />
           </TouchableOpacity>
 
           <View style={styles.divider} />
@@ -196,7 +339,7 @@ export default function Settings() {
           <TouchableOpacity
             style={styles.settingRow}
             activeOpacity={0.7}
-            onPress={() => Toast.show({ type: "info", text1: "Terms of Service", text2: "Gramo Kart E-Commerce Platform v1.0.0" })}
+            onPress={() => Linking.openURL("https://gramokart.com/terms")}
           >
             <View style={styles.settingLeft}>
               <View style={[styles.iconBg, { backgroundColor: "#F3F4F6" }]}>
@@ -204,7 +347,7 @@ export default function Settings() {
               </View>
               <Text style={styles.settingTitle}>Terms of Service</Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+            <Ionicons name="open-outline" size={16} color="#9CA3AF" />
           </TouchableOpacity>
 
           <View style={styles.divider} />
@@ -222,6 +365,36 @@ export default function Settings() {
           </View>
         </View>
 
+        {/* ACCOUNT MANAGEMENT (DANGER ZONE) */}
+        {user && (
+          <>
+            <Text style={[styles.sectionHeader, { color: "#EF4444", marginTop: 10 }]}>Danger Zone</Text>
+            <View style={[styles.cardGroup, { borderColor: "#FECACA" }]}>
+              <TouchableOpacity
+                style={styles.settingRow}
+                activeOpacity={0.7}
+                onPress={handleDeleteAccount}
+                disabled={deletingAccount}
+              >
+                <View style={styles.settingLeft}>
+                  <View style={[styles.iconBg, { backgroundColor: "#FEF2F2" }]}>
+                    <Ionicons name="warning-outline" size={20} color="#EF4444" />
+                  </View>
+                  <View>
+                    <Text style={[styles.settingTitle, { color: "#EF4444" }]}>Delete Account</Text>
+                    <Text style={styles.settingSubtitle}>Permanently remove your data</Text>
+                  </View>
+                </View>
+                {deletingAccount ? (
+                  <ActivityIndicator size="small" color="#EF4444" />
+                ) : (
+                  <Ionicons name="chevron-forward" size={18} color="#FCA5A5" />
+                )}
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
+
         {/* LOGOUT BUTTON */}
         {user && (
           <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.8}>
@@ -230,6 +403,54 @@ export default function Settings() {
           </TouchableOpacity>
         )}
       </ScrollView>
+
+      {/* Edit Profile Modal */}
+      <Modal visible={editProfileVisible} animationType="slide" transparent={true} onRequestClose={() => setEditProfileVisible(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <Text style={{ fontSize: 18, fontWeight: "700", color: "#111827" }}>Edit Profile</Text>
+              <TouchableOpacity onPress={() => setEditProfileVisible(false)}>
+                <Ionicons name="close" size={24} color="#6B7280" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={{ marginBottom: 16 }}>
+              <Text style={{ fontSize: 13, fontWeight: "600", color: "#374151", marginBottom: 6 }}>First Name</Text>
+              <TextInput
+                style={styles.inputField}
+                value={firstName}
+                onChangeText={setFirstName}
+                placeholder="Enter your first name"
+                placeholderTextColor="#9CA3AF"
+              />
+            </View>
+
+            <View style={{ marginBottom: 24 }}>
+              <Text style={{ fontSize: 13, fontWeight: "600", color: "#374151", marginBottom: 6 }}>Last Name</Text>
+              <TextInput
+                style={styles.inputField}
+                value={lastName}
+                onChangeText={setLastName}
+                placeholder="Enter your last name"
+                placeholderTextColor="#9CA3AF"
+              />
+            </View>
+
+            <TouchableOpacity 
+              style={[styles.saveBtn, updatingProfile && { opacity: 0.7 }]} 
+              onPress={handleUpdateProfile}
+              disabled={updatingProfile}
+            >
+              {updatingProfile ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <Text style={styles.saveBtnText}>Save Changes</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -359,5 +580,38 @@ const styles = StyleSheet.create({
     color: "#EF4444",
     fontWeight: "700",
     fontSize: 15,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "flex-end",
+  },
+  modalContent: {
+    backgroundColor: "#FFFFFF",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    paddingBottom: Platform.OS === "ios" ? 40 : 24,
+  },
+  inputField: {
+    backgroundColor: "#F9FAFB",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 15,
+    color: "#111827",
+  },
+  saveBtn: {
+    backgroundColor: "#111827",
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: "center",
+  },
+  saveBtnText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "600",
   },
 });
