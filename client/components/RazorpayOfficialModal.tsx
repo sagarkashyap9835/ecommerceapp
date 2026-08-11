@@ -149,7 +149,7 @@ export const RazorpayOfficialModal: React.FC<RazorpayOfficialModalProps> = ({
           description: "Order Payment",
           order_id: "${orderId}",
           order_id: "${orderId}",
-          callback_url: "https://razorpay-callback.local/status",
+          callback_url: "https://postman-echo.com/post",
           redirect: true,
           modal: {
             ondismiss: function () {
@@ -213,19 +213,28 @@ export const RazorpayOfficialModal: React.FC<RazorpayOfficialModalProps> = ({
   };
 
   const injectedJS = `
-    const originalSubmit = HTMLFormElement.prototype.submit;
-    HTMLFormElement.prototype.submit = function() {
-      if (this.action && this.action.indexOf('razorpay-callback.local') !== -1) {
-        var formData = new FormData(this);
-        var obj = { status: 'SUCCESS' };
-        formData.forEach(function(value, key){
-            obj[key] = value;
-        });
-        window.ReactNativeWebView.postMessage(JSON.stringify(obj));
-        return;
+    (function() {
+      if (window.location.href.indexOf('postman-echo.com/post') !== -1) {
+        var interval = setInterval(function() {
+          try {
+            var text = document.body.innerText;
+            if (text) {
+              var json = JSON.parse(text);
+              if (json && json.form && json.form.razorpay_payment_id) {
+                clearInterval(interval);
+                var obj = {
+                  status: 'SUCCESS',
+                  razorpay_payment_id: json.form.razorpay_payment_id,
+                  razorpay_order_id: json.form.razorpay_order_id,
+                  razorpay_signature: json.form.razorpay_signature
+                };
+                window.ReactNativeWebView.postMessage(JSON.stringify(obj));
+              }
+            }
+          } catch(e) {}
+        }, 500);
       }
-      return originalSubmit.apply(this, arguments);
-    };
+    })();
     true;
   `;
 
