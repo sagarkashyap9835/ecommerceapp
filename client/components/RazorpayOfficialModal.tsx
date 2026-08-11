@@ -242,7 +242,9 @@ export const RazorpayOfficialModal: React.FC<RazorpayOfficialModalProps> = ({
             <WebView
               style={{ flex: 1, backgroundColor: "transparent" }}
               originWhitelist={["*"]}
-              source={{ html: razorpayHtml }}
+              source={{ html: razorpayHtml, baseUrl: "https://checkout.razorpay.com" }}
+              javaScriptEnabled={true}
+              domStorageEnabled={true}
                 onMessage={(event: any) => {
                   try {
                     const data = JSON.parse(event.nativeEvent.data);
