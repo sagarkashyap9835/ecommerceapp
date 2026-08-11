@@ -148,16 +148,9 @@ export const RazorpayOfficialModal: React.FC<RazorpayOfficialModalProps> = ({
           name: "Gramo Kart",
           description: "Order Payment",
           order_id: "${orderId}",
-          handler: function (response) {
-            if (window.ReactNativeWebView) {
-              window.ReactNativeWebView.postMessage(JSON.stringify({
-                status: 'SUCCESS',
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature
-              }));
-            }
-          },
+          order_id: "${orderId}",
+          callback_url: "https://razorpay-callback.local/status",
+          redirect: true,
           modal: {
             ondismiss: function () {
               if (window.ReactNativeWebView) {
@@ -242,30 +235,46 @@ export const RazorpayOfficialModal: React.FC<RazorpayOfficialModalProps> = ({
             <WebView
               style={{ flex: 1, backgroundColor: "transparent" }}
               originWhitelist={["*"]}
-              source={{ html: razorpayHtml, baseUrl: "http://localhost" }}
+              source={{ html: razorpayHtml, baseUrl: "https://localhost" }}
               javaScriptEnabled={true}
               domStorageEnabled={true}
               mixedContentMode="always"
               thirdPartyCookiesEnabled={true}
               sharedCookiesEnabled={true}
-                onMessage={(event: any) => {
-                  try {
-                    const data = JSON.parse(event.nativeEvent.data);
-                    if (data.status === "SUCCESS") {
-                      onSuccess(data);
-                    } else if (data.status === "FAILED") {
-                      onFailure({
-                        code: data.code || "PAYMENT_FAILED",
-                        description: data.description || "Payment failed",
-                      });
-                    } else if (data.status === "CANCELLED") {
-                      onClose();
-                    }
-                  } catch (err) {
-                    console.error("WebView message error:", err);
+              userAgent="Mozilla/5.0 (Linux; Android 10; SM-G973F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Mobile Safari/537.36"
+              onNavigationStateChange={(navState: any) => {
+                if (navState.url.includes("razorpay-callback.local/status")) {
+                  if (navState.url.includes("error")) {
+                    onFailure({ code: "FAILED", description: "Payment failed at gateway" });
+                  } else {
+                    const getQuery = (url: string, name: string) => {
+                      const match = url.match(new RegExp('[?&]' + name + '=([^&]+)'));
+                      return match ? decodeURIComponent(match[1]) : '';
+                    };
+                    onSuccess({
+                      razorpay_order_id: getQuery(navState.url, "razorpay_order_id") || orderId,
+                      razorpay_payment_id: getQuery(navState.url, "razorpay_payment_id"),
+                      razorpay_signature: getQuery(navState.url, "razorpay_signature")
+                    });
                   }
-                }}
-              />
+                }
+              }}
+              onMessage={(event: any) => {
+                try {
+                  const data = JSON.parse(event.nativeEvent.data);
+                  if (data.status === "FAILED") {
+                    onFailure({
+                      code: data.code || "PAYMENT_FAILED",
+                      description: data.description || "Payment failed",
+                    });
+                  } else if (data.status === "CANCELLED") {
+                    onClose();
+                  }
+                } catch (err) {
+                  console.error("WebView message error:", err);
+                }
+              }}
+            />
           ) : (
             <ScrollView contentContainerStyle={styles.content}>
               {/* Order Info */}
