@@ -132,63 +132,63 @@ export const RazorpayOfficialModal: React.FC<RazorpayOfficialModalProps> = ({
     return null;
   }
 
-  // HTML String for Native Mobile WebView
   const razorpayHtml = `
     <!DOCTYPE html>
     <html>
     <head>
       <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-      <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #0c2340; color: #fff; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; }
-        .card { background: #ffffff; color: #111827; border-radius: 12px; padding: 24px; width: 100%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); box-sizing: border-box; }
-        .header { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e5e7eb; padding-bottom: 16px; margin-bottom: 16px; }
-        .logo { font-size: 20px; font-weight: 800; color: #0c2340; display: flex; align-items: center; }
-        .logo span { color: #0284c7; }
-        .badge { background: #e0f2fe; color: #0369a1; font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 4px; }
-        .amount-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px; border-radius: 8px; margin-bottom: 16px; text-align: center; }
-        .amount { font-size: 26px; font-weight: 800; color: #0c2340; margin-top: 4px; }
-        .btn { width: 100%; padding: 14px; border: none; border-radius: 8px; font-size: 15px; font-weight: 700; cursor: pointer; margin-bottom: 10px; transition: all 0.2s; }
-        .btn-success { background: #10b981; color: white; }
-        .btn-failed { background: #ef4444; color: white; }
-      </style>
     </head>
-    <body>
-      <div class="card">
-        <div class="header">
-          <div class="logo">Razorpay <span>Test</span></div>
-          <div class="badge">TEST MODE</div>
-        </div>
-        <div class="amount-box">
-          <div style="font-size: 12px; color: #64748b;">Paying Amount</div>
-          <div class="amount">₹${amount.toFixed(2)}</div>
-        </div>
-        <p style="font-size: 12px; color: #64748b; text-align: center; margin-bottom: 20px;">
-          Select standard Razorpay Test Gateway response:
-        </p>
-        <button class="btn btn-success" id="paySuccess">Simulate SUCCESS Payment</button>
-        <button class="btn btn-failed" id="payFailed">Simulate FAILED Payment</button>
-      </div>
-
+    <body style="margin: 0; padding: 0; background-color: transparent;">
+      <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
       <script>
-        document.getElementById('paySuccess').onclick = function() {
-          if (window.ReactNativeWebView) {
-            window.ReactNativeWebView.postMessage(JSON.stringify({
-              status: 'SUCCESS',
-              razorpay_payment_id: 'pay_test_' + Date.now(),
-              razorpay_order_id: '${orderId}',
-              razorpay_signature: 'test_signature_valid'
-            }));
-          }
+        var options = {
+          key: "${keyId}",
+          amount: "${amountInPaisa}",
+          currency: "${currency}",
+          name: "Gramo Kart",
+          description: "Order Payment",
+          order_id: "${orderId}",
+          handler: function (response) {
+            if (window.ReactNativeWebView) {
+              window.ReactNativeWebView.postMessage(JSON.stringify({
+                status: 'SUCCESS',
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature
+              }));
+            }
+          },
+          modal: {
+            ondismiss: function () {
+              if (window.ReactNativeWebView) {
+                window.ReactNativeWebView.postMessage(JSON.stringify({
+                  status: 'CANCELLED'
+                }));
+              }
+            }
+          },
+          prefill: {
+            name: "Customer",
+            email: "customer@example.com",
+            contact: "9999999999"
+          },
+          theme: { color: "#0C2340" }
         };
 
-        document.getElementById('payFailed').onclick = function() {
+        var rzp = new Razorpay(options);
+
+        rzp.on('payment.failed', function (response) {
           if (window.ReactNativeWebView) {
             window.ReactNativeWebView.postMessage(JSON.stringify({
               status: 'FAILED',
-              code: 'BAD_REQUEST_ERROR',
-              description: 'Payment was declined by bank in Test Mode'
+              code: response.error.code,
+              description: response.error.description
             }));
           }
+        });
+
+        window.onload = function() {
+          rzp.open();
         };
       </script>
     </body>
@@ -221,27 +221,28 @@ export const RazorpayOfficialModal: React.FC<RazorpayOfficialModalProps> = ({
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View style={styles.overlay}>
-        <View style={styles.container}>
+      <View style={[styles.overlay, WebView && { padding: 0, backgroundColor: "transparent" }]}>
+        <View style={WebView ? { flex: 1, width: "100%", backgroundColor: "transparent" } : styles.container}>
           {/* Header */}
-          <View style={styles.header}>
-            <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <View style={styles.razorpayBadge}>
-                <Text style={styles.razorpayBadgeText}>Razorpay</Text>
+          {!WebView && (
+            <View style={styles.header}>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <View style={styles.razorpayBadge}>
+                  <Text style={styles.razorpayBadgeText}>Razorpay</Text>
+                </View>
+                <Text style={styles.headerTitle}>Official Test Gateway</Text>
               </View>
-              <Text style={styles.headerTitle}>Official Test Gateway</Text>
+              <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
+                <Ionicons name="close" size={22} color="#6B7280" />
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <Ionicons name="close" size={22} color="#6B7280" />
-            </TouchableOpacity>
-          </View>
+          )}
 
           {WebView ? (
-            <View style={{ height: 450, width: "100%" }}>
-              <WebView
-                style={{ flex: 1 }}
-                originWhitelist={["*"]}
-                source={{ html: razorpayHtml }}
+            <WebView
+              style={{ flex: 1, backgroundColor: "transparent" }}
+              originWhitelist={["*"]}
+              source={{ html: razorpayHtml }}
                 onMessage={(event: any) => {
                   try {
                     const data = JSON.parse(event.nativeEvent.data);
@@ -260,7 +261,6 @@ export const RazorpayOfficialModal: React.FC<RazorpayOfficialModalProps> = ({
                   }
                 }}
               />
-            </View>
           ) : (
             <ScrollView contentContainerStyle={styles.content}>
               {/* Order Info */}
