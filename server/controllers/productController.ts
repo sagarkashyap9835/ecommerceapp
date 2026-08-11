@@ -401,13 +401,25 @@ export const createProductReview = async (req: Request, res: Response): Promise<
             (rev: any) => rev.user && rev.user.toString() === user._id.toString()
         );
 
+        let uploadedImageUrl = image || "";
+        if (image && image.startsWith("data:image")) {
+            try {
+                if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_CLOUD_NAME !== 'your_cloud_name') {
+                    const result = await cloudinary.uploader.upload(image, { folder: "reviews" });
+                    uploadedImageUrl = result.secure_url;
+                }
+            } catch (error) {
+                console.error("Cloudinary review image upload failed:", error);
+            }
+        }
+
         const newReviewData = {
             user: user._id,
             userName: user.name || "Customer",
             userImage: user.image || "",
             rating: numericRating,
             comment: comment.trim(),
-            image: image || "",
+            image: uploadedImageUrl,
             isVerifiedPurchase: true,
             createdAt: new Date()
         };
