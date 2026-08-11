@@ -239,6 +239,7 @@ export const RazorpayOfficialModal: React.FC<RazorpayOfficialModalProps> = ({
           {WebView ? (
             <View style={{ flex: 1, minHeight: 450 }}>
               <WebView
+                style={{ flex: 1 }}
                 originWhitelist={["*"]}
                 source={{ html: razorpayHtml }}
                 onMessage={(event: any) => {
