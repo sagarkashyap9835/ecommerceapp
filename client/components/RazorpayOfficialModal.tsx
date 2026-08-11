@@ -237,7 +237,7 @@ export const RazorpayOfficialModal: React.FC<RazorpayOfficialModalProps> = ({
           </View>
 
           {WebView ? (
-            <View style={{ flex: 1, minHeight: 450 }}>
+            <View style={{ height: 450, width: "100%" }}>
               <WebView
                 style={{ flex: 1 }}
                 originWhitelist={["*"]}
