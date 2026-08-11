@@ -22,6 +22,13 @@
 // export default connectDB;
 
 import mongoose from "mongoose";
+import dns from "node:dns";
+
+// Fix MongoDB Atlas DNS/SRV resolution issue
+dns.setServers([
+  "8.8.8.8",      // Google DNS
+  "1.1.1.1",      // Cloudflare DNS
+]);
 
 const connectDB = async () => {
   try {
@@ -41,3 +48,4 @@ const connectDB = async () => {
 };
 
 export default connectDB;
+
