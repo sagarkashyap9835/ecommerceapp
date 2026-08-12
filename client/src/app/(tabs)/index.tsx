@@ -84,7 +84,7 @@ export default function Home() {
   const fetchData = async () => {
     try {
       const [prodRes, catRes] = await Promise.all([
-        api.get("products"),
+        api.get("products?limit=50"),
         api.get("categories").catch(() => null),
       ]);
 
