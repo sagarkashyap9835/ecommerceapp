@@ -570,7 +570,7 @@ export default function Home() {
         </TouchableOpacity>
       </View>
       <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", minHeight: 480 }}>
-        {latestProducts.slice(0, 4).map((product, index) => (
+        {latestProducts.slice(0, 10).map((product, index) => (
           <View key={product._id} style={{ marginTop: index % 2 !== 0 ? 24 : 0 }}>
             <ProductCard product={product} index={index} disableAnimation={true} />
           </View>
@@ -625,14 +625,14 @@ export default function Home() {
           minHeight: 480,
         }}
       >
-        {offerProducts.slice(0, 2).map((product, index) => (
+        {offerProducts.slice(0, 4).map((product, index) => (
           <View key={product._id} style={{ marginTop: index % 2 !== 0 ? 24 : 0 }}>
             <ProductCard product={product} index={index} disableAnimation={true} />
           </View>
         ))}
         {scrollY > 100 ? (
-          offerProducts.slice(2, 4).map((product, index) => {
-            const actualIndex = index + 2;
+          offerProducts.slice(4, 10).map((product, index) => {
+            const actualIndex = index + 4;
             return (
               <View key={product._id} style={{ marginTop: actualIndex % 2 !== 0 ? 24 : 0 }}>
                 <ProductCard product={product} index={actualIndex} />
@@ -670,7 +670,7 @@ export default function Home() {
       }}
     >
       {scrollY > 500 ? (
-        products.filter((p: any) => p.isFeatured).slice(0, 4).map((product: any, index: number) => (
+        products.filter((p: any) => p.isFeatured).slice(0, 10).map((product: any, index: number) => (
           <View
             key={product._id}
             style={{
