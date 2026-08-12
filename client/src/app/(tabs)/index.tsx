@@ -563,7 +563,7 @@ export default function Home() {
             Newest Arrivals
           </Text>
         </View>
-        <TouchableOpacity onPress={() => router.push({ pathname: "/shop", params: { isLatest: "true" } })}>
+        <TouchableOpacity onPress={() => router.push({ pathname: "/collection", params: { type: "latest" } })}>
           <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#F3F4F6', justifyContent: 'center', alignItems: 'center' }}>
             <Ionicons name="arrow-forward" size={20} color="#111827" />
           </View>
@@ -609,7 +609,7 @@ export default function Home() {
           </View>
         </View>
 
-        <TouchableOpacity onPress={() => router.push({ pathname: "/shop", params: { isBogo: "true" } })}>
+        <TouchableOpacity onPress={() => router.push({ pathname: "/collection", params: { type: "bogo" } })}>
           <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#F3F4F6', justifyContent: 'center', alignItems: 'center' }}>
             <Ionicons name="arrow-forward" size={20} color="#111827" />
           </View>
@@ -652,7 +652,7 @@ export default function Home() {
       Popular Products
     </Text>
 
-    <TouchableOpacity onPress={() => router.push("/shop")}>
+    <TouchableOpacity onPress={() => router.push({ pathname: "/collection", params: { type: "popular" } })}>
       <Ionicons name="arrow-forward" size={24} color="#111827" />
     </TouchableOpacity>
   </View>
