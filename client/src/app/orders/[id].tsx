@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { Image, ScrollView, Text, View, ActivityIndicator, StyleSheet, TouchableOpacity, Modal, Pressable } from "react-native";
+import { Image, ScrollView, Text, View, ActivityIndicator, StyleSheet, TouchableOpacity, Modal, Pressable, TextInput } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Header from "../../../components/Header";
 import { COLORS } from "@/assets/constants";
@@ -11,6 +11,7 @@ import api from "../../../constants/api";
 import { getDeliveryDateForOrder } from "../../../utils/delivery";
 import Toast from "react-native-toast-message";
 import { getColorName } from "../../../utils/colors";
+import * as ImagePicker from "expo-image-picker";
 
 export default function OrderDetails() {
   const { getToken } = useAuth();
@@ -28,6 +29,14 @@ export default function OrderDetails() {
   const [replacementModalVisible, setReplacementModalVisible] = useState(false);
   const [replacementReason, setReplacementReason] = useState("Size / Fit Issue");
   const [submittingReplacement, setSubmittingReplacement] = useState(false);
+
+  // Review Modal States
+  const [reviewModalVisible, setReviewModalVisible] = useState(false);
+  const [reviewProductId, setReviewProductId] = useState<string | null>(null);
+  const [rating, setRating] = useState<number>(5);
+  const [reviewComment, setReviewComment] = useState<string>("");
+  const [reviewImage, setReviewImage] = useState<string>("");
+  const [submittingReview, setSubmittingReview] = useState<boolean>(false);
 
   const fetchOrderDetails = async () => {
     if (!id || id === "undefined" || id === "null") {
@@ -114,6 +123,81 @@ export default function OrderDetails() {
       });
     } finally {
       setSubmittingReplacement(false);
+    }
+  };
+
+  const pickReviewImage = async () => {
+    try {
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permissionResult.granted) {
+        Toast.show({
+          type: "error",
+          text1: "Permission Denied",
+          text2: "Permission to access photo library is required to upload product photo.",
+        });
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        quality: 0.7,
+        base64: true,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        if (asset.base64) {
+          setReviewImage(`data:image/jpeg;base64,${asset.base64}`);
+        } else {
+          setReviewImage(asset.uri);
+        }
+      }
+    } catch (error) {
+      console.error("Image pick error:", error);
+    }
+  };
+
+  const handleSubmitReview = async () => {
+    if (!reviewProductId) return;
+    if (!reviewComment.trim()) {
+      Toast.show({
+        type: "error",
+        text1: "Empty Review",
+        text2: "Please enter your review message."
+      });
+      return;
+    }
+
+    try {
+      setSubmittingReview(true);
+      const token = await getToken();
+      const { data } = await api.post(
+        `/products/${reviewProductId}/reviews`,
+        { rating, comment: reviewComment, image: reviewImage },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (data.success) {
+        Toast.show({
+          type: "success",
+          text1: "Review Submitted 🎉",
+          text2: data.message || "Thank you for your rating & photo!"
+        });
+        setReviewModalVisible(false);
+        setReviewComment("");
+        setReviewImage("");
+        setRating(5);
+        setReviewProductId(null);
+      }
+    } catch (error: any) {
+      Toast.show({
+        type: "error",
+        text1: "Submission Failed",
+        text2: error.response?.data?.message || "Could not submit review"
+      });
+    } finally {
+      setSubmittingReview(false);
     }
   };
 
@@ -318,6 +402,18 @@ export default function OrderDetails() {
                     <Text style={styles.productPrice}>₹{item.price}</Text>
                     <Text style={styles.productMeta}>Qty: {item.quantity}</Text>
                   </View>
+                  {isDelivered && (
+                    <TouchableOpacity
+                      onPress={() => {
+                        setReviewProductId(productData._id);
+                        setReviewModalVisible(true);
+                      }}
+                      style={{ marginTop: 10, paddingVertical: 6, paddingHorizontal: 12, backgroundColor: '#DBEAFE', borderRadius: 8, alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center' }}
+                    >
+                      <Ionicons name="star" size={14} color="#1E3A8A" style={{ marginRight: 4 }} />
+                      <Text style={{ fontSize: 12, fontWeight: '600', color: '#1E3A8A' }}>Write a Review</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
               </View>
             );
@@ -514,6 +610,104 @@ export default function OrderDetails() {
                 <Text style={{ color: "#FFFFFF", fontWeight: "700", fontSize: 14 }}>
                   Submit Replacement Request
                 </Text>
+              )}
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* REVIEW MODAL */}
+      <Modal visible={reviewModalVisible} transparent animationType="slide">
+        <Pressable style={styles.modalOverlay} onPress={() => setReviewModalVisible(false)}>
+          <Pressable style={styles.modalContentCard} onPress={(e) => e.stopPropagation()}>
+            <View style={styles.modalHeader}>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: "#DBEAFE", justifyContent: "center", alignItems: "center", marginRight: 10 }}>
+                  <Ionicons name="chatbubble-outline" size={18} color="#1E3A8A" />
+                </View>
+                <Text style={styles.modalTitle}>Write a Review</Text>
+              </View>
+              <TouchableOpacity onPress={() => setReviewModalVisible(false)}>
+                <Ionicons name="close" size={22} color="#6B7280" />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={{ fontSize: 13, color: "#4B5563", marginBottom: 12 }}>
+              Share your real experience with this product
+            </Text>
+
+            {/* Interactive Star Rating Selector */}
+            <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 16 }}>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <TouchableOpacity key={star} onPress={() => setRating(star)} activeOpacity={0.7} style={{ padding: 4 }}>
+                  <Ionicons
+                    name={star <= rating ? "star" : "star-outline"}
+                    size={32}
+                    color={star <= rating ? "#FBBF24" : "#D1D5DB"}
+                  />
+                </TouchableOpacity>
+              ))}
+              <View style={{ backgroundColor: "#DBEAFE", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, marginLeft: 12 }}>
+                <Text style={{ fontFamily: 'Roboto', fontSize: 12, fontWeight: '700', color: '#1E3A8A' }}>{rating} / 5 Stars</Text>
+              </View>
+            </View>
+
+            {/* Review Message Input */}
+            <View style={{ backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#BDE0FE", flexDirection: "row", alignItems: "flex-start", padding: 10, borderRadius: 10, marginBottom: 16 }}>
+              <Ionicons name="pencil" size={16} color="#94A3B8" style={{ marginTop: 4, marginRight: 8 }} />
+              <TextInput
+                style={{ flex: 1, fontSize: 14, color: '#111827', textAlignVertical: 'top', minHeight: 60 }}
+                placeholder="Write your review here (e.g. quality, fit, comfort)..."
+                placeholderTextColor="#9CA3AF"
+                multiline
+                numberOfLines={3}
+                value={reviewComment}
+                onChangeText={setReviewComment}
+              />
+            </View>
+
+            {/* Photo Upload Section */}
+            <View style={{ marginBottom: 20 }}>
+              {reviewImage ? (
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <View style={{ position: "relative" }}>
+                    <Image source={{ uri: reviewImage }} style={{ width: 64, height: 64, borderRadius: 8 }} resizeMode="cover" />
+                    <TouchableOpacity
+                      onPress={() => setReviewImage("")}
+                      style={{ position: "absolute", top: -8, right: -8, backgroundColor: "#EF4444", width: 22, height: 22, borderRadius: 11, justifyContent: "center", alignItems: "center", borderWidth: 2, borderColor: "#FFFFFF" }}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons name="close" size={14} color="#FFFFFF" />
+                    </TouchableOpacity>
+                  </View>
+                  <Text style={{ fontSize: 13, color: "#0284C7", marginLeft: 12, fontWeight: "600" }}>
+                    Product Photo Attached ✓
+                  </Text>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  onPress={pickReviewImage}
+                  activeOpacity={0.75}
+                  style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", backgroundColor: "#F0F9FF", borderWidth: 1, borderStyle: "dashed", borderColor: "#7DD3FC", borderRadius: 10, paddingVertical: 12 }}
+                >
+                  <Ionicons name="camera-outline" size={20} color="#0284C7" style={{ marginRight: 8 }} />
+                  <Text style={{ fontSize: 14, fontWeight: "600", color: "#0284C7" }}>Add Product Photo (Optional)</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            <TouchableOpacity
+              onPress={handleSubmitReview}
+              disabled={submittingReview}
+              style={{ backgroundColor: "#2563EB", borderRadius: 12, paddingVertical: 14, flexDirection: "row", justifyContent: "center", alignItems: "center" }}
+            >
+              {submittingReview ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <>
+                  <Ionicons name="paper-plane" size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
+                  <Text style={{ color: "#FFFFFF", fontWeight: "700", fontSize: 15 }}>Submit Review</Text>
+                </>
               )}
             </TouchableOpacity>
           </Pressable>

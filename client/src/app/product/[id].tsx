@@ -16,7 +16,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Product, Review } from "@/assets/constants/types";
 import { useCart } from "../../../context/CartContext";
 import { useWishlist } from "../../../context/WishlistContext";
-import * as ImagePicker from "expo-image-picker";
+
 
 import { SafeAreaView } from "react-native-safe-area-context";
 import { COLORS } from "@/assets/constants";
@@ -43,45 +43,7 @@ export default function ProductDetails() {
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
 
-  // Review System States
-  const [canReview, setCanReview] = useState<boolean>(false);
-  const [rating, setRating] = useState<number>(5);
-  const [reviewComment, setReviewComment] = useState<string>("");
-  const [reviewImage, setReviewImage] = useState<string>("");
   const [previewModalImage, setPreviewModalImage] = useState<string | null>(null);
-  const [submittingReview, setSubmittingReview] = useState<boolean>(false);
-
-  const pickReviewImage = async () => {
-    try {
-      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!permissionResult.granted) {
-        Toast.show({
-          type: "error",
-          text1: "Permission Denied",
-          text2: "Permission to access photo library is required to upload product photo.",
-        });
-        return;
-      }
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        allowsEditing: true,
-        quality: 0.7,
-        base64: true,
-      });
-
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        const asset = result.assets[0];
-        if (asset.base64) {
-          setReviewImage(`data:image/jpeg;base64,${asset.base64}`);
-        } else {
-          setReviewImage(asset.uri);
-        }
-      }
-    } catch (error) {
-      console.error("Image pick error:", error);
-    }
-  };
 
   const fetchProduct = async () => {
     try {
@@ -98,76 +60,11 @@ export default function ProductDetails() {
     }
   };
 
-  const checkEligibility = async () => {
-    if (!isSignedIn) return;
-    try {
-      const token = await getToken();
-      const { data } = await api.get(`/products/${id}/can-review`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setCanReview(!!data.canReview);
-      if (data.userReview) {
-        setRating(data.userReview.rating || 5);
-        setReviewComment(data.userReview.comment || "");
-      }
-    } catch (err) {
-      console.error("Check eligibility error:", err);
-    }
-  };
-
   useEffect(() => {
     fetchProduct();
-    checkEligibility();
   }, [id, isSignedIn]);
 
-  const handleSubmitReview = async () => {
-    if (!isSignedIn) {
-      Toast.show({
-        type: "info",
-        text1: "Sign In Required",
-        text2: "Please sign in to submit a review."
-      });
-      return;
-    }
 
-    if (!reviewComment.trim()) {
-      Toast.show({
-        type: "error",
-        text1: "Empty Review",
-        text2: "Please enter your review message."
-      });
-      return;
-    }
-
-    try {
-      setSubmittingReview(true);
-      const token = await getToken();
-      const { data } = await api.post(
-        `/products/${id}/reviews`,
-        { rating, comment: reviewComment, image: reviewImage },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      if (data.success) {
-        Toast.show({
-          type: "success",
-          text1: "Review Submitted 🎉",
-          text2: data.message || "Thank you for your rating & photo!"
-        });
-        setProduct(data.data);
-        setReviewComment("");
-        setReviewImage("");
-      }
-    } catch (error: any) {
-      Toast.show({
-        type: "error",
-        text1: "Submission Failed",
-        text2: error.response?.data?.message || "Could not submit review"
-      });
-    } finally {
-      setSubmittingReview(false);
-    }
-  };
 
   if (loading) {
     return (
@@ -489,99 +386,7 @@ export default function ProductDetails() {
               </View>
             </View>
 
-            {/* WRITE A REVIEW FORM (ONLY FOR VERIFIED PURCHASERS) */}
-            {canReview ? (
-              <View style={styles.reviewFormCard}>
-                <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 6 }}>
-                  <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: "#DBEAFE", justifyContent: "center", alignItems: "center", marginRight: 10 }}>
-                    <Ionicons name="chatbubble-outline" size={20} color="#1E3A8A" />
-                  </View>
-                  <View>
-                    <Text style={styles.reviewFormTitle}>Write a Review</Text>
-                    <Text style={styles.reviewFormSubtitle}>Share your real experience with this product</Text>
-                  </View>
-                </View>
-                
-                {/* Interactive Star Rating Selector */}
-                <View style={styles.starSelectorRow}>
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <TouchableOpacity key={star} onPress={() => setRating(star)} activeOpacity={0.7} style={{ padding: 4 }}>
-                      <Ionicons
-                        name={star <= rating ? "star" : "star-outline"}
-                        size={28}
-                        color={star <= rating ? "#FBBF24" : "#D1D5DB"}
-                      />
-                    </TouchableOpacity>
-                  ))}
-                  <View style={{ backgroundColor: "#DBEAFE", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, marginLeft: 12 }}>
-                    <Text style={{ fontFamily: 'Roboto', fontSize: 12, fontWeight: '700', color: '#1E3A8A' }}>{rating} / 5 Stars</Text>
-                  </View>
-                </View>
 
-                {/* Review Message Input */}
-                <View style={styles.reviewInput}>
-                  <Ionicons name="pencil" size={16} color="#94A3B8" style={{ marginTop: 4, marginRight: 8 }} />
-                  <TextInput
-                    style={{ flex: 1, fontFamily: 'Roboto', fontSize: 13, color: '#111827', textAlignVertical: 'top' }}
-                    placeholder="Write your review here (e.g. quality, fit, comfort)..."
-                    placeholderTextColor="#9CA3AF"
-                    multiline
-                    numberOfLines={3}
-                    value={reviewComment}
-                    onChangeText={setReviewComment}
-                  />
-                </View>
-
-                {/* Photo Upload Section */}
-                <View style={{ marginBottom: 14 }}>
-                  {reviewImage ? (
-                    <View style={styles.imagePreviewWrapper}>
-                      <View style={{ position: "relative" }}>
-                        <Image source={{ uri: reviewImage }} style={styles.reviewImageThumbnail} resizeMode="cover" />
-                        <TouchableOpacity
-                          onPress={() => setReviewImage("")}
-                          style={styles.removeImageBtn}
-                          activeOpacity={0.8}
-                        >
-                          <Ionicons name="close" size={12} color="#FFFFFF" />
-                        </TouchableOpacity>
-                      </View>
-                      <Text style={{ fontFamily: 'Roboto',  fontSize: 12, color: "#0284C7", marginLeft: 10, fontWeight: "600" }}>
-                        Product Photo Attached ✓
-                      </Text>
-                    </View>
-                  ) : (
-                    <TouchableOpacity
-                      onPress={pickReviewImage}
-                      activeOpacity={0.75}
-                      style={styles.uploadPhotoBtn}
-                    >
-                      <Ionicons name="camera-outline" size={18} color="#4B5563" style={{ marginRight: 6 }} />
-                      <Text style={styles.uploadPhotoBtnText}>Add Product Photo (Optional)</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-
-                <TouchableOpacity style={styles.submitReviewBtn} onPress={handleSubmitReview} activeOpacity={0.8} disabled={submittingReview}>
-                  {submittingReview ? (
-                    <ActivityIndicator size="small" color="#FFFFFF" />
-                  ) : (
-                    <>
-                      <Ionicons name="paper-plane" size={16} color="#FFFFFF" style={{ marginRight: 8 }} />
-                      <Text style={styles.submitReviewBtnText}>Submit Review</Text>
-                    </>
-                  )}
-                </TouchableOpacity>
-              </View>
-            ) : (
-              <View style={styles.verifiedNoticeCard}>
-                <Ionicons name="shield-checkmark-outline" size={24} color="#0284C7" style={{ marginBottom: 6 }} />
-                <Text style={styles.verifiedNoticeTitle}>Verified Buyer Reviews Only</Text>
-                <Text style={styles.verifiedNoticeText}>
-                  To ensure 100% authentic ratings and prevent fake reviews, only customers who have ordered this product can write a review.
-                </Text>
-              </View>
-            )}
 
             {/* REVIEWS LIST */}
             <View style={{ marginTop: 20 }}>
@@ -680,126 +485,6 @@ export default function ProductDetails() {
 }
 
 const styles = StyleSheet.create({
-  reviewFormCard: {
-    backgroundColor: "#F4FAFF",
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "#BDE0FE",
-    marginBottom: 20,
-  },
-  reviewFormTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#000000",
-    fontFamily: "Roboto",
-  },
-  reviewFormSubtitle: {
-    fontSize: 12,
-    color: "#475569",
-    fontFamily: "Roboto",
-    marginTop: 2,
-    marginBottom: 12,
-  },
-  starSelectorRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  ratingTextLabel: {
-    marginLeft: 12,
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#334155",
-    fontFamily: "Roboto",
-  },
-  reviewInput: {
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: "#BDE0FE",
-    flexDirection: "row",
-    alignItems: "flex-start",
-    padding: 10,
-    borderRadius: 10,
-    fontSize: 14,
-    color: "#111827",
-    textAlignVertical: "top",
-    marginBottom: 12,
-  },
-  uploadPhotoBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderStyle: "dashed",
-    borderColor: "#7DD3FC",
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-  },
-  uploadPhotoBtnText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#334155", fontFamily: "Roboto",
-  },
-  imagePreviewWrapper: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  reviewImageThumbnail: {
-    width: 60,
-    height: 60,
-    borderRadius: 8,
-  },
-  removeImageBtn: {
-    position: "absolute",
-    top: -6,
-    right: -6,
-    backgroundColor: "#EF4444",
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 1.5,
-    borderColor: "#FFFFFF",
-  },
-  submitReviewBtn: {
-    backgroundColor: "#2563EB",
-    borderRadius: 10,
-    paddingVertical: 12,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  submitReviewBtnText: {
-    color: "#FFFFFF",
-    fontWeight: "600",
-    fontSize: 14,
-    fontFamily: "Roboto",
-  },
-  verifiedNoticeCard: {
-    backgroundColor: "#F0F9FF",
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "#BAE6FD",
-    marginBottom: 16,
-    alignItems: "center",
-  },
-  verifiedNoticeTitle: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#0369A1", fontFamily: "Roboto",
-    marginBottom: 4,
-  },
-  verifiedNoticeText: {
-    fontSize: 12,
-    color: "#0284C7", fontFamily: "Roboto",
-    textAlign: "center",
-    lineHeight: 18,
-  },
   emptyReviewsBox: {
     paddingVertical: 24,
     alignItems: "center",
