@@ -321,4 +321,34 @@ export const requestReplacement = async (req: Request, res: Response) => {
     }
 };
 
+// Update Replacement Status (Admin)
+export const updateReplacementStatus = async (req: Request, res: Response) => {
+    try {
+        const { status } = req.body;
+        
+        if (!["approved", "rejected"].includes(status)) {
+            return res.status(400).json({ success: false, message: "Invalid status." });
+        }
 
+        const order = await Order.findById(req.params.id);
+
+        if (!order) {
+            return res.status(404).json({ success: false, message: "Order not found" });
+        }
+
+        if (!order.replacementRequest || order.replacementRequest.status === "none") {
+            return res.status(400).json({ success: false, message: "No replacement requested for this order." });
+        }
+
+        order.replacementRequest.status = status;
+        await order.save();
+
+        res.json({
+            success: true,
+            data: order,
+            message: `Replacement request has been ${status}.`
+        });
+    } catch (error: any) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};

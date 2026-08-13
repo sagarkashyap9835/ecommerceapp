@@ -76,6 +76,23 @@ try {
         }
     };
 
+    const handleReplacementStatus = async (orderId: string, status: string) => {
+        try {
+            const token = await getToken();
+            const { data } = await api.put(`/orders/admin/${orderId}/replacement`, {
+                status
+            }, { headers: { Authorization: `Bearer ${token}` } });
+
+            if (data.success) {
+                Alert.alert("Success", `Replacement request ${status}`);
+                fetchOrders();
+            }
+        } catch (error: any) {
+            console.error("Failed to update replacement status", error);
+            Alert.alert("Error", error.response?.data?.message || "Failed to update replacement status");
+        }
+    };
+
     if (loading && !refreshing) {
         return (
             <View style={styles.centerComponent}>
@@ -156,6 +173,38 @@ try {
                                         </View>
                                     ))}
                                 </View>
+
+                                {order.replacementRequest && order.replacementRequest.status !== "none" && (
+                                    <View style={{marginTop: 12, backgroundColor: '#F0F9FF', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: '#BAE6FD'}}>
+                                        <View style={{flexDirection: 'row', alignItems: 'center', marginBottom: 8}}>
+                                            <Ionicons name="refresh-circle" size={20} color="#0284C7" style={{marginRight: 6}} />
+                                            <Text style={{fontSize: 14, fontWeight: '700', color: '#0369A1'}}>2-Day Replacement Requested</Text>
+                                        </View>
+                                        <Text style={{fontSize: 13, color: '#0F172A', marginBottom: 4}}>
+                                            <Text style={{fontWeight: '700'}}>Reason: </Text>{order.replacementRequest.reason}
+                                        </Text>
+                                        <Text style={{fontSize: 12, color: '#64748B', marginBottom: 12}}>
+                                            Status: <Text style={{fontWeight: '700', color: order.replacementRequest.status === 'pending' ? '#D97706' : order.replacementRequest.status === 'approved' ? '#16A34A' : '#DC2626', textTransform: 'capitalize'}}>{order.replacementRequest.status}</Text>
+                                        </Text>
+
+                                        {order.replacementRequest.status === "pending" && (
+                                            <View style={{flexDirection: 'row', gap: 10}}>
+                                                <TouchableOpacity 
+                                                    style={{flex: 1, backgroundColor: '#10B981', paddingVertical: 10, borderRadius: 8, alignItems: 'center'}}
+                                                    onPress={() => handleReplacementStatus(order._id, 'approved')}
+                                                >
+                                                    <Text style={{color: '#FFF', fontWeight: '700', fontSize: 13}}>Approve</Text>
+                                                </TouchableOpacity>
+                                                <TouchableOpacity 
+                                                    style={{flex: 1, backgroundColor: '#EF4444', paddingVertical: 10, borderRadius: 8, alignItems: 'center'}}
+                                                    onPress={() => handleReplacementStatus(order._id, 'rejected')}
+                                                >
+                                                    <Text style={{color: '#FFF', fontWeight: '700', fontSize: 13}}>Reject</Text>
+                                                </TouchableOpacity>
+                                            </View>
+                                        )}
+                                    </View>
+                                )}
 
                                 <View style={styles.orderFooterRow}>
                                     <Text style={styles.totalAmountText}>${order.totalAmount.toFixed(2)}</Text>

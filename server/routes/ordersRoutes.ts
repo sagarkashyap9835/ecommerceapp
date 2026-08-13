@@ -9,6 +9,7 @@ import {
   createRazorpayOrder,
   cancelOrder,
   requestReplacement,
+  updateReplacementStatus,
 } from "../controllers/ordersController.js";
 
 import { protect, authorize } from "../middleware/auth.js";
@@ -35,6 +36,15 @@ router.put(
   protect,
   authorize("admin"),
   updateOrderStatus
+);
+
+// Update Replacement Status
+// PUT /api/orders/admin/:id/replacement
+router.put(
+  "/admin/:id/replacement",
+  protect,
+  authorize("admin"),
+  updateReplacementStatus
 );
 
 /* ===========================
