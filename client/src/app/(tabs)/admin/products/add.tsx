@@ -628,6 +628,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'Outfit_700',
   },
+  switchSubLabel: {
+    color: "#64748B",
+    fontSize: 12,
+    marginTop: 6,
+    fontFamily: 'Outfit_500',
+  },
   submitButton: {
     backgroundColor: "#FF3399",
     paddingVertical: 18,

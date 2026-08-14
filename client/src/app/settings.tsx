@@ -3,13 +3,11 @@ import {
   View,
   Text,
   ScrollView,
-  Switch,
   TouchableOpacity,
   StyleSheet,
   Image,
   Alert,
   Platform,
-  Linking,
   Modal,
   TextInput,
   ActivityIndicator
@@ -27,11 +25,6 @@ export default function Settings() {
   const { user } = useUser();
   const { signOut } = useAuth();
 
-  // Settings Toggles
-  const [orderNotifications, setOrderNotifications] = useState(true);
-  const [promoNotifications, setPromoNotifications] = useState(false);
-  const [emailUpdates, setEmailUpdates] = useState(true);
-  
   // App Preferences
   const [currency, setCurrency] = useState("INR (₹)");
   const [language, setLanguage] = useState("English");
@@ -53,15 +46,9 @@ export default function Settings() {
 
   const loadSettings = async () => {
     try {
-      const order = await AsyncStorage.getItem("orderNotifications");
-      const promo = await AsyncStorage.getItem("promoNotifications");
-      const email = await AsyncStorage.getItem("emailUpdates");
       const curr = await AsyncStorage.getItem("appCurrency");
       const lang = await AsyncStorage.getItem("appLanguage");
 
-      if (order !== null) setOrderNotifications(order === "true");
-      if (promo !== null) setPromoNotifications(promo === "true");
-      if (email !== null) setEmailUpdates(email === "true");
       if (curr) setCurrency(curr);
       if (lang) setLanguage(lang);
     } catch (e) {
@@ -77,26 +64,19 @@ export default function Settings() {
     }
   };
 
-  const toggleOrderNotifs = (val: boolean) => {
-    setOrderNotifications(val);
-    saveSetting("orderNotifications", val.toString());
-  };
-
-  const togglePromoNotifs = (val: boolean) => {
-    setPromoNotifications(val);
-    saveSetting("promoNotifications", val.toString());
-  };
-
-  const toggleEmailNotifs = (val: boolean) => {
-    setEmailUpdates(val);
-    saveSetting("emailUpdates", val.toString());
-  };
-
   const handleUpdateProfile = async () => {
     if (!user) return;
     setUpdatingProfile(true);
     try {
-      await user.update({ firstName, lastName });
+      const firebaseUser = (await import("../config/firebase")).auth.currentUser;
+      if (!firebaseUser) {
+        throw new Error("No authenticated user found.");
+      }
+
+      await (await import("firebase/auth")).updateProfile(firebaseUser, {
+        displayName: `${firstName || ""} ${lastName || ""}`.trim() || "User",
+      });
+
       Toast.show({ type: "success", text1: "Profile Updated", text2: "Your name has been updated successfully." });
       setEditProfileVisible(false);
     } catch (err: any) {
@@ -111,7 +91,10 @@ export default function Settings() {
     const executeDelete = async () => {
       setDeletingAccount(true);
       try {
-        await user.delete();
+        const firebaseUser = (await import("../config/firebase")).auth.currentUser;
+        if (firebaseUser) {
+          await (await import("firebase/auth")).deleteUser(firebaseUser);
+        }
         Toast.show({ type: "success", text1: "Account Deleted", text2: "Your account has been permanently deleted." });
         router.replace("/");
       } catch (err: any) {
@@ -121,49 +104,27 @@ export default function Settings() {
       }
     };
 
-    if (Platform.OS === "web") {
-      if (window.confirm("WARNING: This will permanently delete your account and all associated data. Continue?")) {
-        executeDelete();
-      }
-    } else {
-      Alert.alert("Delete Account", "WARNING: This will permanently delete your account and all associated data. Are you sure?", [
-        { text: "Cancel", style: "cancel" },
-        { text: "Delete Permanently", style: "destructive", onPress: executeDelete },
-      ]);
-    }
+    Alert.alert("Delete Account", "WARNING: This will permanently delete your account and all associated data. Are you sure?", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Delete Permanently", style: "destructive", onPress: executeDelete },
+    ]);
   };
 
   const changeCurrency = () => {
-    if (Platform.OS === "web") {
-      const selected = window.prompt("Enter Currency (e.g., INR (₹), USD ($)):", currency);
-      if (selected) {
-        setCurrency(selected);
-        saveSetting("appCurrency", selected);
-      }
-    } else {
-      Alert.alert("Select Currency", "Choose your preferred currency", [
-        { text: "INR (₹)", onPress: () => { setCurrency("INR (₹)"); saveSetting("appCurrency", "INR (₹)"); } },
-        { text: "USD ($)", onPress: () => { setCurrency("USD ($)"); saveSetting("appCurrency", "USD ($)"); } },
-        { text: "EUR (€)", onPress: () => { setCurrency("EUR (€)"); saveSetting("appCurrency", "EUR (€)"); } },
-        { text: "Cancel", style: "cancel" }
-      ]);
-    }
+    Alert.alert("Select Currency", "Choose your preferred currency", [
+      { text: "INR (₹)", onPress: () => { setCurrency("INR (₹)"); saveSetting("appCurrency", "INR (₹)"); } },
+      { text: "USD ($)", onPress: () => { setCurrency("USD ($)"); saveSetting("appCurrency", "USD ($)"); } },
+      { text: "EUR (€)", onPress: () => { setCurrency("EUR (€)"); saveSetting("appCurrency", "EUR (€)"); } },
+      { text: "Cancel", style: "cancel" }
+    ]);
   };
 
   const changeLanguage = () => {
-    if (Platform.OS === "web") {
-      const selected = window.prompt("Enter Language:", language);
-      if (selected) {
-        setLanguage(selected);
-        saveSetting("appLanguage", selected);
-      }
-    } else {
-      Alert.alert("Select Language", "Choose your preferred language", [
-        { text: "English", onPress: () => { setLanguage("English"); saveSetting("appLanguage", "English"); } },
-        { text: "Hindi", onPress: () => { setLanguage("Hindi"); saveSetting("appLanguage", "Hindi"); } },
-        { text: "Cancel", style: "cancel" }
-      ]);
-    }
+    Alert.alert("Select Language", "Choose your preferred language", [
+      { text: "English", onPress: () => { setLanguage("English"); saveSetting("appLanguage", "English"); } },
+      { text: "Hindi", onPress: () => { setLanguage("Hindi"); saveSetting("appLanguage", "Hindi"); } },
+      { text: "Cancel", style: "cancel" }
+    ]);
   };
 
   const handleLogout = async () => {
@@ -185,15 +146,10 @@ export default function Settings() {
       }
     };
 
-    if (Platform.OS === "web") {
-      const confirmed = window.confirm("Are you sure you want to log out?");
-      if (confirmed) executeLogout();
-    } else {
-      Alert.alert("Log Out", "Are you sure you want to log out of your account?", [
-        { text: "Cancel", style: "cancel" },
-        { text: "Log Out", style: "destructive", onPress: executeLogout },
-      ]);
-    }
+    Alert.alert("Log Out", "Are you sure you want to log out of your account?", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Log Out", style: "destructive", onPress: executeLogout },
+    ]);
   };
 
   return (
@@ -222,68 +178,6 @@ export default function Settings() {
             </View>
           </View>
         )}
-
-        {/* NOTIFICATIONS SECTION */}
-        <Text style={styles.sectionHeader}>Notifications</Text>
-        <View style={styles.cardGroup}>
-          <View style={styles.settingRow}>
-            <View style={styles.settingLeft}>
-              <View style={[styles.iconBg, { backgroundColor: "#EEF2FF" }]}>
-                <Ionicons name="notifications-outline" size={20} color="#4F46E5" />
-              </View>
-              <View>
-                <Text style={styles.settingTitle}>Order Updates</Text>
-                <Text style={styles.settingSubtitle}>Receive tracking and delivery alerts</Text>
-              </View>
-            </View>
-            <Switch
-              value={orderNotifications}
-              onValueChange={toggleOrderNotifs}
-              trackColor={{ false: "#D1D5DB", true: "#111827" }}
-              thumbColor="#FFFFFF"
-            />
-          </View>
-
-          <View style={styles.divider} />
-
-          <View style={styles.settingRow}>
-            <View style={styles.settingLeft}>
-              <View style={[styles.iconBg, { backgroundColor: "#FEF3C7" }]}>
-                <Ionicons name="pricetag-outline" size={20} color="#D97706" />
-              </View>
-              <View>
-                <Text style={styles.settingTitle}>Promotional Offers</Text>
-                <Text style={styles.settingSubtitle}>Sales, discounts and special deals</Text>
-              </View>
-            </View>
-            <Switch
-              value={promoNotifications}
-              onValueChange={togglePromoNotifs}
-              trackColor={{ false: "#D1D5DB", true: "#111827" }}
-              thumbColor="#FFFFFF"
-            />
-          </View>
-
-          <View style={styles.divider} />
-
-          <View style={styles.settingRow}>
-            <View style={styles.settingLeft}>
-              <View style={[styles.iconBg, { backgroundColor: "#ECFDF5" }]}>
-                <Ionicons name="mail-outline" size={20} color="#059669" />
-              </View>
-              <View>
-                <Text style={styles.settingTitle}>Email Newsletter</Text>
-                <Text style={styles.settingSubtitle}>Product recommendations & digests</Text>
-              </View>
-            </View>
-            <Switch
-              value={emailUpdates}
-              onValueChange={toggleEmailNotifs}
-              trackColor={{ false: "#D1D5DB", true: "#111827" }}
-              thumbColor="#FFFFFF"
-            />
-          </View>
-        </View>
 
         {/* APP PREFERENCES */}
         <Text style={styles.sectionHeader}>App Preferences</Text>
@@ -323,7 +217,7 @@ export default function Settings() {
           <TouchableOpacity
             style={styles.settingRow}
             activeOpacity={0.7}
-            onPress={() => Linking.openURL("https://gramokart.com/privacy")}
+            onPress={() => router.push("/privacy-policy")}
           >
             <View style={styles.settingLeft}>
               <View style={[styles.iconBg, { backgroundColor: "#F3F4F6" }]}>
@@ -331,7 +225,7 @@ export default function Settings() {
               </View>
               <Text style={styles.settingTitle}>Privacy Policy</Text>
             </View>
-            <Ionicons name="open-outline" size={16} color="#9CA3AF" />
+            <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
           </TouchableOpacity>
 
           <View style={styles.divider} />
@@ -339,15 +233,95 @@ export default function Settings() {
           <TouchableOpacity
             style={styles.settingRow}
             activeOpacity={0.7}
-            onPress={() => Linking.openURL("https://gramokart.com/terms")}
+            onPress={() => router.push("/terms")}
           >
             <View style={styles.settingLeft}>
               <View style={[styles.iconBg, { backgroundColor: "#F3F4F6" }]}>
                 <Ionicons name="document-text-outline" size={20} color="#374151" />
               </View>
-              <Text style={styles.settingTitle}>Terms of Service</Text>
+              <Text style={styles.settingTitle}>Terms & Conditions</Text>
             </View>
-            <Ionicons name="open-outline" size={16} color="#9CA3AF" />
+            <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+          </TouchableOpacity>
+
+          <View style={styles.divider} />
+
+          <TouchableOpacity
+            style={styles.settingRow}
+            activeOpacity={0.7}
+            onPress={() => router.push("/shipping-policy")}
+          >
+            <View style={styles.settingLeft}>
+              <View style={[styles.iconBg, { backgroundColor: "#F3F4F6" }]}>
+                <Ionicons name="cube-outline" size={20} color="#374151" />
+              </View>
+              <Text style={styles.settingTitle}>Shipping Policy</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+          </TouchableOpacity>
+
+          <View style={styles.divider} />
+
+          <TouchableOpacity
+            style={styles.settingRow}
+            activeOpacity={0.7}
+            onPress={() => router.push("/refund-policy")}
+          >
+            <View style={styles.settingLeft}>
+              <View style={[styles.iconBg, { backgroundColor: "#F3F4F6" }]}>
+                <Ionicons name="cash-outline" size={20} color="#374151" />
+              </View>
+              <Text style={styles.settingTitle}>Cancellation & Refund Policy</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+          </TouchableOpacity>
+
+          <View style={styles.divider} />
+
+          <TouchableOpacity
+            style={styles.settingRow}
+            activeOpacity={0.7}
+            onPress={() => router.push("/contact")}
+          >
+            <View style={styles.settingLeft}>
+              <View style={[styles.iconBg, { backgroundColor: "#F3F4F6" }]}>
+                <Ionicons name="help-circle-outline" size={20} color="#374151" />
+              </View>
+              <Text style={styles.settingTitle}>Contact Us</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+          </TouchableOpacity>
+
+          <View style={styles.divider} />
+
+          <TouchableOpacity
+            style={styles.settingRow}
+            activeOpacity={0.7}
+            onPress={() => router.push("/products")}
+          >
+            <View style={styles.settingLeft}>
+              <View style={[styles.iconBg, { backgroundColor: "#F3F4F6" }]}>
+                <Ionicons name="pricetag-outline" size={20} color="#374151" />
+              </View>
+              <Text style={styles.settingTitle}>Products & Pricing</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+          </TouchableOpacity>
+
+          <View style={styles.divider} />
+
+          <TouchableOpacity
+            style={styles.settingRow}
+            activeOpacity={0.7}
+            onPress={() => router.push("/delete-account")}
+          >
+            <View style={styles.settingLeft}>
+              <View style={[styles.iconBg, { backgroundColor: "#F3F4F6" }]}>
+                <Ionicons name="trash-outline" size={20} color="#374151" />
+              </View>
+              <Text style={styles.settingTitle}>Delete Account</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
           </TouchableOpacity>
 
           <View style={styles.divider} />

@@ -19,14 +19,20 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-import { initializeAuth, getReactNativePersistence, browserLocalPersistence } from 'firebase/auth';
+import { initializeAuth, browserLocalPersistence } from 'firebase/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
+const firebaseAuth = require('firebase/auth');
+const reactNativePersistence = firebaseAuth?.getReactNativePersistence;
+
 const auth = initializeAuth(app, {
-  persistence: Platform.OS === 'web' || !getReactNativePersistence 
-    ? browserLocalPersistence 
-    : getReactNativePersistence(AsyncStorage)
+  persistence:
+    Platform.OS === 'web'
+      ? browserLocalPersistence
+      : reactNativePersistence
+        ? reactNativePersistence(AsyncStorage)
+        : browserLocalPersistence,
 });
 
 // Analytics (only supported in web/some platforms, may throw on React Native without specific native modules)

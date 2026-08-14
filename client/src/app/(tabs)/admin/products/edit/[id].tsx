@@ -659,6 +659,11 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     fontSize: 15,
   },
+  switchSubLabel: {
+    color: "#6b7280",
+    fontSize: 12,
+    marginTop: 4,
+  },
   submitButton: {
     backgroundColor: "#000000",
     paddingVertical: 16,
