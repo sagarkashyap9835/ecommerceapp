@@ -23,6 +23,7 @@ import { Product } from "@/assets/constants/types";
 import ProductCard from "../../../components/ProductCard";
 import InfinityLoader from "../../../components/InfinityLoader";
 import AnimatedButton from "../../../components/AnimatedButton";
+import LiveCountdown from "../../../components/LiveCountdown";
 import api from "../../../constants/api";
 const { width } = Dimensions.get("window");
 const bannerCardWidth = width - 32;
@@ -572,9 +573,11 @@ export default function Home() {
                       {activeSale.subtitle}
                     </Text>
                   )}
-                  <View style={{ backgroundColor: '#FEF08A', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, alignSelf: 'center', marginTop: 10 }}>
-                    <Text style={{ color: '#B45309', fontWeight: 'bold' }}>Ends in: {new Date(activeSale.endAt).toLocaleDateString()}</Text>
-                  </View>
+                  <LiveCountdown
+                    endTime={activeSale.endAt}
+                    style={{ backgroundColor: '#FEF08A', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, alignSelf: 'center', marginTop: 10 }}
+                    textStyle={{ color: '#B45309', fontWeight: 'bold' }}
+                  />
                 </LinearGradient>
               </View>
             );

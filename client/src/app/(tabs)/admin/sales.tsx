@@ -204,24 +204,35 @@ export default function AdminSales() {
 
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                             <View style={{ flex: 1, marginRight: 10 }}>
-                                <Text style={styles.label}>Start Date</Text>
+                                <Text style={styles.label}>Start Date & Time</Text>
                                 <TouchableOpacity style={styles.dateBtn} onPress={() => setShowStartPicker(true)}>
-                                    <Text>{startdate.toLocaleDateString()}</Text>
+                                    <Text>{startdate.toLocaleString()}</Text>
                                 </TouchableOpacity>
                             </View>
                             <View style={{ flex: 1 }}>
-                                <Text style={styles.label}>End Date</Text>
+                                <Text style={styles.label}>End Date & Time</Text>
                                 <TouchableOpacity style={styles.dateBtn} onPress={() => setShowEndPicker(true)}>
-                                    <Text>{endDate.toLocaleDateString()}</Text>
+                                    <Text>{endDate.toLocaleString()}</Text>
                                 </TouchableOpacity>
                             </View>
                         </View>
+                        <View style={{ flexDirection: 'row', gap: 10, marginBottom: 16 }}>
+                            <TouchableOpacity style={{ backgroundColor: '#F3F4F6', padding: 8, borderRadius: 8 }} onPress={() => setStartDate(new Date())}>
+                                <Text style={{ fontSize: 12 }}>Set Start = Now</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={{ backgroundColor: '#FEE2E2', padding: 8, borderRadius: 8 }} onPress={() => setEndDate(new Date(startdate.getTime() + 2 * 60000))}>
+                                <Text style={{ fontSize: 12, color: '#EF4444', fontWeight: 'bold' }}>+ 2 Mins</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={{ backgroundColor: '#DBEAFE', padding: 8, borderRadius: 8 }} onPress={() => setEndDate(new Date(startdate.getTime() + 60 * 60000))}>
+                                <Text style={{ fontSize: 12, color: '#2563EB' }}>+ 1 Hour</Text>
+                            </TouchableOpacity>
+                        </View>
 
                         {showStartPicker && (
-                            <DateTimePicker value={startdate} mode="date" display="default" onChange={(e, d) => { setShowStartPicker(false); if (d) setStartDate(d); }} />
+                            <DateTimePicker value={startdate} mode="time" display="default" onChange={(e, d) => { setShowStartPicker(false); if (d) setStartDate(d); }} />
                         )}
                         {showEndPicker && (
-                            <DateTimePicker value={endDate} mode="date" display="default" onChange={(e, d) => { setShowEndPicker(false); if (d) setEndDate(d); }} />
+                            <DateTimePicker value={endDate} mode="time" display="default" onChange={(e, d) => { setShowEndPicker(false); if (d) setEndDate(d); }} />
                         )}
 
                         <Text style={[styles.label, { marginTop: 20 }]}>Discount Rules</Text>
