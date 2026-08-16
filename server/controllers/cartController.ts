@@ -4,6 +4,8 @@
 import { Request, Response } from "express";
 import Cart from "../models/cart.js";
 import Product from "../models/products.js";
+import { getActiveSale, getEffectiveProductPrice } from "../utils/saleLogic.js";
+
 export const getUserCart = async (
   req: Request,
   res: Response
@@ -22,6 +24,28 @@ export const getUserCart = async (
         totalAmount: 0,
       });
     }
+
+    let activeSale: any = null;
+    try {
+      activeSale = await getActiveSale();
+    } catch (err) {
+      console.error("Sale logic error", err);
+    }
+
+    cart.items.forEach(item => {
+      if (item.product) {
+        const productWithSale = getEffectiveProductPrice((item.product as any).toObject(), activeSale);
+        if (productWithSale.sale.isOnSale) {
+          item.price = productWithSale.sale.salePrice;
+          (item.product as Record<string, any>).sale = productWithSale.sale;
+        } else {
+          item.price = (item.product as any).price;
+        }
+      }
+    });
+
+    cart.calculateTotal();
+    await cart.save();
 
     res.status(200).json({
       success: true,
@@ -98,10 +122,14 @@ export const addToCart = async (
       item.quantity += quantity;
     } else {
       // Add new item
+      const activeSale = await getActiveSale();
+      const productWithSale = getEffectiveProductPrice(product.toObject(), activeSale);
+      const effectivePrice = productWithSale.sale.isOnSale ? productWithSale.sale.salePrice : product.price;
+
       cart.items.push({
         product: product._id,
         quantity,
-        price: product.price,
+        price: effectivePrice,
         size,
         color,
       });
@@ -195,8 +223,10 @@ export const updateCartItem = async (
       return;
     }
 
+    const activeSale = await getActiveSale();
+    const productWithSale = getEffectiveProductPrice(product.toObject(), activeSale);
     item.quantity = quantity;
-    item.price = product.price;
+    item.price = productWithSale.sale.isOnSale ? productWithSale.sale.salePrice : product.price;
 
     cart.calculateTotal();
 

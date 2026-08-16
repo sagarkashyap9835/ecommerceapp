@@ -2,12 +2,13 @@ import { Request, Response } from "express";
 import Product from "../models/products.js";
 import Order from "../models/order.js";
 import cloudinary from "../config/cloudinary.js";
+import { getActiveSale, getEffectiveProductPrice } from "../utils/saleLogic.js";
 // सभी एक्टिव प्रोडक्ट्स को पेजिनेशन के साथ गेट करने का लॉजिक
 export const getProducts = async (req: Request, res: Response): Promise<void> => {
     try {
         const page = Number(req.query.page) || 1;
         const limit = Number(req.query.limit) || 10;
-        
+
         const { search, category, subcategory, size, minPrice, maxPrice, sortBy, isBogo } = req.query;
 
         // केवल वही प्रोडक्ट्स जो एक्टिव हैं
@@ -81,10 +82,14 @@ export const getProducts = async (req: Request, res: Response): Promise<void> =>
             .skip((page - 1) * limit)
             .limit(limit);
 
+        const activeSale = await getActiveSale();
+
+        const productsWithSale = products.map(p => getEffectiveProductPrice(p.toObject(), activeSale));
+
         // सफल रिस्पॉन्स भेजना
         res.status(200).json({
             success: true,
-            data: products,
+            data: productsWithSale,
             pagination: {
                 total,
                 page,
@@ -103,36 +108,39 @@ export const getProducts = async (req: Request, res: Response): Promise<void> =>
 
 // Single Product by ID
 export const getSingleProduct = async (
-  req: Request,
-  res: Response
+    req: Request,
+    res: Response
 ): Promise<void> => {
-  try {
-    const { id } = req.params;
-    console.log('getSingleProduct called with id:', id);
+    try {
+        const { id } = req.params;
+        console.log('getSingleProduct called with id:', id);
 
-    const product = await Product.findOne({
-      _id: id,
-      isActive: true,
-    });
+        const product = await Product.findOne({
+            _id: id,
+            isActive: true,
+        });
 
-    if (!product) {
-      res.status(404).json({
-        success: false,
-        message: "Product not found",
-      });
-      return;
+        if (!product) {
+            res.status(404).json({
+                success: false,
+                message: "Product not found",
+            });
+            return;
+        }
+
+        const activeSale = await getActiveSale();
+        const productWithSale = getEffectiveProductPrice(product.toObject(), activeSale);
+
+        res.status(200).json({
+            success: true,
+            data: productWithSale,
+        });
+    } catch (error: any) {
+        res.status(500).json({
+            success: false,
+            message: error.message || "Internal Server Error",
+        });
     }
-
-    res.status(200).json({
-      success: true,
-      data: product,
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: error.message || "Internal Server Error",
-    });
-  }
 };
 
 
@@ -178,7 +186,7 @@ export const createProduct = async (req: Request, res: Response): Promise<void> 
                     const b64 = Buffer.from(file.buffer).toString("base64");
                     return "data:" + (file.mimetype || "image/jpeg") + ";base64," + b64;
                 }
-                return DEFAULT_PLACEHOLDER; 
+                return DEFAULT_PLACEHOLDER;
             });
             imageUrls = await Promise.all(uploadPromises);
         }
@@ -225,7 +233,7 @@ export const createProduct = async (req: Request, res: Response): Promise<void> 
 export const updateProduct = async (req: Request, res: Response): Promise<void> => {
     try {
         const { id } = req.params;
-    console.log('getSingleProduct called with id:', id);
+        console.log('getSingleProduct called with id:', id);
 
         const existingProduct = await Product.findById(id);
         if (!existingProduct) {
@@ -269,18 +277,18 @@ export const updateProduct = async (req: Request, res: Response): Promise<void> 
                     const b64 = Buffer.from(file.buffer).toString("base64");
                     return "data:" + (file.mimetype || "image/jpeg") + ";base64," + b64;
                 }
-                return DEFAULT_PLACEHOLDER; 
+                return DEFAULT_PLACEHOLDER;
             });
             updatedImages = await Promise.all(uploadPromises);
         } else {
             let existingImgArr: string[] = [];
             if (req.body.existingImages) {
-                existingImgArr = Array.isArray(req.body.existingImages) 
-                    ? req.body.existingImages 
+                existingImgArr = Array.isArray(req.body.existingImages)
+                    ? req.body.existingImages
                     : [req.body.existingImages];
             } else if (req.body.images) {
-                existingImgArr = Array.isArray(req.body.images) 
-                    ? req.body.images 
+                existingImgArr = Array.isArray(req.body.images)
+                    ? req.body.images
                     : [req.body.images];
             } else {
                 existingImgArr = existingProduct.images;
@@ -327,16 +335,16 @@ export const deleteProduct = async (req: Request, res: Response) => {
     try {
         const product = await Product.findById(req.params.id);
 
-        if(!product){
+        if (!product) {
             return res.status(404).json({ success: false, message: "Product not found" });
         }
 
-        if(product.images && product.images.length > 0){
-            const deletePromises = product.images.map(async (imageUrl: string)=>{
+        if (product.images && product.images.length > 0) {
+            const deletePromises = product.images.map(async (imageUrl: string) => {
                 try {
                     const publicIdMatch = imageUrl.match(/\/v\d+\/(.+)\.[a-z]+$/);
                     const publicId = publicIdMatch ? publicIdMatch[1] : null;
-                    if(publicId && process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_CLOUD_NAME !== 'your_cloud_name'){
+                    if (publicId && process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_CLOUD_NAME !== 'your_cloud_name') {
                         await cloudinary.uploader.destroy(publicId);
                     }
                 } catch (imgErr) {
@@ -358,7 +366,7 @@ export const deleteProduct = async (req: Request, res: Response) => {
 export const createProductReview = async (req: Request, res: Response): Promise<void> => {
     try {
         const { id } = req.params;
-    console.log('getSingleProduct called with id:', id);
+        console.log('getSingleProduct called with id:', id);
         const { rating, comment, image } = req.body;
         const user = (req as any).user;
 
@@ -468,7 +476,7 @@ export const createProductReview = async (req: Request, res: Response): Promise<
 export const checkUserCanReview = async (req: Request, res: Response): Promise<void> => {
     try {
         const { id } = req.params;
-    console.log('getSingleProduct called with id:', id);
+        console.log('getSingleProduct called with id:', id);
         const user = (req as any).user;
 
         if (!user) {

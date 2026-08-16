@@ -1,9 +1,9 @@
-// get user orders
 import { Request, Response } from "express";
 import Order from "../models/order.js";
 import Cart from "../models/cart.js";
 import Product from "../models/products.js";
 import Razorpay from "razorpay";
+import { getActiveSale, getEffectiveProductPrice } from "../utils/saleLogic.js";
 export const getOrders = async (req: Request, res: Response) => {
     try {
         const query = { user: req.user._id }
@@ -23,11 +23,11 @@ export const getOrder = async (req: Request, res: Response) => {
     try {
         const order = await Order.findById(req.params.id).populate('items.product', 'name images');
 
-        if(!order){
+        if (!order) {
             return res.status(404).json({ success: false, message: "Order not found" });
         }
 
-        if(order.user.toString() !== req.user._id.toString() && req.user.role !== "admin"){
+        if (order.user.toString() !== req.user._id.toString() && req.user.role !== "admin") {
             return res.status(403).json({ success: false, message: "Not authorized" });
         }
 
@@ -50,7 +50,9 @@ export const createOrder = async (req: Request, res: Response) => {
             return res.status(400).json({ success: false, message: "Cart is empty" });
         }
 
+        const activeSale = await getActiveSale();
         const orderItems = [];
+        let calculatedSubtotal = 0;
 
         for (const item of cart.items) {
             const product = await Product.findById(item.product._id);
@@ -62,20 +64,33 @@ export const createOrder = async (req: Request, res: Response) => {
                 });
             }
 
+            // Recalculate dynamic sale price
+            const productWithSale = getEffectiveProductPrice(product.toObject(), activeSale);
+            const finalItemPrice = productWithSale.sale.isOnSale ? productWithSale.sale.salePrice : product.price;
+
             orderItems.push({
                 product: item.product._id,
                 name: (item.product as any).name,
                 quantity: item.quantity,
-                price: item.price,
+                price: finalItemPrice,
+                saleDetails: productWithSale.sale.isOnSale ? {
+                    originalPrice: product.price,
+                    salePrice: productWithSale.sale.salePrice,
+                    discountAmount: productWithSale.sale.discountAmount,
+                    finalItemPrice: finalItemPrice,
+                    saleName: productWithSale.sale.saleName
+                } : undefined,
                 size: item.size,
                 color: item.color,
             });
+
+            calculatedSubtotal += (finalItemPrice * item.quantity);
 
             product.stock -= item.quantity;
             await product.save();
         }
 
-        const subtotal = cart.totalAmount;
+        const subtotal = calculatedSubtotal;
         const shippingCost = 0;
         const tax = 0;
         const totalAmount = subtotal + shippingCost + tax;
@@ -84,9 +99,9 @@ export const createOrder = async (req: Request, res: Response) => {
         const paymentStatus = req.body.paymentStatus || (isRazorpay ? "paid" : "pending");
 
         // Calculate guaranteed 3-day district delivery date
-        const estimatedDeliveryDate = req.body.estimatedDeliveryDate 
-          ? new Date(req.body.estimatedDeliveryDate) 
-          : new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
+        const estimatedDeliveryDate = req.body.estimatedDeliveryDate
+            ? new Date(req.body.estimatedDeliveryDate)
+            : new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
 
         const order = await Order.create({
             user: req.user._id,
@@ -177,13 +192,13 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
         const { orderStatus, paymentStatus } = req.body;
         const order = await Order.findById(req.params.id)
 
-        if(!order){
+        if (!order) {
             return res.status(404).json({ success: false, message: "Order not found" })
         }
 
-        if(orderStatus) order.orderStatus = orderStatus;
-        if(paymentStatus) order.paymentStatus = paymentStatus;
-        if(orderStatus === "delivered") order.deliveredAt = new Date()
+        if (orderStatus) order.orderStatus = orderStatus;
+        if (paymentStatus) order.paymentStatus = paymentStatus;
+        if (orderStatus === "delivered") order.deliveredAt = new Date()
 
         await order.save();
         res.json({ success: true, data: order });
@@ -198,9 +213,9 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
 export const getAllOrders = async (req: Request, res: Response) => {
     try {
         const { page = 1, limit = 20, status } = req.query
-        const query : any = {}
+        const query: any = {}
 
-        if(status) query.orderStatus = status;
+        if (status) query.orderStatus = status;
 
         const total = await Order.countDocuments(query)
 
@@ -209,7 +224,7 @@ export const getAllOrders = async (req: Request, res: Response) => {
         res.json({
             success: true,
             data: orders,
-            pagination: {total, page: Number(page), pages: Math.ceil(total / Number(limit))}
+            pagination: { total, page: Number(page), pages: Math.ceil(total / Number(limit)) }
         })
 
     } catch (error: any) {
@@ -325,7 +340,7 @@ export const requestReplacement = async (req: Request, res: Response) => {
 export const updateReplacementStatus = async (req: Request, res: Response) => {
     try {
         const { status } = req.body;
-        
+
         if (!["approved", "rejected"].includes(status)) {
             return res.status(400).json({ success: false, message: "Invalid status." });
         }

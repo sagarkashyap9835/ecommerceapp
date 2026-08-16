@@ -35,11 +35,11 @@ export interface Product {
     images: string[];
     sizes?: string[];
     category:
-        | {
-              _id: string;
-              name: string;
-          }
-        | string;
+    | {
+        _id: string;
+        name: string;
+    }
+    | string;
     stock: number;
     ratings: {
         average: number;
@@ -50,6 +50,15 @@ export interface Product {
     isBogo?: boolean;
     isLatest?: boolean;
     isActive: boolean;
+    sale?: {
+        isOnSale: boolean;
+        saleName: string;
+        saleSubtitle: string;
+        originalPrice: number;
+        salePrice: number;
+        discountAmount: number;
+        saleEndsAt: string;
+    };
     createdAt: string;
 }
 

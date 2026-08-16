@@ -86,6 +86,15 @@ export default function AdminLayout() {
                     )
                 }}
             />
+            <Tabs.Screen
+                name="sales"
+                options={{
+                    title: "Sales/Offers",
+                    tabBarIcon: ({ color, size }) => (
+                        <Ionicons name="flash-outline" size={size} color={color} />
+                    )
+                }}
+            />
         </Tabs>
     );
 }

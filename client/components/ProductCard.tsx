@@ -46,7 +46,7 @@ export default function ProductCard({ product, index = 0, disableAnimation = fal
               borderTopRightRadius: 16,
               overflow: "hidden",
               position: "relative",
-              height: 220, 
+              height: 220,
               alignItems: 'center',
               justifyContent: 'center',
             }}
@@ -115,6 +115,15 @@ export default function ProductCard({ product, index = 0, disableAnimation = fal
                 </Text>
               </View>
             ) : null}
+
+            {/* SALE BADGE */}
+            {product.sale?.isOnSale ? (
+              <View style={{ backgroundColor: "#F43F5E", position: 'absolute', bottom: 10, left: 10, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 }}>
+                <Text style={{ color: "#FFF", fontSize: 9, fontWeight: "800", fontFamily: "Outfit_800" }}>
+                  {product.sale.saleName}
+                </Text>
+              </View>
+            ) : null}
           </View>
 
           {/* Details */}
@@ -137,7 +146,7 @@ export default function ProductCard({ product, index = 0, disableAnimation = fal
               style={{
                 fontSize: 12,
                 fontWeight: "700",
-                color: "#0284C7", 
+                color: "#0284C7",
                 fontFamily: "Outfit_700",
                 marginBottom: 4,
               }}
@@ -153,16 +162,28 @@ export default function ProductCard({ product, index = 0, disableAnimation = fal
                 alignItems: "center",
               }}
             >
-              <Text
-                style={{
-                  fontSize: 14,
-                  fontWeight: "800",
-                  color: "#111827",
-                  fontFamily: "Outfit_800",
-                }}
-              >
-                ₹{product.price}
-              </Text>
+              <View style={{ flexDirection: "column" }}>
+                {product.sale?.isOnSale && (
+                  <Text style={{ fontSize: 10, color: "#9CA3AF", textDecorationLine: "line-through", marginBottom: 1 }}>
+                    ₹{product.price}
+                  </Text>
+                )}
+                <Text
+                  style={{
+                    fontSize: 14,
+                    fontWeight: "800",
+                    color: product.sale?.isOnSale ? "#F43F5E" : "#111827",
+                    fontFamily: "Outfit_800",
+                  }}
+                >
+                  ₹{product.sale?.isOnSale ? product.sale.salePrice : product.price}
+                </Text>
+                {product.sale?.isOnSale && (
+                  <Text style={{ fontSize: 9, color: "#10B981", fontWeight: "700" }}>
+                    Save ₹{product.sale.discountAmount}
+                  </Text>
+                )}
+              </View>
 
               {/* Ratings and Reviews */}
               <View style={{ flexDirection: "row", alignItems: "center" }}>

@@ -2,16 +2,23 @@ import mongoose from "mongoose";
 import { IOrder } from "../types/index.js";
 
 const orderItemSchema = new mongoose.Schema({
-    product: {type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true},
+    product: { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true },
     name: String,
-    quantity: {type: Number, required: true, min: 1},
-    price: {type: Number, required: true},
-    size: {type: String},
-    color: {type: String},
+    quantity: { type: Number, required: true, min: 1 },
+    price: { type: Number, required: true },
+    saleDetails: {
+        originalPrice: Number,
+        salePrice: Number,
+        discountAmount: Number,
+        finalItemPrice: Number,
+        saleName: String
+    },
+    size: { type: String },
+    color: { type: String },
 })
 
 const orderSchema = new mongoose.Schema<IOrder>({
-    user: {type: mongoose.Schema.Types.ObjectId, ref: "User", required: true},
+    user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     orderNumber: { type: String, unique: true },
     items: [orderItemSchema],
     shippingAddress: {
@@ -22,8 +29,8 @@ const orderSchema = new mongoose.Schema<IOrder>({
         zipCode: { type: String, required: true },
         country: { type: String, required: true },
     },
-    paymentMethod: {type: String, required: true, enum: ["cash", "razorpay"], default: "cash"},
-    paymentStatus: { type: String, enum: ["pending", "paid", "failed", "refunded"], default: "pending"},
+    paymentMethod: { type: String, required: true, enum: ["cash", "razorpay"], default: "cash" },
+    paymentStatus: { type: String, enum: ["pending", "paid", "failed", "refunded"], default: "pending" },
     paymentIntentId: { type: String },
     razorpayOrderId: { type: String },
     orderStatus: { type: String, enum: ["placed", "processing", "shipped", "delivered", "cancelled"], default: "placed" },
@@ -43,7 +50,7 @@ const orderSchema = new mongoose.Schema<IOrder>({
         reason: String,
         requestedAt: Date,
     },
-},{timestamps: true})
+}, { timestamps: true })
 
 const Order = mongoose.model<IOrder>("Order", orderSchema)
 

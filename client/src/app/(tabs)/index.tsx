@@ -40,6 +40,7 @@ export default function Home() {
   const [popularSectionLoading, setPopularSectionLoading] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [categories, setCategories] = useState<any[]>([{ id: 'all', name: 'All', icon: 'grid' }, ...CATEGORIES]);
+  const [activeSale, setActiveSale] = useState<any>(null);
 
   const shopNowTranslateX = useSharedValue(150);
 
@@ -47,15 +48,15 @@ export default function Home() {
     // Slide in after 2 seconds
     const slideInTimeout = setTimeout(() => {
       shopNowTranslateX.value = withTiming(0, { duration: 600, easing: Easing.out(Easing.exp) });
-      
+
       // Slide back out after 5 seconds
       const slideOutTimeout = setTimeout(() => {
         shopNowTranslateX.value = withTiming(150, { duration: 600, easing: Easing.in(Easing.exp) });
       }, 5000);
-      
+
       return () => clearTimeout(slideOutTimeout);
     }, 2000);
-    
+
     return () => clearTimeout(slideInTimeout);
   }, []);
 
@@ -83,9 +84,10 @@ export default function Home() {
 
   const fetchData = async () => {
     try {
-      const [prodRes, catRes] = await Promise.all([
+      const [prodRes, catRes, saleRes] = await Promise.all([
         api.get("products?limit=50"),
         api.get("categories").catch(() => null),
+        api.get("sale/active").catch(() => null)
       ]);
 
       if (prodRes.data?.success) {
@@ -99,6 +101,10 @@ export default function Home() {
           icon: c.icon || "grid-outline",
         }));
         setCategories([{ id: 'all', name: 'All', icon: 'grid' }, ...dynamicCats]);
+      }
+
+      if (saleRes?.data?.success && saleRes.data.data) {
+        setActiveSale(saleRes.data.data);
       }
     } catch (error) {
       console.error("Error fetching data", error);
@@ -168,16 +174,16 @@ export default function Home() {
         >
           {/* Top Row: Logo & Cart */}
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-            <Image 
-              source={require("@/assets/logo.png")} 
-              style={{ 
-                width: 120, 
+            <Image
+              source={require("@/assets/logo.png")}
+              style={{
+                width: 120,
                 height: 40,
-                marginLeft: -8 
-              }} 
-              resizeMode="contain" 
+                marginLeft: -8
+              }}
+              resizeMode="contain"
             />
-            
+
             <TouchableOpacity
               onPress={() => router.push("/cart")}
               style={{
@@ -246,7 +252,7 @@ export default function Home() {
                 }}
               />
             </View>
-            <TouchableOpacity 
+            <TouchableOpacity
               onPress={() => router.push("/shop")}
               style={{
                 width: 50,
@@ -255,10 +261,10 @@ export default function Home() {
                 backgroundColor: "#F3F4F6",
                 justifyContent: "center",
                 alignItems: "center",
-            }} activeOpacity={0.8}>
+              }} activeOpacity={0.8}>
               <Ionicons name="options-outline" size={22} color="#111827" />
             </TouchableOpacity>
-            
+
             {/* Search Suggestions Dropdown */}
             {isSearchFocused && (
               <View style={{
@@ -311,450 +317,486 @@ export default function Home() {
           scrollEventThrottle={16}
         >
           {/* Banner Slider */}
-        <ScrollView
-          ref={bannerRef}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          scrollEventThrottle={16}
-          decelerationRate="fast"
-          snapToInterval={bannerStep}
-          contentContainerStyle={{
-            paddingTop: 8,
-            paddingBottom: 12,
-          }}
-          onScroll={handleScroll}
-          onMomentumScrollEnd={handleScroll}
-        >
-          {BANNERS.map((banner: any) => {
-            const handleBannerPress = () => {
-              const queryParams: any = {};
-              if (banner.id === 1) {
-                queryParams.isBogo = "true";
-              } else if (banner.id === 2 || banner.id === 3) {
-                queryParams.sortBy = "popular";
-              }
+          <ScrollView
+            ref={bannerRef}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            scrollEventThrottle={16}
+            decelerationRate="fast"
+            snapToInterval={bannerStep}
+            contentContainerStyle={{
+              paddingTop: 8,
+              paddingBottom: 12,
+            }}
+            onScroll={handleScroll}
+            onMomentumScrollEnd={handleScroll}
+          >
+            {BANNERS.map((banner: any) => {
+              const handleBannerPress = () => {
+                const queryParams: any = {};
+                if (banner.id === 1) {
+                  queryParams.isBogo = "true";
+                } else if (banner.id === 2 || banner.id === 3) {
+                  queryParams.sortBy = "popular";
+                }
 
-              router.push({
-                pathname: "/shop",
-                params: queryParams,
-              });
-            };
+                router.push({
+                  pathname: "/shop",
+                  params: queryParams,
+                });
+              };
 
-            return (
-              <TouchableOpacity
-                key={banner.id}
-                activeOpacity={0.9}
-                onPress={handleBannerPress}
-                style={{
-                  width: width - 32,
-                  height: 180,
-                  marginRight: 12,
-                  marginTop: 5,
-                  position: "relative",
-                  justifyContent: "flex-end",
-                }}
-              >
-                <LinearGradient
-                  colors={["#FDF2F8", "#FBCFE8"]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={{ 
-                    position: "absolute",
-                    bottom: 0, left: 0, right: 0,
-                    height: 160,
-                    borderRadius: 16,
-                  }}
-                />
-                
-                <View style={{ flex: 1, flexDirection: "row", height: "100%" }}>
-                  {/* Banner Image (Left Side) */}
-                  <View style={{ width: "45%", height: "100%", position: "relative" }}>
-                  <Image
-                    source={typeof banner.image === 'string' ? { uri: banner.image } : banner.image}
-                    style={{
-                      width: "140%",
-                      height: "112%",
-                      position: "absolute",
-                      bottom: 0,
-                      left: -10,
-                    }}
-                    resizeMode="contain"
-                  />
-                </View>
-
-                {/* Banner Content (Right Side) */}
-                <View
+              return (
+                <TouchableOpacity
+                  key={banner.id}
+                  activeOpacity={0.9}
+                  onPress={handleBannerPress}
                   style={{
-                    width: "55%",
-                    padding: 16,
-                    justifyContent: "center",
+                    width: width - 32,
+                    height: 180,
+                    marginRight: 12,
+                    marginTop: 5,
+                    position: "relative",
+                    justifyContent: "flex-end",
                   }}
                 >
-                  <Text
+                  <LinearGradient
+                    colors={["#FDF2F8", "#FBCFE8"]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
                     style={{
-                      color: "#1F2937",
-                      fontSize: 18,
-                      fontWeight: "800",
-                      marginBottom: 4,
-                      fontFamily: "Outfit_800",
+                      position: "absolute",
+                      bottom: 0, left: 0, right: 0,
+                      height: 160,
+                      borderRadius: 16,
                     }}
-                    numberOfLines={2}
-                  >
-                    {banner.title}
-                  </Text>
+                  />
 
-                  <Text
-                    style={{
-                      color: "#4B5563",
-                      fontSize: 12,
-                      marginBottom: 16,
-                      lineHeight: 16,
-                      fontFamily: "Outfit",
-                    }}
-                    numberOfLines={2}
-                  >
-                    {banner.subtitle}
-                  </Text>
-
-                  <View
-                    style={{
-                      backgroundColor: "#FF3399",
-                      paddingVertical: 8,
-                      paddingHorizontal: 16,
-                      borderRadius: 20,
-                      alignSelf: "flex-start",
-                      flexDirection: "row",
-                      alignItems: "center",
-                      overflow: "hidden",
-                    }}
-                  >
-                    {/* Shimmer Effect */}
-                    <Animated.View
-                      style={[
-                        {
+                  <View style={{ flex: 1, flexDirection: "row", height: "100%" }}>
+                    {/* Banner Image (Left Side) */}
+                    <View style={{ width: "45%", height: "100%", position: "relative" }}>
+                      <Image
+                        source={typeof banner.image === 'string' ? { uri: banner.image } : banner.image}
+                        style={{
+                          width: "140%",
+                          height: "112%",
                           position: "absolute",
-                          top: 0,
                           bottom: 0,
-                          width: 30,
-                          backgroundColor: "rgba(255, 255, 255, 0.4)",
-                          transform: [{ skewX: "-20deg" }],
-                        },
-                        shimmerStyle,
-                      ]}
-                    />
-                    <Text
+                          left: -10,
+                        }}
+                        resizeMode="contain"
+                      />
+                    </View>
+
+                    {/* Banner Content (Right Side) */}
+                    <View
                       style={{
-                        color: "#fff",
-                        fontSize: 12,
-                        fontWeight: "700",
-                        marginRight: 4,
-                        fontFamily: "Outfit_700",
+                        width: "55%",
+                        padding: 16,
+                        justifyContent: "center",
                       }}
                     >
-                      {banner.btnText || "Shop Now"}
-                    </Text>
-                    <Ionicons name="arrow-forward" size={14} color="#FFFFFF" />
+                      <Text
+                        style={{
+                          color: "#1F2937",
+                          fontSize: 18,
+                          fontWeight: "800",
+                          marginBottom: 4,
+                          fontFamily: "Outfit_800",
+                        }}
+                        numberOfLines={2}
+                      >
+                        {banner.title}
+                      </Text>
+
+                      <Text
+                        style={{
+                          color: "#4B5563",
+                          fontSize: 12,
+                          marginBottom: 16,
+                          lineHeight: 16,
+                          fontFamily: "Outfit",
+                        }}
+                        numberOfLines={2}
+                      >
+                        {banner.subtitle}
+                      </Text>
+
+                      <View
+                        style={{
+                          backgroundColor: "#FF3399",
+                          paddingVertical: 8,
+                          paddingHorizontal: 16,
+                          borderRadius: 20,
+                          alignSelf: "flex-start",
+                          flexDirection: "row",
+                          alignItems: "center",
+                          overflow: "hidden",
+                        }}
+                      >
+                        {/* Shimmer Effect */}
+                        <Animated.View
+                          style={[
+                            {
+                              position: "absolute",
+                              top: 0,
+                              bottom: 0,
+                              width: 30,
+                              backgroundColor: "rgba(255, 255, 255, 0.4)",
+                              transform: [{ skewX: "-20deg" }],
+                            },
+                            shimmerStyle,
+                          ]}
+                        />
+                        <Text
+                          style={{
+                            color: "#fff",
+                            fontSize: 12,
+                            fontWeight: "700",
+                            marginRight: 4,
+                            fontFamily: "Outfit_700",
+                          }}
+                        >
+                          {banner.btnText || "Shop Now"}
+                        </Text>
+                        <Ionicons name="arrow-forward" size={14} color="#FFFFFF" />
+                      </View>
+                    </View>
                   </View>
-                </View>
-                </View>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
 
-        {/* Slider Indicator */}
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "center",
-            alignItems: "center",
-            marginTop: 4,
-            marginBottom: 16,
-          }}
-        >
-          {BANNERS.map((_, index) => (
-            <TouchableOpacity
-              key={index}
-              activeOpacity={0.7}
-              onPress={() => {
-                bannerRef.current?.scrollTo({
-                  x: index * bannerStep,
-                  animated: true,
-                });
-                setActiveBanner(index);
-              }}
-              style={{
-                width: activeBanner === index ? 24 : 8,
-                height: 8,
-                borderRadius: 4,
-                marginHorizontal: 4,
-                backgroundColor:
-                  activeBanner === index
-                    ? (COLORS.primary || "#111827")
-                    : "#D1D5DB",
-              }}
-            />
-          ))}
-        </View>
-
-        {/* Categories Section */}
-        <View style={{ marginTop: 4, marginBottom: 24 }}>
-          {/* Heading */}
+          {/* Slider Indicator */}
           <View
             style={{
               flexDirection: "row",
-              justifyContent: "space-between",
+              justifyContent: "center",
               alignItems: "center",
-              marginBottom: 12,
+              marginTop: 4,
+              marginBottom: 16,
+            }}
+          >
+            {BANNERS.map((_, index) => (
+              <TouchableOpacity
+                key={index}
+                activeOpacity={0.7}
+                onPress={() => {
+                  bannerRef.current?.scrollTo({
+                    x: index * bannerStep,
+                    animated: true,
+                  });
+                  setActiveBanner(index);
+                }}
+                style={{
+                  width: activeBanner === index ? 24 : 8,
+                  height: 8,
+                  borderRadius: 4,
+                  marginHorizontal: 4,
+                  backgroundColor:
+                    activeBanner === index
+                      ? (COLORS.primary || "#111827")
+                      : "#D1D5DB",
+                }}
+              />
+            ))}
+          </View>
+
+          {/* Categories Section */}
+          <View style={{ marginTop: 4, marginBottom: 24 }}>
+            {/* Heading */}
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 12,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 20,
+                  fontWeight: "800",
+                  color: "#111827",
+                  letterSpacing: -0.3,
+                }}
+              >
+                Categories
+              </Text>
+            </View>
+
+            {/* Categories List */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{
+                paddingRight: 16,
+              }}
+            >
+              {categories.map((cat: any) => (
+                <CategoryItem
+                  key={cat.id}
+                  item={cat}
+                  isSelected={false}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/shop",
+                      params: {
+                        category: cat.id === "all" ? "" : cat.name,
+                      },
+                    })
+                  }
+                />
+              ))}
+            </ScrollView>
+          </View>
+
+          {/* FESTIVAL SALE SECTION */}
+          {(() => {
+            if (loading || !activeSale) return null;
+            const saleProducts = products.filter((p) => p.sale?.isOnSale);
+            if (saleProducts.length === 0) return null;
+
+            return (
+              <View style={{ marginBottom: 28 }}>
+                <LinearGradient
+                  colors={["#FFFBEB", "#FEF3C7"]}
+                  style={{ padding: 20, borderRadius: 16, marginBottom: 16, borderColor: '#FDE68A', borderWidth: 1 }}
+                >
+                  <Text style={{ fontSize: 24, fontWeight: "800", color: "#D97706", fontFamily: "Outfit_800", textAlign: 'center' }}>
+                    🎉 {activeSale.name}
+                  </Text>
+                  {activeSale.subtitle && (
+                    <Text style={{ fontSize: 14, color: "#92400E", textAlign: 'center', marginTop: 4 }}>
+                      {activeSale.subtitle}
+                    </Text>
+                  )}
+                  <View style={{ backgroundColor: '#FEF08A', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, alignSelf: 'center', marginTop: 10 }}>
+                    <Text style={{ color: '#B45309', fontWeight: 'bold' }}>Ends in: {new Date(activeSale.endAt).toLocaleDateString()}</Text>
+                  </View>
+                </LinearGradient>
+
+                <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between" }}>
+                  {saleProducts.slice(0, 4).map((product, index) => (
+                    <View key={product._id} style={{ marginTop: index % 2 !== 0 ? 24 : 0 }}>
+                      <ProductCard product={product} index={index} disableAnimation={true} />
+                    </View>
+                  ))}
+                </View>
+              </View>
+            );
+          })()}
+
+          {/* Latest Products Section */}
+          {(() => {
+            if (loading) return null;
+            const latestProducts = products.filter((p) => p.isLatest);
+            if (latestProducts.length === 0) return null;
+
+            return (
+              <View style={{ marginBottom: 28 }}>
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                  <View>
+                    <Text style={{ fontSize: 22, fontWeight: "800", color: "#111827", fontFamily: "Outfit_800", letterSpacing: -0.5 }}>
+                      Latest Products
+                    </Text>
+                    <Text style={{ fontSize: 13, color: "#4B5563", fontWeight: "600", fontFamily: "Outfit_600", marginTop: 2 }}>
+                      Newest Arrivals
+                    </Text>
+                  </View>
+                  <TouchableOpacity onPress={() => router.push({ pathname: "/collection", params: { type: "latest" } })}>
+                    <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#F3F4F6', justifyContent: 'center', alignItems: 'center' }}>
+                      <Ionicons name="arrow-forward" size={20} color="#111827" />
+                    </View>
+                  </TouchableOpacity>
+                </View>
+                <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", minHeight: 480 }}>
+                  {latestProducts.slice(0, 10).map((product, index) => (
+                    <View key={product._id} style={{ marginTop: index % 2 !== 0 ? 24 : 0 }}>
+                      <ProductCard product={product} index={index} disableAnimation={true} />
+                    </View>
+                  ))}
+                </View>
+              </View>
+            );
+          })()}
+
+          {/* Special Offers & Sales (Buy 1 Get 1 Free Section) */}
+          {(() => {
+            if (loading) return <InfinityLoader />;
+
+            const offerProducts = products.filter((p) => p.isBogo);
+            if (offerProducts.length === 0) return null;
+
+            return (
+              <View style={{ marginBottom: 28 }}>
+                {/* Section Header */}
+                <View
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: 14,
+                  }}
+                >
+                  <View style={{ flexDirection: "row", alignItems: "center" }}>
+                    <View>
+                      <Text style={{ fontSize: 22, fontWeight: "800", color: "#111827", fontFamily: "Outfit_800", letterSpacing: -0.5 }}>
+                        Buy 1 Get 1 Free
+                      </Text>
+                      <Text style={{ fontSize: 13, color: "#4B5563", fontWeight: "600", fontFamily: "Outfit_600", marginTop: 2 }}>
+                        Exclusive Offers & Sales
+                      </Text>
+                    </View>
+                  </View>
+
+                  <TouchableOpacity onPress={() => router.push({ pathname: "/collection", params: { type: "bogo" } })}>
+                    <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#F3F4F6', justifyContent: 'center', alignItems: 'center' }}>
+                      <Ionicons name="arrow-forward" size={20} color="#111827" />
+                    </View>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Grid List for Offer Products */}
+                <View
+                  style={{
+                    flexDirection: "row",
+                    flexWrap: "wrap",
+                    justifyContent: "space-between",
+                    minHeight: 480,
+                  }}
+                >
+                  {offerProducts.slice(0, 4).map((product, index) => (
+                    <View key={product._id} style={{ marginTop: index % 2 !== 0 ? 24 : 0 }}>
+                      <ProductCard product={product} index={index} disableAnimation={true} />
+                    </View>
+                  ))}
+                  {scrollY > 100 ? (
+                    offerProducts.slice(4, 10).map((product, index) => {
+                      const actualIndex = index + 4;
+                      return (
+                        <View key={product._id} style={{ marginTop: actualIndex % 2 !== 0 ? 24 : 0 }}>
+                          <ProductCard product={product} index={actualIndex} />
+                        </View>
+                      );
+                    })
+                  ) : null}
+                </View>
+              </View>
+            );
+          })()}
+          {/* Popular Products */}
+          <View className="mb-8">
+            {/* Header */}
+            <View className="flex-row items-center justify-between mb-4">
+              <Text className="text-2xl font-bold text-black">
+                Popular Products
+              </Text>
+
+              <TouchableOpacity onPress={() => router.push({ pathname: "/collection", params: { type: "popular" } })}>
+                <Ionicons name="arrow-forward" size={24} color="#111827" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Products */}
+            {loading ? (
+              <InfinityLoader />
+            ) : (
+              <View
+                style={{
+                  flexDirection: "row",
+                  flexWrap: "wrap",
+                  justifyContent: "space-between",
+                  minHeight: 480,
+                }}
+              >
+                {scrollY > 500 ? (
+                  products.filter((p: any) => p.isFeatured).slice(0, 10).map((product: any, index: number) => (
+                    <View
+                      key={product._id}
+                      style={{
+                        marginTop: index % 2 !== 0 ? 24 : 0,
+                      }}
+                    >
+                      <ProductCard product={product} index={index} />
+                    </View>
+                  ))
+                ) : null}
+              </View>
+            )}
+          </View>
+          <LinearGradient
+            colors={["#0284C7", "#0369A1"]} // GramoKart Blue gradient
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={{
+              borderRadius: 24,
+              padding: 28,
+              marginVertical: 20,
+              alignItems: "center",
+              shadowColor: "#0284C7",
+              shadowOpacity: 0.3,
+              shadowRadius: 10,
+              shadowOffset: { width: 0, height: 4 },
+              elevation: 8,
             }}
           >
             <Text
               style={{
-                fontSize: 20,
+                color: "#ffffff",
+                fontSize: 26,
                 fontWeight: "800",
-                color: "#111827",
-                letterSpacing: -0.3,
+                textAlign: "center",
+                fontFamily: "Outfit_800",
+                letterSpacing: -0.5,
               }}
             >
-              Categories
+              Join the GramoKart Family
             </Text>
-          </View>
 
-  {/* Categories List */}
-  <ScrollView
-    horizontal
-    showsHorizontalScrollIndicator={false}
-    contentContainerStyle={{
-      paddingRight: 16,
-    }}
-  >
-    {categories.map((cat: any) => (
-      <CategoryItem
-        key={cat.id}
-        item={cat}
-        isSelected={false}
-        onPress={() =>
-          router.push({
-            pathname: "/shop",
-            params: {
-              category: cat.id === "all" ? "" : cat.name,
-            },
-          })
-        }
-      />
-    ))}
-  </ScrollView>
-</View>
-
-{/* Latest Products Section */}
-{(() => {
-  if (loading) return null;
-  const latestProducts = products.filter((p) => p.isLatest);
-  if (latestProducts.length === 0) return null;
-
-  return (
-    <View style={{ marginBottom: 28 }}>
-      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-        <View>
-          <Text style={{ fontSize: 22, fontWeight: "800", color: "#111827", fontFamily: "Outfit_800", letterSpacing: -0.5 }}>
-            Latest Products
-          </Text>
-          <Text style={{ fontSize: 13, color: "#4B5563", fontWeight: "600", fontFamily: "Outfit_600", marginTop: 2 }}>
-            Newest Arrivals
-          </Text>
-        </View>
-        <TouchableOpacity onPress={() => router.push({ pathname: "/collection", params: { type: "latest" } })}>
-          <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#F3F4F6', justifyContent: 'center', alignItems: 'center' }}>
-            <Ionicons name="arrow-forward" size={20} color="#111827" />
-          </View>
-        </TouchableOpacity>
-      </View>
-      <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", minHeight: 480 }}>
-        {latestProducts.slice(0, 10).map((product, index) => (
-          <View key={product._id} style={{ marginTop: index % 2 !== 0 ? 24 : 0 }}>
-            <ProductCard product={product} index={index} disableAnimation={true} />
-          </View>
-        ))}
-      </View>
-    </View>
-  );
-})()}
-
-{/* Special Offers & Sales (Buy 1 Get 1 Free Section) */}
-{(() => {
-  if (loading) return <InfinityLoader />;
-  
-  const offerProducts = products.filter((p) => p.isBogo);
-  if (offerProducts.length === 0) return null;
-
-  return (
-    <View style={{ marginBottom: 28 }}>
-      {/* Section Header */}
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: 14,
-        }}
-      >
-        <View style={{ flexDirection: "row", alignItems: "center" }}>
-          <View>
-            <Text style={{ fontSize: 22, fontWeight: "800", color: "#111827", fontFamily: "Outfit_800", letterSpacing: -0.5 }}>
-              Buy 1 Get 1 Free
+            <Text
+              style={{
+                color: "#E0F2FE", // Soft light blue
+                fontSize: 15,
+                textAlign: "center",
+                marginTop: 10,
+                lineHeight: 22,
+                fontFamily: "Outfit_500",
+              }}
+            >
+              Subscribe to our newsletter and get{" "}
+              <Text style={{ color: "#FDE047", fontWeight: "800", fontFamily: "Outfit_800" }}>
+                10% OFF
+              </Text>{" "}
+              on your first purchase.
             </Text>
-            <Text style={{ fontSize: 13, color: "#4B5563", fontWeight: "600", fontFamily: "Outfit_600", marginTop: 2 }}>
-              Exclusive Offers & Sales
-            </Text>
-          </View>
-        </View>
 
-        <TouchableOpacity onPress={() => router.push({ pathname: "/collection", params: { type: "bogo" } })}>
-          <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#F3F4F6', justifyContent: 'center', alignItems: 'center' }}>
-            <Ionicons name="arrow-forward" size={20} color="#111827" />
-          </View>
-        </TouchableOpacity>
-      </View>
-
-      {/* Grid List for Offer Products */}
-      <View
-        style={{
-          flexDirection: "row",
-          flexWrap: "wrap",
-          justifyContent: "space-between",
-          minHeight: 480,
-        }}
-      >
-        {offerProducts.slice(0, 4).map((product, index) => (
-          <View key={product._id} style={{ marginTop: index % 2 !== 0 ? 24 : 0 }}>
-            <ProductCard product={product} index={index} disableAnimation={true} />
-          </View>
-        ))}
-        {scrollY > 100 ? (
-          offerProducts.slice(4, 10).map((product, index) => {
-            const actualIndex = index + 4;
-            return (
-              <View key={product._id} style={{ marginTop: actualIndex % 2 !== 0 ? 24 : 0 }}>
-                <ProductCard product={product} index={actualIndex} />
-              </View>
-            );
-          })
-        ) : null}
-      </View>
-    </View>
-  );
-})()}
-{/* Popular Products */}
-<View className="mb-8">
-  {/* Header */}
-  <View className="flex-row items-center justify-between mb-4">
-    <Text className="text-2xl font-bold text-black">
-      Popular Products
-    </Text>
-
-    <TouchableOpacity onPress={() => router.push({ pathname: "/collection", params: { type: "popular" } })}>
-      <Ionicons name="arrow-forward" size={24} color="#111827" />
-    </TouchableOpacity>
-  </View>
-
-  {/* Products */}
-  {loading ? (
-    <InfinityLoader />
-  ) : (
-    <View
-      style={{
-        flexDirection: "row",
-        flexWrap: "wrap",
-        justifyContent: "space-between",
-        minHeight: 480,
-      }}
-    >
-      {scrollY > 500 ? (
-        products.filter((p: any) => p.isFeatured).slice(0, 10).map((product: any, index: number) => (
-          <View
-            key={product._id}
-            style={{
-              marginTop: index % 2 !== 0 ? 24 : 0,
-            }}
-          >
-            <ProductCard product={product} index={index} />
-          </View>
-        ))
-      ) : null}
-    </View>
-  )}
-</View>
-<LinearGradient
-  colors={["#0284C7", "#0369A1"]} // GramoKart Blue gradient
-  start={{ x: 0, y: 0 }}
-  end={{ x: 1, y: 1 }}
-  style={{
-    borderRadius: 24,
-    padding: 28,
-    marginVertical: 20,
-    alignItems: "center",
-    shadowColor: "#0284C7",
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 8,
-  }}
->
-  <Text
-    style={{
-      color: "#ffffff",
-      fontSize: 26,
-      fontWeight: "800",
-      textAlign: "center",
-      fontFamily: "Outfit_800",
-      letterSpacing: -0.5,
-    }}
-  >
-    Join the GramoKart Family
-  </Text>
-
-  <Text
-    style={{
-      color: "#E0F2FE", // Soft light blue
-      fontSize: 15,
-      textAlign: "center",
-      marginTop: 10,
-      lineHeight: 22,
-      fontFamily: "Outfit_500",
-    }}
-  >
-    Subscribe to our newsletter and get{" "}
-    <Text style={{ color: "#FDE047", fontWeight: "800", fontFamily: "Outfit_800" }}>
-      10% OFF
-    </Text>{" "}
-    on your first purchase.
-  </Text>
-
-  <AnimatedButton
-    style={{
-      marginTop: 22,
-      backgroundColor: "#ffffff",
-      paddingHorizontal: 32,
-      paddingVertical: 14,
-      borderRadius: 999,
-      shadowColor: "#000",
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 2,
-    }}
-  >
-    <Text
-      style={{
-        color: "#0284C7",
-        fontWeight: "800",
-        fontSize: 16,
-        fontFamily: "Outfit_800",
-      }}
-    >
-      Subscribe Now
-    </Text>
-  </AnimatedButton>
-</LinearGradient>
+            <AnimatedButton
+              style={{
+                marginTop: 22,
+                backgroundColor: "#ffffff",
+                paddingHorizontal: 32,
+                paddingVertical: 14,
+                borderRadius: 999,
+                shadowColor: "#000",
+                shadowOpacity: 0.1,
+                shadowRadius: 4,
+                elevation: 2,
+              }}
+            >
+              <Text
+                style={{
+                  color: "#0284C7",
+                  fontWeight: "800",
+                  fontSize: 16,
+                  fontFamily: "Outfit_800",
+                }}
+              >
+                Subscribe Now
+              </Text>
+            </AnimatedButton>
+          </LinearGradient>
 
 
         </ScrollView>

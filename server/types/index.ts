@@ -35,6 +35,13 @@ export interface IOrderItem {
     name: string;
     quantity: number;
     price: number;
+    saleDetails?: {
+        originalPrice?: number;
+        salePrice?: number;
+        discountAmount?: number;
+        finalItemPrice?: number;
+        saleName?: string;
+    };
     size?: string;
     color?: string;
 }
