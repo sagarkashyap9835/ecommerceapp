@@ -47,11 +47,11 @@ export interface Product {
     sizes?: string[];
     colors?: string[];
     category:
-        | {
-              _id: string;
-              name: string;
-          }
-        | string;
+    | {
+        _id: string;
+        name: string;
+    }
+    | string;
     subcategory?: string;
     stock: number;
     ratings: {
@@ -63,6 +63,15 @@ export interface Product {
     isBogo?: boolean;
     isLatest?: boolean;
     isActive: boolean;
+    sale?: {
+        isOnSale: boolean;
+        saleName: string;
+        saleSubtitle: string;
+        originalPrice: number;
+        salePrice: number;
+        discountAmount: number;
+        saleEndsAt: string;
+    };
     createdAt: string;
 }
 

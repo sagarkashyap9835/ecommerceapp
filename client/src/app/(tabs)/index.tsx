@@ -559,7 +559,7 @@ export default function Home() {
             if (saleProducts.length === 0) return null;
 
             return (
-              <View style={{ marginBottom: 28 }}>
+              <View style={{ marginBottom: 12 }}>
                 <LinearGradient
                   colors={["#FFFBEB", "#FEF3C7"]}
                   style={{ padding: 20, borderRadius: 16, marginBottom: 16, borderColor: '#FDE68A', borderWidth: 1 }}
@@ -576,14 +576,6 @@ export default function Home() {
                     <Text style={{ color: '#B45309', fontWeight: 'bold' }}>Ends in: {new Date(activeSale.endAt).toLocaleDateString()}</Text>
                   </View>
                 </LinearGradient>
-
-                <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between" }}>
-                  {saleProducts.slice(0, 4).map((product, index) => (
-                    <View key={product._id} style={{ marginTop: index % 2 !== 0 ? 24 : 0 }}>
-                      <ProductCard product={product} index={index} disableAnimation={true} />
-                    </View>
-                  ))}
-                </View>
               </View>
             );
           })()}
