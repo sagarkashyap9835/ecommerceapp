@@ -282,22 +282,28 @@ export const RazorpayOfficialModal: React.FC<RazorpayOfficialModalProps> = ({
                   }
                 }}
                 injectedJavaScript={injectedJS}
-              onMessage={(event: any) => {
-                try {
-                  const data = JSON.parse(event.nativeEvent.data);
-                  if (data.status === "FAILED") {
-                    onFailure({
-                      code: data.code || "PAYMENT_FAILED",
-                      description: data.description || "Payment failed",
-                    });
-                  } else if (data.status === "CANCELLED") {
-                    onClose();
+                onMessage={(event: any) => {
+                  try {
+                    const data = JSON.parse(event.nativeEvent.data);
+                    if (data.status === "FAILED") {
+                      onFailure({
+                        code: data.code || "PAYMENT_FAILED",
+                        description: data.description || "Payment failed",
+                      });
+                    } else if (data.status === "CANCELLED") {
+                      onClose();
+                    } else if (data.status === "SUCCESS") {
+                      onSuccess({
+                        razorpay_order_id: data.razorpay_order_id,
+                        razorpay_payment_id: data.razorpay_payment_id,
+                        razorpay_signature: data.razorpay_signature,
+                      });
+                    }
+                  } catch (err) {
+                    console.error("WebView message error:", err);
                   }
-                } catch (err) {
-                  console.error("WebView message error:", err);
-                }
-              }}
-            />
+                }}
+              />
             </View>
           ) : (
             <ScrollView contentContainerStyle={styles.content}>
