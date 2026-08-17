@@ -25,7 +25,7 @@ import paymentService from "../../services/paymentService";
 import RazorpayOfficialModal from "../../components/RazorpayOfficialModal";
 
 export default function Checkout() {
-  const { getToken } = useAuth();
+  const { getToken, refetchFirstOrderOffer } = useAuth();
   const { cartTotal, clearCart, cartItems } = useCart();
   const router = useRouter();
 
@@ -132,6 +132,7 @@ export default function Checkout() {
           position: "top",
         });
         await clearCart();
+        await refetchFirstOrderOffer();
         router.replace("/orders" as any);
       }
     } catch (error: any) {
@@ -201,6 +202,7 @@ export default function Checkout() {
             position: "top",
           });
           await clearCart();
+          await refetchFirstOrderOffer();
           router.replace("/orders" as any);
         } else {
           Toast.show({

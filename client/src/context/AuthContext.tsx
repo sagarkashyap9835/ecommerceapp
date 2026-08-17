@@ -24,6 +24,7 @@ type AuthContextType = {
   getToken: () => Promise<string | null>;
   signOut: () => Promise<void>;
   firstOrderOffer: any;
+  refetchFirstOrderOffer: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType>({
@@ -33,6 +34,7 @@ const AuthContext = createContext<AuthContextType>({
   getToken: async () => null,
   signOut: async () => { },
   firstOrderOffer: null,
+  refetchFirstOrderOffer: async () => { },
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -82,6 +84,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => unsubscribe();
   }, []);
 
+  const refetchFirstOrderOffer = async () => {
+    if (firebaseUser) {
+      try {
+        const token = await firebaseUser.getIdToken();
+        const firstOfferRes = await api.get("/first-order/eligibility", { headers: { Authorization: `Bearer ${token}` } });
+        const offer = firstOfferRes.data;
+        if (offer?.success && offer?.eligible && offer?.isEnabled) {
+          setFirstOrderOffer(offer);
+        } else {
+          setFirstOrderOffer(null);
+        }
+      } catch (e) { setFirstOrderOffer(null); }
+    }
+  };
+
   const getToken = async () => {
     if (firebaseUser) {
       return await firebaseUser.getIdToken();
@@ -122,6 +139,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         getToken,
         signOut,
         firstOrderOffer,
+        refetchFirstOrderOffer,
       }}
     >
       {children}
@@ -138,6 +156,7 @@ export const useAuth = () => {
     getToken: context.getToken,
     signOut: context.signOut,
     firstOrderOffer: context.firstOrderOffer,
+    refetchFirstOrderOffer: context.refetchFirstOrderOffer,
   };
 };
 
