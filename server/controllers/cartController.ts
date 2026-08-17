@@ -30,13 +30,17 @@ export const getUserCart = async (
 
     try {
       activeSale = await getActiveSale();
-      const FOOffer = (await import("./firstOrderController.js")).getFirstOrderOffer;
-      firstOrderOffer = await FOOffer(req.user._id);
+      const { checkFirstOrderEligibility, getFirstOrderSettings } = await import("../utils/firstOrderLogic.js");
+      const isEligible = await checkFirstOrderEligibility(req.user._id);
+      if (isEligible) {
+        const settings = await getFirstOrderSettings();
+        firstOrderOffer = { isEligible, settings };
+      }
     } catch (err) {
       console.error("Sale or First Order logic error", err);
     }
 
-    cart.items.forEach(item => {
+    cart.items.forEach((item: any) => {
       if (item.product) {
         const productWithSale = getEffectiveProductPrice((item.product as any).toObject(), activeSale, firstOrderOffer);
         if (productWithSale.sale.isOnSale) {
@@ -129,8 +133,12 @@ export const addToCart = async (
       const activeSale = await getActiveSale();
       let firstOrderOffer: any = undefined;
       try {
-        const FOOffer = (await import("./firstOrderController.js")).getFirstOrderOffer;
-        firstOrderOffer = await FOOffer(req.user._id);
+        const { checkFirstOrderEligibility, getFirstOrderSettings } = await import("../utils/firstOrderLogic.js");
+        const isEligible = await checkFirstOrderEligibility(req.user._id);
+        if (isEligible) {
+          const settings = await getFirstOrderSettings();
+          firstOrderOffer = { isEligible, settings };
+        }
       } catch (err) { }
 
       const productWithSale = getEffectiveProductPrice(product.toObject(), activeSale, firstOrderOffer);
@@ -236,8 +244,12 @@ export const updateCartItem = async (
     const activeSale = await getActiveSale();
     let firstOrderOffer: any = undefined;
     try {
-      const FOOffer = (await import("./firstOrderController.js")).getFirstOrderOffer;
-      firstOrderOffer = await FOOffer(req.user._id);
+      const { checkFirstOrderEligibility, getFirstOrderSettings } = await import("../utils/firstOrderLogic.js");
+      const isEligible = await checkFirstOrderEligibility(req.user._id);
+      if (isEligible) {
+        const settings = await getFirstOrderSettings();
+        firstOrderOffer = { isEligible, settings };
+      }
     } catch (err) { }
 
     const productWithSale = getEffectiveProductPrice(product.toObject(), activeSale, firstOrderOffer);
