@@ -8,6 +8,8 @@ import ProductCard from "../../components/ProductCard";
 import InfinityLoader from "../../components/InfinityLoader";
 import { Product } from "@/assets/constants/types";
 import Header from "../../components/Header";
+import { useAuth } from "../context/AuthContext";
+import { applyFirstOrderDiscount } from "../utils/discountLogic";
 
 const SORT_OPTIONS = [
   { label: "Newest Arrivals", value: "newest" },
@@ -19,6 +21,7 @@ export default function Collection() {
   const { type } = useLocalSearchParams<{ type: string }>();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const { firstOrderOffer } = useAuth();
 
   // Search & Filter States
   const [searchQuery, setSearchQuery] = useState("");
@@ -36,7 +39,11 @@ export default function Collection() {
 
         const { data } = await api.get("/products", { params });
         if (data?.success) {
-          setProducts(data.data);
+          let newProducts = data.data;
+          if (firstOrderOffer) {
+            newProducts = newProducts.map((p: any) => applyFirstOrderDiscount(p, firstOrderOffer));
+          }
+          setProducts(newProducts);
         }
       } catch (error) {
         console.error("Failed to load collection:", error);

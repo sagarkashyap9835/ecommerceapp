@@ -23,6 +23,7 @@ type AuthContextType = {
   user: ClerkUser | null;
   getToken: () => Promise<string | null>;
   signOut: () => Promise<void>;
+  firstOrderOffer: any;
 };
 
 const AuthContext = createContext<AuthContextType>({
@@ -30,13 +31,15 @@ const AuthContext = createContext<AuthContextType>({
   isSignedIn: false,
   user: null,
   getToken: async () => null,
-  signOut: async () => {},
+  signOut: async () => { },
+  firstOrderOffer: null,
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [userRole, setUserRole] = useState<string | undefined>(undefined);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [firstOrderOffer, setFirstOrderOffer] = useState<any>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -45,19 +48,33 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         try {
           // Fetch token and force refresh to get latest claims if needed, but normally getIdTokenResult() is fine.
           const tokenResult = await user.getIdTokenResult();
-          
+
           if (tokenResult.claims.role) {
             setUserRole(tokenResult.claims.role as string);
           } else {
             // If no claim is found, default to 'user'
             setUserRole('user');
           }
+
+          // Fetch first order offer
+          try {
+            const token = await user.getIdToken();
+            const firstOfferRes = await api.get("/first-order/eligibility", { headers: { Authorization: `Bearer ${token}` } });
+            const offer = firstOfferRes.data;
+            if (offer?.success && offer?.eligible && offer?.isEnabled) {
+              setFirstOrderOffer(offer);
+            } else {
+              setFirstOrderOffer(null);
+            }
+          } catch (e) { setFirstOrderOffer(null); }
+
         } catch (e) {
           console.error("Failed to fetch user role from Firebase", e);
           setUserRole('user');
         }
       } else {
         setUserRole(undefined);
+        setFirstOrderOffer(null);
       }
       setIsLoaded(true);
     });
@@ -104,6 +121,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         user: clerkUser,
         getToken,
         signOut,
+        firstOrderOffer,
       }}
     >
       {children}
@@ -119,6 +137,7 @@ export const useAuth = () => {
     isSignedIn: context.isSignedIn,
     getToken: context.getToken,
     signOut: context.signOut,
+    firstOrderOffer: context.firstOrderOffer,
   };
 };
 

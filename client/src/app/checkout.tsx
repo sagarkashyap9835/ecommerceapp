@@ -26,7 +26,7 @@ import RazorpayOfficialModal from "../../components/RazorpayOfficialModal";
 
 export default function Checkout() {
   const { getToken } = useAuth();
-  const { cartTotal, clearCart } = useCart();
+  const { cartTotal, clearCart, cartItems } = useCart();
   const router = useRouter();
 
   const deliveryEstimate = getEstimatedDelivery(3, 5);
@@ -291,7 +291,7 @@ export default function Checkout() {
                 ) : (
                   <Text style={styles.addressTitle}>{selectedAddress.street}</Text>
                 )}
-                
+
                 <Text style={styles.addressText}>
                   {selectedAddress.city}, {selectedAddress.state} - {selectedAddress.zipCode}
                 </Text>
@@ -402,9 +402,24 @@ export default function Checkout() {
           </View>
 
           <View style={styles.priceRow}>
-            <Text style={styles.priceLabel}>Subtotal</Text>
-            <Text style={styles.priceValue}>₹{cartTotal.toFixed(2)}</Text>
+            <Text style={styles.priceLabel}>Items Subtotal</Text>
+            <Text style={styles.priceValue}>₹{cartItems.reduce((sum: number, item: any) => sum + (item.product?.sale?.isOnSale && item.product?.sale?.originalPrice ? item.product.sale.originalPrice : item.price) * item.quantity, 0).toFixed(2)}</Text>
           </View>
+
+          {(() => {
+            const originalTotal = cartItems.reduce((sum: number, item: any) => sum + (item.product?.sale?.isOnSale && item.product?.sale?.originalPrice ? item.product.sale.originalPrice : item.price) * item.quantity, 0);
+            const totalDiscount = originalTotal - cartTotal;
+            if (totalDiscount > 0) {
+              return (
+                <View style={styles.priceRow}>
+                  <Text style={styles.priceLabel}>Discount</Text>
+                  <Text style={[styles.priceValue, { color: "#16A34A" }]}>-₹{totalDiscount.toFixed(2)}</Text>
+                </View>
+              );
+            }
+            return null;
+          })()}
+
           <View style={styles.priceRow}>
             <Text style={styles.priceLabel}>Shipping</Text>
             <View style={{ backgroundColor: "#FCE7F3", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, flexDirection: "row", alignItems: "center" }}>
@@ -416,7 +431,7 @@ export default function Checkout() {
             <Text style={styles.priceLabel}>Tax</Text>
             <Text style={styles.priceValue}>₹{tax.toFixed(2)}</Text>
           </View>
-          
+
           <View style={styles.totalRowWrapper}>
             <Text style={styles.totalLabel}>Total Amount</Text>
             <Text style={styles.totalPrice}>₹{total.toFixed(2)}</Text>

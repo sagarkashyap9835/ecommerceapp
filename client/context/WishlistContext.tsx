@@ -4,11 +4,12 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "expo-router";
 import Toast from "react-native-toast-message";
 import api from "../constants/api";
+import { applyFirstOrderDiscount } from "../src/utils/discountLogic";
 
 const WishlistContext = createContext<WishlistContextType | undefined>(undefined);
 
 export function WishlistProvider({ children }: { children: ReactNode }) {
-    const { getToken, isSignedIn } = useAuth();
+    const { getToken, isSignedIn, firstOrderOffer } = useAuth();
     const router = useRouter();
     const [wishlist, setWishlist] = useState<Product[]>([]);
     const [loading, setLoading] = useState(false);
@@ -27,7 +28,11 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
             });
 
             if (data.success && data.data?.products) {
-                setWishlist(data.data.products);
+                let parsedProducts = data.data.products;
+                if (firstOrderOffer) {
+                    parsedProducts = parsedProducts.map((p: any) => applyFirstOrderDiscount(p, firstOrderOffer));
+                }
+                setWishlist(parsedProducts);
             }
         } catch (error: any) {
             console.error("Failed to fetch wishlist:", error.response?.data || error.message);

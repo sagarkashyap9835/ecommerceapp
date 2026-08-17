@@ -20,6 +20,8 @@ import api from "../../constants/api";
 import ProductCard from "../../components/ProductCard";
 import InfinityLoader from "../../components/InfinityLoader";
 import { useLocalSearchParams } from "expo-router";
+import { useAuth } from "../context/AuthContext";
+import { applyFirstOrderDiscount } from "../utils/discountLogic";
 
 const SORT_OPTIONS = [
   { label: "Newest Arrivals", value: "newest" },
@@ -45,6 +47,7 @@ export default function Shop() {
 
   // Dynamic Categories from API
   const [categoriesTaxonomy, setCategoriesTaxonomy] = useState<Category[]>([]);
+  const { firstOrderOffer } = useAuth();
 
   // Filter States
   const [selectedCategory, setSelectedCategory] = useState<string>(
@@ -180,10 +183,15 @@ export default function Shop() {
 
       const { data } = await api.get("/products", { params: queryparams });
 
+      let newProducts = data.data;
+      if (firstOrderOffer) {
+        newProducts = newProducts.map((p: any) => applyFirstOrderDiscount(p, firstOrderOffer));
+      }
+
       if (pageNumber === 1 || isNewFilter) {
-        setProducts(data.data);
+        setProducts(newProducts);
       } else {
-        setProducts((prev) => [...prev, ...data.data]);
+        setProducts((prev) => [...prev, ...newProducts]);
       }
 
       setHasMore(data.pagination.page < data.pagination.pages);
@@ -606,42 +614,42 @@ export default function Shop() {
           <InfinityLoader />
         </View>
       ) : (
-      <FlatList
-        data={liveFilteredProducts}
-        keyExtractor={(item, index) => item._id || index.toString()}
-        numColumns={2}
-        columnWrapperStyle={styles.row}
-        renderItem={({ item }) => <ProductCard product={item} />}
-        contentContainerStyle={styles.listContent}
-        onEndReached={!loading ? loadMore : null}
-        onEndReachedThreshold={0.2}
-        ListFooterComponent={
-          loadingMore ? (
-            <View style={styles.footerLoader}>
-              <ActivityIndicator
-                size="small"
-                color={COLORS.primary || "#000"}
-              />
-            </View>
-          ) : null
-        }
-        ListEmptyComponent={
-          !loading ? (
-            <View style={styles.emptyContainer}>
-              <Ionicons name="basket-outline" size={50} color="#9ca3af" />
-              <Text style={styles.emptyText}>
-                No products found matching your filters
-              </Text>
-              <TouchableOpacity
-                onPress={resetFilters}
-                style={styles.resetSearchBtn}
-              >
-                <Text style={styles.resetSearchBtnText}>Reset All Filters</Text>
-              </TouchableOpacity>
-            </View>
-          ) : null
-        }
-      />
+        <FlatList
+          data={liveFilteredProducts}
+          keyExtractor={(item, index) => item._id || index.toString()}
+          numColumns={2}
+          columnWrapperStyle={styles.row}
+          renderItem={({ item }) => <ProductCard product={item} />}
+          contentContainerStyle={styles.listContent}
+          onEndReached={!loading ? loadMore : null}
+          onEndReachedThreshold={0.2}
+          ListFooterComponent={
+            loadingMore ? (
+              <View style={styles.footerLoader}>
+                <ActivityIndicator
+                  size="small"
+                  color={COLORS.primary || "#000"}
+                />
+              </View>
+            ) : null
+          }
+          ListEmptyComponent={
+            !loading ? (
+              <View style={styles.emptyContainer}>
+                <Ionicons name="basket-outline" size={50} color="#9ca3af" />
+                <Text style={styles.emptyText}>
+                  No products found matching your filters
+                </Text>
+                <TouchableOpacity
+                  onPress={resetFilters}
+                  style={styles.resetSearchBtn}
+                >
+                  <Text style={styles.resetSearchBtnText}>Reset All Filters</Text>
+                </TouchableOpacity>
+              </View>
+            ) : null
+          }
+        />
       )}
 
       {/* FILTER & SORT MODAL */}

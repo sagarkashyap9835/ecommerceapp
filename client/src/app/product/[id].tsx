@@ -25,13 +25,14 @@ import Toast from "react-native-toast-message";
 import api from "../../../constants/api";
 import { useAuth } from "@/context/AuthContext";
 import DeliveryEstimateCard from "../../../components/DeliveryEstimateCard";
+import { applyFirstOrderDiscount } from "../../utils/discountLogic";
 
 const { width } = Dimensions.get("window");
 
 export default function ProductDetails() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
-  const { getToken, isSignedIn } = useAuth();
+  const { getToken, isSignedIn, firstOrderOffer } = useAuth();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
@@ -48,7 +49,11 @@ export default function ProductDetails() {
   const fetchProduct = async () => {
     try {
       const { data } = await api.get(`/products/${id}`);
-      setProduct(data.data);
+      let p = data.data;
+      if (firstOrderOffer) {
+        p = applyFirstOrderDiscount(p, firstOrderOffer);
+      }
+      setProduct(p);
     } catch (error: any) {
       Toast.show({
         type: "error",
@@ -109,7 +114,7 @@ export default function ProductDetails() {
         >
           <Ionicons name="arrow-back" size={20} color="#9CA3AF" />
         </TouchableOpacity>
-        <Text style={{ fontFamily: 'Outfit',  fontSize: 16, fontWeight: '700', color: '#111827' }}>Product Details</Text>
+        <Text style={{ fontFamily: 'Outfit', fontSize: 16, fontWeight: '700', color: '#111827' }}>Product Details</Text>
         <TouchableOpacity
           onPress={() => toggleWishlist(product)}
           style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: '#F3F4F6', justifyContent: 'center', alignItems: 'center' }}
@@ -145,16 +150,16 @@ export default function ProductDetails() {
         <View style={{ paddingHorizontal: 20, marginTop: 24 }}>
           {/* TITLE AND QUANTITY */}
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Text style={{ fontFamily: 'Outfit',  fontSize: 20, fontWeight: '700', color: COLORS.primary, flex: 1, paddingRight: 10 }}>
+            <Text style={{ fontFamily: 'Outfit', fontSize: 20, fontWeight: '700', color: COLORS.primary, flex: 1, paddingRight: 10 }}>
               {product.name}
             </Text>
-            
+
             {/* Quantity Selector */}
             <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F9FAFB', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderColor: '#F3F4F6' }}>
               <TouchableOpacity onPress={() => currentCartItem && updateQuantity(currentCartItem.id, Math.max(1, currentCartItem.quantity - 1), currentCartItem.size)}>
                 <Ionicons name="remove" size={14} color="#6B7280" />
               </TouchableOpacity>
-              <Text style={{ fontFamily: 'Outfit',  fontSize: 14, fontWeight: '600', marginHorizontal: 10, color: '#111827' }}>
+              <Text style={{ fontFamily: 'Outfit', fontSize: 14, fontWeight: '600', marginHorizontal: 10, color: '#111827' }}>
                 {currentCartItem ? currentCartItem.quantity : 1}
               </Text>
               <TouchableOpacity onPress={() => {
@@ -168,13 +173,25 @@ export default function ProductDetails() {
           </View>
 
           {/* PRICE */}
-          <Text style={{ fontFamily: 'Outfit',  fontSize: 24, fontWeight: '700', color: '#111827', marginTop: 12 }}>
-            Rs {product.price.toFixed(2)}
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 12 }}>
+            {product.sale?.isOnSale && product.sale.originalPrice > product.price && (
+              <Text style={{ fontFamily: 'Outfit', fontSize: 16, fontWeight: '500', color: '#9CA3AF', textDecorationLine: 'line-through', marginRight: 8 }}>
+                Rs {product.sale.originalPrice.toFixed(2)}
+              </Text>
+            )}
+            <Text style={{ fontFamily: 'Outfit', fontSize: 24, fontWeight: '700', color: '#111827' }}>
+              Rs {(product.sale?.isOnSale ? product.sale.salePrice : product.price).toFixed(2)}
+            </Text>
+            {product.sale?.discountType === "FIRST_ORDER" && (
+              <View style={{ backgroundColor: '#DBEAFE', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, marginLeft: 12 }}>
+                <Text style={{ color: '#1D4ED8', fontSize: 10, fontWeight: 'bold' }}>🎉 FIRST ORDER</Text>
+              </View>
+            )}
+          </View>
 
           {/* CHOOSE SIZE */}
           <View style={{ marginTop: 24 }}>
-            <Text style={{ fontFamily: 'Outfit',  fontSize: 14, fontWeight: '700', color: '#111827', marginBottom: 12 }}>Choose Size</Text>
+            <Text style={{ fontFamily: 'Outfit', fontSize: 14, fontWeight: '700', color: '#111827', marginBottom: 12 }}>Choose Size</Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
               {product.sizes && product.sizes.length > 0 ? product.sizes.map((size) => {
                 const isSelected = selectedSize === size;
@@ -188,7 +205,7 @@ export default function ProductDetails() {
                       justifyContent: 'center', alignItems: 'center', marginRight: 12, marginBottom: 10
                     }}
                   >
-                    <Text style={{ fontFamily: 'Outfit',  fontSize: 13, fontWeight: '600', color: isSelected ? '#FFFFFF' : '#4B5563' }}>
+                    <Text style={{ fontFamily: 'Outfit', fontSize: 13, fontWeight: '600', color: isSelected ? '#FFFFFF' : '#4B5563' }}>
                       {size}
                     </Text>
                   </TouchableOpacity>
@@ -204,7 +221,7 @@ export default function ProductDetails() {
                       justifyContent: 'center', alignItems: 'center', marginRight: 12, marginBottom: 10
                     }}
                   >
-                    <Text style={{ fontFamily: 'Outfit',  fontSize: 13, fontWeight: '600', color: selectedSize === size ? '#FFFFFF' : '#4B5563' }}>
+                    <Text style={{ fontFamily: 'Outfit', fontSize: 13, fontWeight: '600', color: selectedSize === size ? '#FFFFFF' : '#4B5563' }}>
                       {size}
                     </Text>
                   </TouchableOpacity>
@@ -215,7 +232,7 @@ export default function ProductDetails() {
           {/* CHOOSE COLOR */}
           {product.colors && product.colors.length > 0 ? (
             <View style={{ marginTop: 16 }}>
-              <Text style={{ fontFamily: 'Outfit',  fontSize: 14, fontWeight: '700', color: '#111827', marginBottom: 12 }}>Choose Color</Text>
+              <Text style={{ fontFamily: 'Outfit', fontSize: 14, fontWeight: '700', color: '#111827', marginBottom: 12 }}>Choose Color</Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
                 {product.colors.map((colorOption, idx) => {
                   const isSelected = selectedColor === colorOption;
@@ -244,55 +261,55 @@ export default function ProductDetails() {
 
           {/* ACTION BUTTONS */}
           <View style={{ flexDirection: 'row', marginTop: 30, gap: 12 }}>
-            <TouchableOpacity 
+            <TouchableOpacity
               onPress={async () => {
-                 if (product.stock <= 0) {
-                   Toast.show({ type: "error", text1: "Out of Stock ⚠️", text2: "This product is currently out of stock." });
-                   return;
-                 }
-                 if (product.colors && product.colors.length > 0 && !selectedColor) {
-                   Toast.show({ type: "info", text1: "Select Color", text2: "Please select a color first." });
-                   return;
-                 }
-                 if (product.sizes && product.sizes.length > 0 && !selectedSize) {
-                   Toast.show({ type: "info", text1: "Select Size", text2: "Please select a size first before adding to cart." });
-                   return;
-                 }
-                 await addToCart(product, selectedSize || "", selectedColor || "");
-                 router.push('/checkout');
+                if (product.stock <= 0) {
+                  Toast.show({ type: "error", text1: "Out of Stock ⚠️", text2: "This product is currently out of stock." });
+                  return;
+                }
+                if (product.colors && product.colors.length > 0 && !selectedColor) {
+                  Toast.show({ type: "info", text1: "Select Color", text2: "Please select a color first." });
+                  return;
+                }
+                if (product.sizes && product.sizes.length > 0 && !selectedSize) {
+                  Toast.show({ type: "info", text1: "Select Size", text2: "Please select a size first before adding to cart." });
+                  return;
+                }
+                await addToCart(product, selectedSize || "", selectedColor || "");
+                router.push('/checkout');
               }}
               style={{ flex: 1, backgroundColor: COLORS.primary, borderRadius: 24, paddingVertical: 16, justifyContent: 'center', alignItems: 'center', flexDirection: 'row' }}
             >
-              <Text style={{ fontFamily: 'Outfit',  color: '#fff', fontSize: 14, fontWeight: '600' }}>Buy Now →</Text>
+              <Text style={{ fontFamily: 'Outfit', color: '#fff', fontSize: 14, fontWeight: '600' }}>Buy Now →</Text>
             </TouchableOpacity>
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               onPress={async () => {
-                 if (product.stock <= 0) {
-                   Toast.show({ type: "error", text1: "Out of Stock ⚠️", text2: "This product is currently out of stock." });
-                   return;
-                 }
-                 if (product.colors && product.colors.length > 0 && !selectedColor) {
-                   Toast.show({ type: "info", text1: "Select Color", text2: "Please select a color first." });
-                   return;
-                 }
-                 if (product.sizes && product.sizes.length > 0 && !selectedSize) {
-                   Toast.show({ type: "info", text1: "Select Size", text2: "Please select a size first before adding to cart." });
-                   return;
-                 }
-                 await addToCart(product, selectedSize || "", selectedColor || "");
+                if (product.stock <= 0) {
+                  Toast.show({ type: "error", text1: "Out of Stock ⚠️", text2: "This product is currently out of stock." });
+                  return;
+                }
+                if (product.colors && product.colors.length > 0 && !selectedColor) {
+                  Toast.show({ type: "info", text1: "Select Color", text2: "Please select a color first." });
+                  return;
+                }
+                if (product.sizes && product.sizes.length > 0 && !selectedSize) {
+                  Toast.show({ type: "info", text1: "Select Size", text2: "Please select a size first before adding to cart." });
+                  return;
+                }
+                await addToCart(product, selectedSize || "", selectedColor || "");
               }}
               style={{ flex: 1, backgroundColor: '#fff', borderRadius: 24, paddingVertical: 16, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: COLORS.primary, flexDirection: 'row' }}
             >
-              <Text style={{ fontFamily: 'Outfit',  color: COLORS.primary, fontSize: 14, fontWeight: '600', marginRight: 6 }}>Add to Bag</Text>
+              <Text style={{ fontFamily: 'Outfit', color: COLORS.primary, fontSize: 14, fontWeight: '600', marginRight: 6 }}>Add to Bag</Text>
               <Ionicons name="bag-outline" size={16} color={COLORS.primary} />
             </TouchableOpacity>
           </View>
 
           {/* DESCRIPTION */}
           <View style={{ marginTop: 30, marginBottom: 20 }}>
-            <Text style={{ fontFamily: 'Outfit',  fontSize: 14, fontWeight: '700', color: '#111827', marginBottom: 8 }}>Description</Text>
-            <Text style={{ fontFamily: 'Outfit',  fontSize: 13, color: '#6B7280', lineHeight: 20 }}>
+            <Text style={{ fontFamily: 'Outfit', fontSize: 14, fontWeight: '700', color: '#111827', marginBottom: 8 }}>Description</Text>
+            <Text style={{ fontFamily: 'Outfit', fontSize: 13, color: '#6B7280', lineHeight: 20 }}>
               {product.description}
             </Text>
           </View>
@@ -356,7 +373,7 @@ export default function ProductDetails() {
                     let iconName: any = "star-outline";
                     if (ratingValue >= star) iconName = "star";
                     else if (ratingValue >= star - 0.5) iconName = "star-half";
-                    
+
                     return (
                       <Ionicons key={star} name={iconName} size={28} color="#388E3C" style={{ marginHorizontal: 1 }} />
                     );
