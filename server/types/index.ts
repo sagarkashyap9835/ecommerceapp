@@ -41,6 +41,8 @@ export interface IOrderItem {
         discountAmount?: number;
         finalItemPrice?: number;
         saleName?: string;
+        discountType?: "FIRST_ORDER" | "FESTIVAL_SALE";
+        firstOrderDiscount?: number;
     };
     size?: string;
     color?: string;
@@ -136,6 +138,7 @@ export interface IUser extends Document {
     firebaseUid: string;
     image?: string;
     role: "user" | "admin";
+    hasCompletedFirstOrder?: boolean;
     createdAt: Date;
     updatedAt: Date;
 }

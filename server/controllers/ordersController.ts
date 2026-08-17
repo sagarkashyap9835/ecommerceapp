@@ -51,6 +51,15 @@ export const createOrder = async (req: Request, res: Response) => {
         }
 
         const activeSale = await getActiveSale();
+
+        let firstOrderOffer = { isEligible: false, settings: null } as any;
+        const { checkFirstOrderEligibility, getFirstOrderSettings } = await import("../utils/firstOrderLogic.js");
+        const isEligible = await checkFirstOrderEligibility(req.user._id);
+        if (isEligible) {
+            const settings = await getFirstOrderSettings();
+            firstOrderOffer = { isEligible, settings };
+        }
+
         const orderItems = [];
         let calculatedSubtotal = 0;
 
@@ -65,7 +74,7 @@ export const createOrder = async (req: Request, res: Response) => {
             }
 
             // Recalculate dynamic sale price
-            const productWithSale = getEffectiveProductPrice(product.toObject(), activeSale);
+            const productWithSale = getEffectiveProductPrice(product.toObject(), activeSale, firstOrderOffer);
             const finalItemPrice = productWithSale.sale.isOnSale ? productWithSale.sale.salePrice : product.price;
 
             orderItems.push({
@@ -78,7 +87,9 @@ export const createOrder = async (req: Request, res: Response) => {
                     salePrice: productWithSale.sale.salePrice,
                     discountAmount: productWithSale.sale.discountAmount,
                     finalItemPrice: finalItemPrice,
-                    saleName: productWithSale.sale.saleName
+                    saleName: productWithSale.sale.saleName,
+                    discountType: productWithSale.sale.discountType,
+                    firstOrderDiscount: productWithSale.sale.discountType === "FIRST_ORDER" ? productWithSale.sale.discountAmount : undefined
                 } : undefined,
                 size: item.size,
                 color: item.color,
@@ -97,6 +108,16 @@ export const createOrder = async (req: Request, res: Response) => {
 
         const isRazorpay = req.body.paymentMethod === "razorpay";
         const paymentStatus = req.body.paymentStatus || (isRazorpay ? "paid" : "pending");
+
+        // If paying via 'cash' (COD), the order is successfully placed immediately, consume First Order Offer
+        if (paymentStatus === "pending" && !isRazorpay && firstOrderOffer.isEligible && isEligible) {
+            // mark user as having completed first order
+            const User = (await import("../models/User.js")).default;
+            await User.findByIdAndUpdate(req.user._id, { hasCompletedFirstOrder: true });
+        } else if (paymentStatus === "paid" && firstOrderOffer.isEligible && isEligible) {
+            const User = (await import("../models/User.js")).default;
+            await User.findByIdAndUpdate(req.user._id, { hasCompletedFirstOrder: true });
+        }
 
         // Calculate guaranteed 3-day district delivery date
         const estimatedDeliveryDate = req.body.estimatedDeliveryDate
@@ -140,7 +161,27 @@ export const createRazorpayOrder = async (req: Request, res: Response) => {
             return res.status(400).json({ success: false, message: "Cart is empty" });
         }
 
-        const subtotal = cart.totalAmount;
+        const activeSale = await getActiveSale();
+
+        let firstOrderOffer = { isEligible: false, settings: null } as any;
+        const { checkFirstOrderEligibility, getFirstOrderSettings } = await import("../utils/firstOrderLogic.js");
+        const isEligible = await checkFirstOrderEligibility(req.user._id);
+        if (isEligible) {
+            const settings = await getFirstOrderSettings();
+            firstOrderOffer = { isEligible, settings };
+        }
+
+        let calculatedSubtotal = 0;
+        for (const item of cart.items) {
+            const product = await Product.findById(item.product._id);
+            if (!product) continue;
+
+            const productWithSale = getEffectiveProductPrice(product.toObject(), activeSale, firstOrderOffer);
+            const finalItemPrice = productWithSale.sale.isOnSale ? productWithSale.sale.salePrice : product.price;
+            calculatedSubtotal += (finalItemPrice * item.quantity);
+        }
+
+        const subtotal = calculatedSubtotal;
         const shippingCost = 0;
         const totalAmount = subtotal + shippingCost;
         const amountInPaisa = Math.round(totalAmount * 100);

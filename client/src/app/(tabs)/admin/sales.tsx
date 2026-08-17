@@ -150,10 +150,16 @@ export default function AdminSales() {
         <View style={styles.container}>
             <View style={styles.topBar}>
                 <Text style={styles.topBarTitle}>Festival Sales</Text>
-                <TouchableOpacity onPress={handleOpenCreate} style={styles.addButton}>
-                    <Ionicons name="add" size={20} color="white" />
-                    <Text style={styles.addButtonText}>Create Sale</Text>
-                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', gap: 10 }}>
+                    <TouchableOpacity onPress={() => router.push('/(tabs)/admin/first-order-discount' as any)} style={[styles.addButton, { backgroundColor: '#F3F4F6' }]}>
+                        <Ionicons name="gift-outline" size={20} color="#000" />
+                        <Text style={[styles.addButtonText, { color: '#000' }]}>First Order</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={handleOpenCreate} style={styles.addButton}>
+                        <Ionicons name="add" size={20} color="white" />
+                        <Text style={styles.addButtonText}>Create Sale</Text>
+                    </TouchableOpacity>
+                </View>
             </View>
 
             <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>

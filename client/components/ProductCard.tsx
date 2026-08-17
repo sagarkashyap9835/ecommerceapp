@@ -118,9 +118,9 @@ export default function ProductCard({ product, index = 0, disableAnimation = fal
 
             {/* SALE BADGE */}
             {product.sale?.isOnSale ? (
-              <View style={{ backgroundColor: "#F43F5E", position: 'absolute', bottom: 10, left: 10, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 }}>
+              <View style={{ backgroundColor: product.sale?.discountType === "FIRST_ORDER" ? "#2563EB" : "#F43F5E", position: 'absolute', bottom: 10, left: 10, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 }}>
                 <Text style={{ color: "#FFF", fontSize: 9, fontWeight: "800", fontFamily: "Outfit_800" }}>
-                  {product.sale.saleName}
+                  {product.sale?.discountType === "FIRST_ORDER" && "🎉 "}{product.sale.saleName}
                 </Text>
               </View>
             ) : null}

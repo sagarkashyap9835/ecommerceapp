@@ -71,6 +71,7 @@ export interface Product {
         salePrice: number;
         discountAmount: number;
         saleEndsAt: string;
+        discountType?: "FIRST_ORDER" | "FESTIVAL_SALE";
     };
     createdAt: string;
 }

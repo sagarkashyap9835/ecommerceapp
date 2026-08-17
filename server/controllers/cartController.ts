@@ -26,15 +26,19 @@ export const getUserCart = async (
     }
 
     let activeSale: any = null;
+    let firstOrderOffer: any = undefined;
+
     try {
       activeSale = await getActiveSale();
+      const FOOffer = (await import("./firstOrderController.js")).getFirstOrderOffer;
+      firstOrderOffer = await FOOffer(req.user._id);
     } catch (err) {
-      console.error("Sale logic error", err);
+      console.error("Sale or First Order logic error", err);
     }
 
     cart.items.forEach(item => {
       if (item.product) {
-        const productWithSale = getEffectiveProductPrice((item.product as any).toObject(), activeSale);
+        const productWithSale = getEffectiveProductPrice((item.product as any).toObject(), activeSale, firstOrderOffer);
         if (productWithSale.sale.isOnSale) {
           item.price = productWithSale.sale.salePrice;
           (item.product as Record<string, any>).sale = productWithSale.sale;
@@ -123,7 +127,13 @@ export const addToCart = async (
     } else {
       // Add new item
       const activeSale = await getActiveSale();
-      const productWithSale = getEffectiveProductPrice(product.toObject(), activeSale);
+      let firstOrderOffer: any = undefined;
+      try {
+        const FOOffer = (await import("./firstOrderController.js")).getFirstOrderOffer;
+        firstOrderOffer = await FOOffer(req.user._id);
+      } catch (err) { }
+
+      const productWithSale = getEffectiveProductPrice(product.toObject(), activeSale, firstOrderOffer);
       const effectivePrice = productWithSale.sale.isOnSale ? productWithSale.sale.salePrice : product.price;
 
       cart.items.push({
@@ -224,7 +234,13 @@ export const updateCartItem = async (
     }
 
     const activeSale = await getActiveSale();
-    const productWithSale = getEffectiveProductPrice(product.toObject(), activeSale);
+    let firstOrderOffer: any = undefined;
+    try {
+      const FOOffer = (await import("./firstOrderController.js")).getFirstOrderOffer;
+      firstOrderOffer = await FOOffer(req.user._id);
+    } catch (err) { }
+
+    const productWithSale = getEffectiveProductPrice(product.toObject(), activeSale, firstOrderOffer);
     item.quantity = quantity;
     item.price = productWithSale.sale.isOnSale ? productWithSale.sale.salePrice : product.price;
 

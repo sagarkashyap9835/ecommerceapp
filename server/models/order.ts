@@ -11,7 +11,9 @@ const orderItemSchema = new mongoose.Schema({
         salePrice: Number,
         discountAmount: Number,
         finalItemPrice: Number,
-        saleName: String
+        saleName: String,
+        discountType: { type: String, enum: ["FIRST_ORDER", "FESTIVAL_SALE"] },
+        firstOrderDiscount: Number,
     },
     size: { type: String },
     color: { type: String },

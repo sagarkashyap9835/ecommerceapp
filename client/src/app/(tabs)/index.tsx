@@ -25,6 +25,7 @@ import InfinityLoader from "../../../components/InfinityLoader";
 import AnimatedButton from "../../../components/AnimatedButton";
 import LiveCountdown from "../../../components/LiveCountdown";
 import api from "../../../constants/api";
+import { useAuth, useUser } from "@/context/AuthContext";
 const { width } = Dimensions.get("window");
 const bannerCardWidth = width - 32;
 const bannerStep = bannerCardWidth + 12;
@@ -42,6 +43,9 @@ export default function Home() {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [categories, setCategories] = useState<any[]>([{ id: 'all', name: 'All', icon: 'grid' }, ...CATEGORIES]);
   const [activeSale, setActiveSale] = useState<any>(null);
+  const [firstOrderOffer, setFirstOrderOffer] = useState<any>(null);
+  const { getToken } = useAuth();
+  const { user } = useUser();
 
   const shopNowTranslateX = useSharedValue(150);
 
@@ -107,6 +111,56 @@ export default function Home() {
       if (saleRes?.data?.success && saleRes.data.data) {
         setActiveSale(saleRes.data.data);
       }
+
+      if (user) {
+        try {
+          const token = await getToken();
+          const firstOfferRes = await api.get("first-order/eligibility", { headers: { Authorization: `Bearer ${token}` } });
+          const offer = firstOfferRes.data;
+          if (offer?.success && offer?.eligible && offer?.isEnabled) {
+            setFirstOrderOffer(offer);
+
+            // Now visually recalculate prices for products
+            if (prodRes.data?.success) {
+              const recalculatedProducts = prodRes.data.data.map((p: any) => {
+                let maxDiscount = p.sale?.isOnSale ? p.sale.discountAmount : 0;
+                let bestDiscountType = p.sale?.isOnSale ? "FESTIVAL_SALE" : null;
+                let applyFirstOrder = false;
+                let foDiscount = 0;
+
+                const activeRule = offer.settings?.priceRules?.find((r: any) => p.price >= r.minPrice && p.price <= r.maxPrice);
+
+                if (activeRule && activeRule.discountAmount > maxDiscount) {
+                  applyFirstOrder = true;
+                  foDiscount = activeRule.discountAmount;
+                }
+
+                if (applyFirstOrder) {
+                  const sp = p.price - foDiscount;
+                  return {
+                    ...p,
+                    sale: {
+                      isOnSale: true,
+                      saleName: offer.settings?.title || "Welcome Offer",
+                      discountAmount: foDiscount,
+                      salePrice: sp < 0 ? 0 : sp,
+                      discountType: "FIRST_ORDER"
+                    }
+                  };
+                }
+
+                if (p.sale?.isOnSale) {
+                  p.sale.discountType = "FESTIVAL_SALE";
+                }
+
+                return p;
+              });
+              setProducts(recalculatedProducts);
+            }
+          }
+        } catch (e) { }
+      }
+
     } catch (error) {
       console.error("Error fetching data", error);
     } finally {
@@ -578,6 +632,31 @@ export default function Home() {
                     style={{ backgroundColor: '#FEF08A', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, alignSelf: 'center', marginTop: 10 }}
                     textStyle={{ color: '#B45309', fontWeight: 'bold' }}
                   />
+                </LinearGradient>
+              </View>
+            );
+          })()}
+
+          {/* FIRST ORDER OFFER SECTION */}
+          {(() => {
+            if (loading || !firstOrderOffer?.eligible || !firstOrderOffer?.isEnabled) return null;
+
+            return (
+              <View style={{ marginBottom: 12 }}>
+                <LinearGradient
+                  colors={["#EFF6FF", "#DBEAFE"]}
+                  style={{ padding: 20, borderRadius: 16, marginBottom: 16, borderColor: '#BFDBFE', borderWidth: 1 }}
+                >
+                  <Text style={{ fontSize: 24, fontWeight: "800", color: "#1D4ED8", fontFamily: "Outfit_800", textAlign: 'center' }}>
+                    🎉 {firstOrderOffer?.settings?.title || "Welcome Offer"}
+                  </Text>
+                  <Text style={{ fontSize: 14, color: "#1E3A8A", textAlign: 'center', marginTop: 4 }}>
+                    {firstOrderOffer?.settings?.subtitle || "Get a special discount on your first order"}
+                  </Text>
+
+                  <TouchableOpacity onPress={() => router.push("/shop")} style={{ backgroundColor: '#1D4ED8', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 20, alignSelf: 'center', marginTop: 14 }}>
+                    <Text style={{ color: '#FFFFFF', fontWeight: 'bold' }}>Shop Now</Text>
+                  </TouchableOpacity>
                 </LinearGradient>
               </View>
             );

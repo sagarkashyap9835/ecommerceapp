@@ -13,6 +13,7 @@ import wishlistRoutes from "./routes/wishlistRoutes.js";
 import categoryRoutes from "./routes/categoryRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import saleRoutes from "./routes/saleRoutes.js";
+import firstOrderRoutes from "./routes/firstOrderRoutes.js";
 import { seedProducts } from "./scripts/seedProducts.js";
 import { seedCategories } from "./scripts/seedCategories.js";
 const app = express();
@@ -43,6 +44,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/wishlist", wishlistRoutes);
 app.use("/api/payment", paymentRoutes);
 app.use("/api/sale", saleRoutes);
+app.use("/api/first-order", firstOrderRoutes);
 
 // app.listen(port, () => {
 //     console.log(`Server is running at http://localhost:${port}`);

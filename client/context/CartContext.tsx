@@ -68,6 +68,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           isActive: prodObj.isActive ?? true,
           createdAt: prodObj.createdAt || new Date().toISOString(),
           category: prodObj.category || "Other",
+          sale: prodObj.sale,
         },
         quantity: item.quantity,
         size: sizeVal,
@@ -232,7 +233,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       Toast.show({
         type: "error",
         text1: "Stock Limit Reached ⚠️",
-        text2: availableStock > 0 
+        text2: availableStock > 0
           ? `Only ${availableStock} units available in stock.`
           : "This product is out of stock.",
       });

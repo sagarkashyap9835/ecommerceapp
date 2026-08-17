@@ -151,6 +151,11 @@ export const verifyPayment = async (req: Request, res: Response) => {
       );
     }
 
+    if (order) {
+      const User = (await import("../models/User.js")).default;
+      await User.findByIdAndUpdate(order.user, { hasCompletedFirstOrder: true });
+    }
+
     return res.status(200).json({
       success: true,
       message: "Payment verified successfully",
